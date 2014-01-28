@@ -7,6 +7,7 @@ grails.project.dependency.resolution = {
     inherits("global") {
         // uncomment to disable ehcache
         // excludes 'ehcache'
+		excludes 'slf4j-log4j12'
     }
     log "warn" // log level of Ivy resolver, either 'error', 'warn', 'info', 'debug' or 'verbose'
     legacyResolve false // whether to do a secondary resolve on plugin installation, not advised and here for backwards compatibility
@@ -34,10 +35,10 @@ grails.project.dependency.resolution = {
 		compile ("org.apache.jena:jena-core:2.11.0") {
 			excludes 'slf4j-api', 'xercesImpl'
 		}
-		compile ("org.apache.jena:jena-arq:2.11.0")
+		compile ("org.apache.jena:jena-arq:2.11.0") 
 		
 		//compile ("com.github.jsonld-java:jsonld-java-jena:0.3-SNAPSHOT")
-		compile ("com.github.jsonld-java:jsonld-java-jena:0.2.99-mygrid")
+		compile ("com.github.jsonld-java:jsonld-java-jena:0.2.99-mygrid") 
 		compile ("xml-apis:xml-apis:1.4.01") {
 			excludes 'xercesImpl'
 		}
