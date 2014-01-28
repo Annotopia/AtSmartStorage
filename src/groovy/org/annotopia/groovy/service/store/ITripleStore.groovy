@@ -41,11 +41,11 @@ interface ITripleStore {
 	
 	/**
 	 * Stores the triples/quads loaded from a file.
-	 * @param baseUri Base URI (defaults to uri).
 	 * @param content Triples/quads in a file.
+	 * @param baseUri Base URI (defaults to uri).
 	 * @return
 	 */
-	public String store(String baseUri, File content);
+	public String store(File content, String baseUri);
 	
 	/**
 	 * Stores the triples/quads loaded through a String.
@@ -55,10 +55,10 @@ interface ITripleStore {
 	public String store(String content);
 	
 	/**
-	 * Stores the triples/quads loaded through a String.
-	 * @param baseUri Base URI (defaults to uri).
+	 * Stores the triples/quads loaded through a String
 	 * @param content Triples/quads in a String.
+	 * @param baseUri Base URI (defaults to uri).
 	 * @return
 	 */
-	public String store(String baseUri, String content);
+	public String store(String content, String baseUri);
 }

@@ -48,54 +48,21 @@ class VirtuosoJenaStoreService implements ITripleStore {
 	public String store(File annotationFile) {
 		
 		log.info 'Loading file: ' + annotationFile.getName();	
-		store("", annotationFile);
+		store(annotationFile, null);
 	}
 	
 	@Override
-	public String store(String baseUri, File annotationFile) {
+	public String store(File annotationFile, String baseUri) {
 		log.info 'Loading file: ' + annotationFile.getName() + ' with baseUri: ' + baseUri;
 		
 		try {
 			try {
-				JenaJSONLD.init(); // Only needed once
-				
-				Dataset dataset = DatasetFactory.createMem();
-				
 				if(annotationFile == null || !annotationFile.exists()) {
 					log.error "File not found: " + annotationFile;
 					throw new IllegalArgumentException("File not found: " + annotationFile);
 				}
 				InputStream inputStream = new FileInputStream(annotationFile);
-				// Using the RIOT reader
-				RDFDataMgr.read(dataset, inputStream, "http://example.com/", JenaJSONLD.JSONLD);
-				printDebugData(dataset);
-				
-				// Default graph management
-				if(dataset.getDefaultModel()!=null && dataset.getDefaultModel().size()>0) {
-					log.debug "graph: * (default)"
-					log.debug grailsApplication.config.annotopia.storage.triplestore.host
-					VirtGraph virtGraph = new VirtGraph (
-						grailsApplication.config.annotopia.storage.triplestore.host,
-						grailsApplication.config.annotopia.storage.triplestore.user,
-						grailsApplication.config.annotopia.storage.triplestore.pass);
-					VirtModel virtModel = new VirtModel(virtGraph);
-					virtModel.add(dataset.getDefaultModel())
-					printDebugData(dataset.getDefaultModel());
-				}
-				
-				Iterator<String> names = dataset.listNames()
-				while(names.hasNext()) {
-					String name = names.next();
-					log.debug "graph: " + name
-					Model model = dataset.getNamedModel(name)
-					VirtGraph virtGraph = new VirtGraph (name,
-						grailsApplication.config.annotopia.storage.triplestore.host,
-						grailsApplication.config.annotopia.storage.triplestore.user,
-						grailsApplication.config.annotopia.storage.triplestore.pass);
-					VirtModel virtModel = new VirtModel(virtGraph);
-					virtModel.add(model);
-					printDebugData(model);
-				}
+				storeGraphs(inputStream, baseUri);	
 			} finally {
 
 			}
@@ -106,18 +73,72 @@ class VirtuosoJenaStoreService implements ITripleStore {
 
 	@Override
 	public String store(String content) {
-		// TODO Auto-generated method stub
-		return null;
+		log.info 'Loading content: ' + content;	
+		store(content, null);
 	}
 
 	@Override
-	public String store(String baseUri, String content) {
-		// TODO Auto-generated method stub
-		return null;
+	public String store(String content, String baseUri) {
+		log.info 'Loading content with baseUri: ' + baseUri;
+		
+		try {
+			try {
+				if(content == null || content.isEmpty()) {
+					log.error "Content not valid: " + content;
+					throw new IllegalArgumentException("Content not valid: " + content);
+				}
+				
+				InputStream inputStream = new ByteArrayInputStream(content.getBytes());
+				storeGraphs(inputStream, baseUri);		
+			} finally {
+
+			}
+		} catch (Exception e) {
+			System.out.println( e.getMessage());
+		}
+	}
+	
+	private storeGraphs(InputStream inputStream, String baseUri) {
+		JenaJSONLD.init(); // Only needed once
+		
+		Dataset dataset = DatasetFactory.createMem();
+		
+		// Using the RIOT reader
+		if(baseUri!=null && !baseUri.isEmpty()) RDFDataMgr.read(dataset, inputStream, baseUri, JenaJSONLD.JSONLD);
+		else RDFDataMgr.read(dataset, inputStream, JenaJSONLD.JSONLD);
+		printDebugData(dataset);
+		
+		// Default graph management
+		if(dataset.getDefaultModel()!=null && dataset.getDefaultModel().size()>0) {
+			log.debug "graph: * (default)"
+			log.debug grailsApplication.config.annotopia.storage.triplestore.host
+			VirtGraph virtGraph = new VirtGraph (
+				grailsApplication.config.annotopia.storage.triplestore.host,
+				grailsApplication.config.annotopia.storage.triplestore.user,
+				grailsApplication.config.annotopia.storage.triplestore.pass);
+			VirtModel virtModel = new VirtModel(virtGraph);
+			virtModel.add(dataset.getDefaultModel())
+			printDebugData(dataset.getDefaultModel());
+		}
+		
+		Iterator<String> names = dataset.listNames()
+		while(names.hasNext()) {
+			String name = names.next();
+			log.debug "graph: " + name
+			Model model = dataset.getNamedModel(name)
+			VirtGraph virtGraph = new VirtGraph (name,
+				grailsApplication.config.annotopia.storage.triplestore.host,
+				grailsApplication.config.annotopia.storage.triplestore.user,
+				grailsApplication.config.annotopia.storage.triplestore.pass);
+			VirtModel virtModel = new VirtModel(virtGraph);
+			virtModel.add(model);
+			printDebugData(model);
+		}
 	}
 	
 	private printDebugData(def data) {
-		if (Environment.current == Environment.DEVELOPMENT) {
+		if (Environment.current == Environment.DEVELOPMENT && 
+				Boolean.parseBoolean(grailsApplication.config.annotopia.debug.storage.environment.trace.data)) {
 			println '-----START-DEVELOPMENT-DEBUG-DATA-----';
 			RDFDataMgr.write(System.out, data, JenaJSONLD.JSONLD);
 			println '\n-----END-DEVELOPMENT-DEBUG-DATA-----';
