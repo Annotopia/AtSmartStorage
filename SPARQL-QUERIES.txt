@@ -1,0 +1,14 @@
+-------------------------------------------------------------------------------
+                             SOME SPARQL QUERIES
+-------------------------------------------------------------------------------
+
+These can be used directly in the Virtuoso Conductor user interface:
+http://localhost:8890/conductor/
+
+1) Deleting a graph
+DROP SILENT GRAPH <http://example.org/graphs/73> 
+
+2) Displaying all the triples of a graph
+SELECT * FROM <http://example.org/graphs/73> WHERE {
+  ?s ?p ?o .
+}
