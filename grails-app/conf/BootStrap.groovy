@@ -1,3 +1,5 @@
+import java.util.logging.Logger;
+
 import virtuoso.jena.driver.VirtGraph
 
 /*
@@ -44,6 +46,22 @@ class BootStrap {
 		log.info  'Bootstrapping....'
 		
 		separator();
+		log.info  '** External Configuration';
+
+		grailsApplication.config.grails.config.locations.each {
+			log.info  ' ' + it
+		}
+		
+		if(grailsApplication.config.annotopia.storage) log.info ' ...external configuration file loaded!'
+		else {
+			log.error ' ...no external configuration file found!'
+			terminate();
+		}
+		
+		if(grailsApplication.config.annotopia.debug.storage) log.info ' ...debug configuration file loaded!'
+		else log.warn ' ...no debug configuration file found!'
+		
+		separator();
 		log.info  '** Virtuoso Configuration';
 		log.info  ' url        : ' + grailsApplication.config.annotopia.storage.triplestore.host ;
 		log.info  ' user       : ' + grailsApplication.config.annotopia.storage.triplestore.user ;
@@ -59,6 +77,10 @@ class BootStrap {
 			log.error e.getMessage();
 			terminate();
 		}	
+		
+		separator();
+		log.info  '** Debug Configuration';
+		
 		
 		separator();
 		log.info  '** Services Interceptors';
@@ -86,7 +108,7 @@ class BootStrap {
 	}
 	
 	private terminate() {
-		log.error 'BOOTSTRAPPING TERMINATED, APPLICATION SHUTDOWN!'
+		log.error '!! BOOTSTRAPPING TERMINATED, APPLICATION SHUTDOWN!'
 		log.error '========================================================================';
 		throw new RuntimeException();
 	}
