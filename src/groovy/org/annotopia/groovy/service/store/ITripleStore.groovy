@@ -66,12 +66,19 @@ interface ITripleStore {
 	 * Retrieves the graph identified by the given URI
 	 * @param graphUri	The URI identifying the graph to retrieve
 	 */
-	public Dataset retrieveGraph(String graphUri)
+	public Dataset retrieveGraph(String graphUri);
+	
+	/**
+	 * Verifies existence of the graph identified by the given URI
+	 * @param graphUri  The URI identifying the graph 
+	 * @return True if the graph exists
+	 */
+	public boolean doesGraphExists(String graphUri);
 	
 	/**
 	 * Drops the graph identified by the given URI
 	 * @param graphUri	The URI identifying the graph to drop
 	 * @return True if the graph has been dropped
 	 */
-	public boolean dropGraph(String graphUri) 
+	public boolean dropGraph(String graphUri);
 }

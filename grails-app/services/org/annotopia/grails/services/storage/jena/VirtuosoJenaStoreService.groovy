@@ -113,13 +113,13 @@ class VirtuosoJenaStoreService implements ITripleStore {
 	
 	@Override
 	public Dataset retrieveGraph(String graphUri) {
+		log.info 'Retrieving graph: ' + graphUri;
 		
 		VirtGraph set = new VirtGraph (graphUri,
 			grailsApplication.config.annotopia.storage.triplestore.host,
 			grailsApplication.config.annotopia.storage.triplestore.user,
 			grailsApplication.config.annotopia.storage.triplestore.pass);
 		
-
 		String queryString = "CONSTRUCT { ?s ?p ?o . } FROM <" + graphUri + "> WHERE {" +
 				"?s ?p ?o . " +
 			"}" ;
@@ -139,9 +139,42 @@ class VirtuosoJenaStoreService implements ITripleStore {
 		} 
 	}
 	
+	public boolean doesGraphExists(String graphUri) {
+		log.info 'Checking graph existance: ' + graphUri;		
+		
+		// The ASK method seems not working so I am using a more elaborate
+		// methodology
+		
+		/* 
+		VirtGraph set = new VirtGraph (
+			grailsApplication.config.annotopia.storage.triplestore.host,
+			grailsApplication.config.annotopia.storage.triplestore.user,
+			grailsApplication.config.annotopia.storage.triplestore.pass);	
+		
+		String query = "ASK { GRAPH <" + graphUri + "> { ?s ?p ?o . } }";
+		log.info 'Query: ' + query;
+		
+		Query sparql = QueryFactory.create(query);
+		VirtuosoQueryExecution vqe = VirtuosoQueryExecutionFactory.create (sparql, set);
+		boolean result =  vqe.execAsk();
+		log.info 'Result: ' + result;
+		return	result
+		*/
+		
+		Dataset dataset = retrieveGraph(graphUri);
+		boolean existenceFlag = false;
+		Iterator<String> graphNames = dataset.listNames()
+		while(graphNames.hasNext()) {
+			String graphName = graphNames.next();
+			if(dataset.getNamedModel(graphName).size()>0)
+				existenceFlag = true;
+		}
+		return existenceFlag;
+	}
+	
 	@Override
 	public boolean dropGraph(String graphUri) {
-		log.info 'Remove graph: ' + graphUri;
+		log.info 'Removing graph: ' + graphUri;
 		
 		try {
 			VirtGraph graph = new VirtGraph (
