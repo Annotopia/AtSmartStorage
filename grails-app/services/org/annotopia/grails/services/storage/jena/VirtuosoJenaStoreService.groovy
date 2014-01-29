@@ -27,11 +27,24 @@ import org.apache.jena.riot.RDFDataMgr
 
 import virtuoso.jena.driver.VirtGraph
 import virtuoso.jena.driver.VirtModel
+import virtuoso.jena.driver.VirtuosoQueryExecution
+import virtuoso.jena.driver.VirtuosoQueryExecutionFactory
+import virtuoso.jena.driver.VirtuosoUpdateFactory
+import virtuoso.jena.driver.VirtuosoUpdateRequest
 
 import com.github.jsonldjava.jena.JenaJSONLD
 import com.hp.hpl.jena.query.Dataset
 import com.hp.hpl.jena.query.DatasetFactory
+import com.hp.hpl.jena.query.Query
+import com.hp.hpl.jena.query.QueryFactory
+import com.hp.hpl.jena.query.QuerySolution
+import com.hp.hpl.jena.query.ResultSet
 import com.hp.hpl.jena.rdf.model.Model
+import com.hp.hpl.jena.rdf.model.ModelFactory
+import com.hp.hpl.jena.rdf.model.Property
+import com.hp.hpl.jena.rdf.model.RDFNode
+import com.hp.hpl.jena.rdf.model.Resource
+import com.hp.hpl.jena.rdf.model.Statement
 
 
 /**
@@ -95,6 +108,51 @@ class VirtuosoJenaStoreService implements ITripleStore {
 			}
 		} catch (Exception e) {
 			System.out.println( e.getMessage());
+		}
+	}
+	
+	@Override
+	public Dataset retrieveGraph(String graphUri) {
+		
+		VirtGraph set = new VirtGraph (graphUri,
+			grailsApplication.config.annotopia.storage.triplestore.host,
+			grailsApplication.config.annotopia.storage.triplestore.user,
+			grailsApplication.config.annotopia.storage.triplestore.pass);
+		
+
+		String queryString = "CONSTRUCT { ?s ?p ?o . } FROM <" + graphUri + "> WHERE {" +
+				"?s ?p ?o . " +
+			"}" ;
+		Query  sparql = QueryFactory.create(queryString);
+		
+		Model model = ModelFactory.createMemModelMaker().createModel(graphUri);
+		Dataset dataset = DatasetFactory.createMem();
+		VirtuosoQueryExecution vqe = VirtuosoQueryExecutionFactory.create (sparql, set);
+		
+		try {
+			model = vqe.execConstruct();
+			dataset.addNamedModel(graphUri, model);
+			return dataset;
+		} catch (Exception e) {
+			println e.getMessage();
+			return null;
+		} 
+	}
+	
+	@Override
+	public boolean dropGraph(String graphUri) {
+		log.info 'Remove graph: ' + graphUri;
+		
+		try {
+			VirtGraph graph = new VirtGraph (
+				grailsApplication.config.annotopia.storage.triplestore.host,
+				grailsApplication.config.annotopia.storage.triplestore.user,
+				grailsApplication.config.annotopia.storage.triplestore.pass);
+			String str = "DROP SILENT GRAPH <" + graphUri + ">";
+			VirtuosoUpdateRequest vur = VirtuosoUpdateFactory.create(str, graph);
+			vur.exec();
+		} catch (Exception e) {
+			println e.getMessage();
 		}
 	}
 	
