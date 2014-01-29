@@ -20,7 +20,7 @@
  */
 package org.annotopia.groovy.service.store
 
-import java.io.File;
+import com.hp.hpl.jena.query.Dataset
 
 /**
  * This is the interface that lists all the methods available for
@@ -61,4 +61,17 @@ interface ITripleStore {
 	 * @return
 	 */
 	public String store(String content, String baseUri);
+	
+	/**
+	 * Retrieves the graph identified by the given URI
+	 * @param graphUri	The URI identifying the graph to retrieve
+	 */
+	public Dataset retrieveGraph(String graphUri)
+	
+	/**
+	 * Drops the graph identified by the given URI
+	 * @param graphUri	The URI identifying the graph to drop
+	 * @return True if the graph has been dropped
+	 */
+	public boolean dropGraph(String graphUri) 
 }
