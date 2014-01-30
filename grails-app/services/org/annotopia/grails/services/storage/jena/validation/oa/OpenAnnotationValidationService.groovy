@@ -37,16 +37,27 @@ import com.hp.hpl.jena.rdf.model.RDFNode
 /**
  * This service allows to validate RDF content against the
  * Open Annotation Model http://www.openannotation.org/spec/core/
+ * 
+ * This class is a rewritten adaptation of the one originally written 
+ * by Anna Gerber for the lorestore project. This new version is in Groovy 
+ * and works with Jena/ARQ APIs.
  *
  * @author Paolo Ciccarese <paolo.ciccarese@gmail.com>
  */
 class OpenAnnotationValidationService {
 
+	/*
+	 * This file has been created by Anna Gerber for the lorestore
+	 * project 
+	 */
 	private final VALIDATION_RULES_FILE = "OAConstraintsSPARQL.json";
 	
 	/**
 	 * This method validates the input agains the Open Annotation data model
 	 * specifications http://www.openannotation.org/spec/core/
+	 * 
+	 * TODO: Validate annotations in graphs
+	 * 
 	 * @param inputStream	The inputStream of the resource to validate
 	 * @param contentType	The content type of the resource to validate (Accepted 
 	 *                      JSON-LD and therefore 'application/json'
