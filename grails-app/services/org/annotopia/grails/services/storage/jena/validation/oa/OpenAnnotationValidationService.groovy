@@ -21,7 +21,7 @@
 package org.annotopia.grails.services.storage.jena.validation.oa
 
 import org.apache.jena.riot.RDFDataMgr
-import org.json.simple.JSONValue
+import org.codehaus.groovy.grails.web.json.JSONObject
 
 import com.github.jsonldjava.jena.JenaJSONLD
 import com.github.jsonldjava.utils.JSONUtils
@@ -65,13 +65,13 @@ class OpenAnnotationValidationService {
 	 *                      JSON-LD and therefore 'application/json'
 	 * @return The map with a summary and all the tests and results
 	 */
-	public HashMap<String,Object> validate(InputStream inputStream, String contentType) {
+	public List<HashMap<String,Object>> validate(InputStream inputStream, String contentType) {
 
 		// Validation rules (later loaded from the external json file)
 		List<Map<String, Object>> validationRules = null;
 
 		// Results
-		HashMap<String,Object> graphResult = new HashMap<String, Object>();
+		List<HashMap<String,Object>> finalResult = new ArrayList<HashMap<String, Object>>();
 
 		try {
 			if (contentType.contains("application/json")) {
@@ -83,8 +83,10 @@ class OpenAnnotationValidationService {
 						// Using the RIOT reader
 						RDFDataMgr.read(dataset, inputStream, "http://localhost/jsonld/", JenaJSONLD.JSONLD);
 					} catch (Exception ex) {
-						graphResult.put("exception", createException("Content parsing failed", "Failure while: loading of the content to validate " + ex.toString()));
-						return graphResult;
+						HashMap<String,Object> errorResult = new HashMap<String, Object>();
+						errorResult.put("exception", createException("Content parsing failed", "Failure while: loading of the content to validate " + ex.toString()));
+						finalResult.add(errorResult);
+						return finalResult;
 					} 
 					
 					// Load validation rules
@@ -99,14 +101,29 @@ class OpenAnnotationValidationService {
 							validationRules = (List<Map<String, Object>>) JSONUtils.fromInputStream(inp, "UTF-8");
 						}
 					} catch (IOException ex) {
-						graphResult.put("exception", createException("Validation rules loading failed", "Failure while: loading the validation rules " + ex.toString()));
-						return graphResult;
+						HashMap<String,Object> errorResult = new HashMap<String, Object>();
+						errorResult.put("exception", createException("Validation rules loading failed", "Failure while: loading the validation rules " + ex.toString()));
+						finalResult.add(errorResult);
+						return finalResult;
+					}
+					
+					// Query all graphs
+					log.info("Graphs detection...");
+					int totalDetectedGraphs = 0;
+					Query  sparqlGraphs = QueryFactory.create("PREFIX oa: <http://www.w3.org/ns/oa#> SELECT DISTINCT ?g WHERE { GRAPH ?g { ?s ?p ?o . }}");
+					QueryExecution qGraphs = QueryExecutionFactory.create (sparqlGraphs, dataset);
+					ResultSet rGraphs = qGraphs.execSelect();
+					while (rGraphs.hasNext()) {
+						rGraphs.nextSolution();
+						totalDetectedGraphs++;
 					}
 					
 					// Query for graphs containing annotation
 					// See: https://www.mail-archive.com/wikidata-l@lists.wikimedia.org/msg00370.html
+					log.info("Annotation graphs detection...");
 					HashMap<String, Model> models = new HashMap<String, Model>();
 					boolean graphRepresentationDetected = false;
+					int totalDetectedAnnotationGraphs = 0;
 					List<String> annotationsGraphs = new ArrayList<String>();
 					Query  sparqlAnnotationGraphs = QueryFactory.create("PREFIX oa: <http://www.w3.org/ns/oa#> SELECT DISTINCT ?g WHERE { GRAPH ?g { ?s a oa:Annotation . }}");
 					QueryExecution qAnnotationGraphs = QueryExecutionFactory.create (sparqlAnnotationGraphs, dataset);
@@ -115,6 +132,7 @@ class OpenAnnotationValidationService {
 						QuerySolution querySolution = rAnnotationGraphs.nextSolution();
 						annotationsGraphs.add(querySolution.get("g").toString());
 						graphRepresentationDetected = true;
+						totalDetectedAnnotationGraphs++;
 					}
 					// TODO Graphs
 					// For each graph containing annotations run the validation code 
@@ -133,6 +151,7 @@ class OpenAnnotationValidationService {
 					
 					models.keySet().each { modelName ->
 						Model firstModel = models.get(modelName);
+						HashMap<String,Object> graphResult = new HashMap<String, Object>();
 						
 						log.info("Applying validation rules...");
 						int totalPass = 0, totalError = 0, totalWarn = 0, totalSkip = 0, totalTotal = 0;
@@ -265,19 +284,35 @@ class OpenAnnotationValidationService {
 						graphResult.put("pass", totalPass);
 						graphResult.put("skip", totalSkip);
 						graphResult.put("total", totalTotal);
+						finalResult.add(graphResult);
 					}
-					return graphResult;
+					
+					JSONObject sums = new JSONObject();
+					sums.put("totalGraphs", totalDetectedGraphs);
+					finalResult.add(sums);
+					
+					JSONObject sums2 = new JSONObject();
+					sums2.put("annotationGraphs", totalDetectedAnnotationGraphs);
+					finalResult.add(sums2);
+					
+					return finalResult;
 				} catch (Exception ex) {
-					graphResult.put("exception", createException("OA JSON validation failed", "Failure while: validating the JSON " + ex.toString()));
-					return graphResult;
+					HashMap<String,Object> errorResult = new HashMap<String, Object>();
+					errorResult.put("exception", createException("OA JSON validation failed", "Failure while: validating the JSON " + ex.toString()));
+					finalResult.add(errorResult);
+					return finalResult;
 				}
 			} else {
-				graphResult.put("exception", createException("Format not supported", "Format not supported:" + contentType));
-				return graphResult;
+				HashMap<String,Object> errorResult = new HashMap<String, Object>();
+				errorResult.put("exception", createException("Format not supported", "Format not supported:" + contentType));
+				finalResult.add(errorResult);
+				return finalResult;
 			}
 		} catch (Exception ex) {
-			graphResult.put("exception", createException("OA validation failed", "Failure while: validating the OA content " + ex.toString()));
-			return graphResult;
+			HashMap<String,Object> errorResult = new HashMap<String, Object>();
+			errorResult.put("exception", createException("OA validation failed", "Failure while: validating the OA content " + ex.toString()));
+			finalResult.add(errorResult);
+			return finalResult;
 		}
 	}
 	

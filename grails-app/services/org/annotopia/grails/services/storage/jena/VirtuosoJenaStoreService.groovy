@@ -33,6 +33,8 @@ import virtuoso.jena.driver.VirtuosoUpdateFactory
 import virtuoso.jena.driver.VirtuosoUpdateRequest
 
 import com.github.jsonldjava.jena.JenaJSONLD
+import com.hp.hpl.jena.graph.Graph
+import com.hp.hpl.jena.graph.Triple
 import com.hp.hpl.jena.query.Dataset
 import com.hp.hpl.jena.query.DatasetFactory
 import com.hp.hpl.jena.query.Query
@@ -41,10 +43,7 @@ import com.hp.hpl.jena.query.QuerySolution
 import com.hp.hpl.jena.query.ResultSet
 import com.hp.hpl.jena.rdf.model.Model
 import com.hp.hpl.jena.rdf.model.ModelFactory
-import com.hp.hpl.jena.rdf.model.Property
 import com.hp.hpl.jena.rdf.model.RDFNode
-import com.hp.hpl.jena.rdf.model.Resource
-import com.hp.hpl.jena.rdf.model.Statement
 
 
 /**
@@ -141,7 +140,7 @@ class VirtuosoJenaStoreService implements ITripleStore {
 	
 	public boolean doesGraphExists(String graphUri) {
 		log.info 'Checking graph existance: ' + graphUri;		
-		
+
 		// The ASK method seems not working so I am using a more elaborate
 		// methodology
 		
