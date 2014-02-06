@@ -23,10 +23,13 @@ package org.annotopia.grails.services.storage.jena;
 import static org.junit.Assert.*
 import grails.test.mixin.TestFor
 
+import java.util.logging.Level
+import java.util.logging.LogManager
+
+import org.apache.log4j.BasicConfigurator
+import org.codehaus.groovy.grails.commons.DefaultGrailsApplication
 import org.junit.After
 import org.junit.Before
-
-import com.hp.hpl.jena.query.Dataset
 
 /**
  * Tests for the service that allows to connect to the Virtuoso
@@ -35,8 +38,9 @@ import com.hp.hpl.jena.query.Dataset
  * @author Paolo Ciccarese <paolo.ciccarese@gmail.com>
  */
 @TestFor(org.annotopia.grails.services.storage.jena.VirtuosoJenaStoreService)
-class VirtuosoJenaStoreServiceTests {
+class VirtuosoJenaStoreServiceTests extends DefaultGrailsApplication {
 
+	def grailsApplication = new org.codehaus.groovy.grails.commons.DefaultGrailsApplication()
 	def virtuosoJenaStoreService;
 	
 	@Before
@@ -52,11 +56,11 @@ class VirtuosoJenaStoreServiceTests {
 		String currentDir = new File(".").getCanonicalPath()
 		File file = new File(currentDir + '/tests/oa-test-example-with-graph.json')
 		
-		virtuosoJenaStoreService.store(file);
-		assert "Graph creation", virtuosoJenaStoreService.doesGraphExists("http://example.org/tests/graph/001");
+		virtuosoJenaStoreService.store(grailsApplication.config.annotopia.storage.testing.apiKey, file);
+		assert "Graph creation", virtuosoJenaStoreService.doesGraphExists(grailsApplication.config.annotopia.storage.testing.apiKey, "http://example.org/tests/graph/001");
 		
-		virtuosoJenaStoreService.dropGraph("http://example.org/tests/graph/001")
-		assertFalse "Graph deletion", virtuosoJenaStoreService.doesGraphExists("http://example.org/tests/graph/001");
+		virtuosoJenaStoreService.dropGraph(grailsApplication.config.annotopia.storage.testing.apiKey, "http://example.org/tests/graph/001")
+		assertFalse "Graph deletion", virtuosoJenaStoreService.doesGraphExists(grailsApplication.config.annotopia.storage.testing.apiKey, "http://example.org/tests/graph/001");
 	}
 	
 	/**
@@ -68,11 +72,11 @@ class VirtuosoJenaStoreServiceTests {
 		String currentDir = new File(".").getCanonicalPath()
 		String fileContent = new File(currentDir + '/tests/oa-test-example-with-graph.json').text
 		
-		virtuosoJenaStoreService.store(fileContent);
-		assert "Graph creation", virtuosoJenaStoreService.doesGraphExists("http://example.org/tests/graph/001");
+		virtuosoJenaStoreService.store(grailsApplication.config.annotopia.storage.testing.apiKey, fileContent);
+		assert "Graph creation", virtuosoJenaStoreService.doesGraphExists(grailsApplication.config.annotopia.storage.testing.apiKey, "http://example.org/tests/graph/001");
 		
-		virtuosoJenaStoreService.dropGraph("http://example.org/tests/graph/001")
-		assertFalse "Graph deletion", virtuosoJenaStoreService.doesGraphExists("http://example.org/tests/graph/001");
+		virtuosoJenaStoreService.dropGraph(grailsApplication.config.annotopia.storage.testing.apiKey, "http://example.org/tests/graph/001")
+		assertFalse "Graph deletion", virtuosoJenaStoreService.doesGraphExists(grailsApplication.config.annotopia.storage.testing.apiKey, "http://example.org/tests/graph/001");
 	}
 
 	@After
