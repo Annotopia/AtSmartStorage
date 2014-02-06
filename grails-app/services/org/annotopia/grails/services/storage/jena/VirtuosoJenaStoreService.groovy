@@ -57,14 +57,14 @@ class VirtuosoJenaStoreService implements ITripleStore {
 	def grailsApplication
 	
 	@Override
-	public String store(File annotationFile) {
+	public String store(String apiKey, File annotationFile) {
 		
 		log.info 'Loading file: ' + annotationFile.getName();	
-		store(annotationFile, null);
+		store(apiKey, annotationFile, null);
 	}
 	
 	@Override
-	public String store(File annotationFile, String baseUri) {
+	public String store(String apiKey, File annotationFile, String baseUri) {
 		log.info 'Loading file: ' + annotationFile.getName() + ' with baseUri: ' + baseUri;
 		
 		try {
@@ -84,13 +84,13 @@ class VirtuosoJenaStoreService implements ITripleStore {
 	}
 
 	@Override
-	public String store(String content) {
+	public String store(String apiKey, String content) {
 		log.info 'Loading content: ' + content;	
-		store(content, null);
+		store(apiKey, content, null);
 	}
 
 	@Override
-	public String store(String content, String baseUri) {
+	public String store(String apiKey, String content, String baseUri) {
 		log.info 'Loading content with baseUri: ' + baseUri;
 		
 		try {
@@ -111,8 +111,8 @@ class VirtuosoJenaStoreService implements ITripleStore {
 	}
 	
 	@Override
-	public Dataset retrieveGraph(String graphUri) {
-		log.info 'Retrieving graph: ' + graphUri;
+	public Dataset retrieveGraph(String apiKey, String graphUri) {
+		log.info '[' + apiKey + '] Retrieving graph: ' + graphUri;
 		
 		VirtGraph set = new VirtGraph (graphUri,
 			grailsApplication.config.annotopia.storage.triplestore.host,
@@ -133,12 +133,12 @@ class VirtuosoJenaStoreService implements ITripleStore {
 			dataset.addNamedModel(graphUri, model);
 			return dataset;
 		} catch (Exception e) {
-			println e.getMessage();
+			log.error(e.getMessage());
 			return null;
 		} 
 	}
 	
-	public boolean doesGraphExists(String graphUri) {
+	public boolean doesGraphExists(String apiKey, String graphUri) {
 		log.info 'Checking graph existance: ' + graphUri;		
 
 		// The ASK method seems not working so I am using a more elaborate
@@ -160,7 +160,7 @@ class VirtuosoJenaStoreService implements ITripleStore {
 		return	result
 		*/
 		
-		Dataset dataset = retrieveGraph(graphUri);
+		Dataset dataset = retrieveGraph(apiKey, graphUri);
 		boolean existenceFlag = false;
 		Iterator<String> graphNames = dataset.listNames()
 		while(graphNames.hasNext()) {
@@ -172,7 +172,7 @@ class VirtuosoJenaStoreService implements ITripleStore {
 	}
 	
 	@Override
-	public boolean dropGraph(String graphUri) {
+	public boolean dropGraph(String apiKey, String graphUri) {
 		log.info 'Removing graph: ' + graphUri;
 		
 		try {
@@ -188,7 +188,7 @@ class VirtuosoJenaStoreService implements ITripleStore {
 		}
 	}
 	
-	private storeGraphs(InputStream inputStream, String baseUri) {
+	private storeGraphs(String apiKey, InputStream inputStream, String baseUri) {
 		JenaJSONLD.init(); // Only needed once
 		
 		Dataset dataset = DatasetFactory.createMem();

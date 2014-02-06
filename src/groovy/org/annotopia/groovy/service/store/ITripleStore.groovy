@@ -34,51 +34,58 @@ interface ITripleStore {
 
 	/**
 	 * Stores the triples/quads loaded from a file.
+	 * @param apiKey	The API key of the system requesting the transaction
 	 * @param content Triples/quads in a file.
 	 * @return
 	 */
-	public String store(File content);
+	public String store(String apiKey, File content);
 	
 	/**
 	 * Stores the triples/quads loaded from a file.
+	 * @param apiKey	The API key of the system requesting the transaction
 	 * @param content Triples/quads in a file.
 	 * @param baseUri Base URI (defaults to uri).
 	 * @return
 	 */
-	public String store(File content, String baseUri);
+	public String store(String apiKey, File content, String baseUri);
 	
 	/**
 	 * Stores the triples/quads loaded through a String.
+	 * @param apiKey	The API key of the system requesting the transaction
 	 * @param content Triples/quads in a String.
 	 * @return
 	 */
-	public String store(String content);
+	public String store(String apiKey, String content);
 	
 	/**
 	 * Stores the triples/quads loaded through a String
+	 * @param apiKey	The API key of the system requesting the transaction
 	 * @param content Triples/quads in a String.
 	 * @param baseUri Base URI (defaults to uri).
 	 * @return
 	 */
-	public String store(String content, String baseUri);
+	public String store(String apiKey, String content, String baseUri);
 	
 	/**
 	 * Retrieves the graph identified by the given URI
+	 * @param apiKey	The API key of the system requesting the transaction
 	 * @param graphUri	The URI identifying the graph to retrieve
 	 */
-	public Dataset retrieveGraph(String graphUri);
+	public Dataset retrieveGraph(String apiKey, String graphUri);
 	
 	/**
 	 * Verifies existence of the graph identified by the given URI
+	 * @param apiKey	The API key of the system requesting the transaction
 	 * @param graphUri  The URI identifying the graph 
 	 * @return True if the graph exists
 	 */
-	public boolean doesGraphExists(String graphUri);
+	public boolean doesGraphExists(String apiKey, String graphUri);
 	
 	/**
 	 * Drops the graph identified by the given URI
+	 * @param apiKey	The API key of the system requesting the transaction
 	 * @param graphUri	The URI identifying the graph to drop
 	 * @return True if the graph has been dropped
 	 */
-	public boolean dropGraph(String graphUri);
+	public boolean dropGraph(String apiKey, String graphUri);
 }
