@@ -41,11 +41,13 @@ class AnnotationJenaStorageService {
 	def grailsApplication
 	def virtuosoJenaStoreService
 	
-	public listAnnotationSet(apiKey, max, offset, tgtUrl, tgtExt, tgtIds) {
+	public listAnnotationSet(apiKey, max, offset, tgtUrl, tgtFgt, tgtExt, tgtIds) {
 		log.info '[' + apiKey + '] List annotation sets' + 
 			'max:' + max + 
-			'offset:' + offset;
-		retrieveAnnotationGraphs(apiKey, max, offset);
+			'offset:' + offset +
+			'tgtUrl:' + tgtUrl +
+			'tgtFgt:' + tgtFgt;
+		retrieveAnnotationGraphs(apiKey, max, offset, tgtUrl, tgtFgt);
 	}
 	
 	public int countAnnotationGraphs(apiKey) {
@@ -56,7 +58,7 @@ class AnnotationJenaStorageService {
 		
 		String queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> " +
 			"SELECT (COUNT(DISTINCT ?g) AS ?total) WHERE { GRAPH ?g { ?s a oa:Annotation }}";
-		log.trace('[' + apiKey + ']' +  queryString);
+		log.trace('[' + apiKey + '] ' +  queryString);
 			
 		int totalCount = 0;
 		Query  sparql = QueryFactory.create(queryString);
@@ -70,10 +72,34 @@ class AnnotationJenaStorageService {
 		totalCount;
 	}
 	
-	public List<String> retrieveAnnotationGraphsNames(apiKey, max, offset) {
+	public int countAnnotations(apiKey) {
+		VirtGraph set = new VirtGraph (
+			grailsApplication.config.annotopia.storage.triplestore.host,
+			grailsApplication.config.annotopia.storage.triplestore.user,
+			grailsApplication.config.annotopia.storage.triplestore.pass);
+		
+		String queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> " +
+			"SELECT (COUNT(DISTINCT ?s) AS ?total) WHERE { GRAPH ?g { ?s a oa:Annotation }}";
+		log.trace('[' + apiKey + ']' +  queryString);
+			
+		int totalCount = 0;
+		Query  sparql = QueryFactory.create(queryString);
+		VirtuosoQueryExecution vqe = VirtuosoQueryExecutionFactory.create (sparql, set);
+		ResultSet results=vqe.execSelect();
+		if(results.hasNext())
+		{
+			totalCount = Integer.parseInt(results.next().get("total").getString());
+		}
+		log.info('[' + apiKey + '] Total accessible Annotations: ' + totalCount);
+		totalCount;
+	}
+	
+	public List<String> retrieveAnnotationGraphsNames(apiKey, max, offset, tgtUrl, tgtFgt) {
 		log.info  '[' + apiKey + '] Retrieving annotation graphs names ' + 
 			'max:' + max + 
-			' offset:' + offset;
+			'offset:' + offset +
+			'tgtUrl:' + tgtUrl +
+			'tgtFgt:' + tgtFgt;
 		
 		VirtGraph set = new VirtGraph (
 			grailsApplication.config.annotopia.storage.triplestore.host,
@@ -82,7 +108,16 @@ class AnnotationJenaStorageService {
 		
 		String queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> " +
 			"SELECT DISTINCT ?g WHERE { GRAPH ?g { ?s a oa:Annotation }} LIMIT " + max;
-		log.trace('[' + apiKey + ']' + queryString);
+		
+		if(tgtUrl!=null && tgtFgt=="false") {
+			queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> " +
+				"SELECT DISTINCT ?g WHERE { GRAPH ?g { ?s a oa:Annotation . ?s oa:hasTarget <" + tgtUrl + "> }} LIMIT " + max;
+		} else if(tgtUrl!=null && tgtFgt=="true") {
+			queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> " +
+				"SELECT DISTINCT ?g WHERE { GRAPH ?g { ?s a oa:Annotation . {?s oa:hasTarget <" + tgtUrl + "> } UNION {?s oa:hasTarget ?t. ?t a oa:SpecificResource. ?t oa:hasSource <" + tgtUrl + ">}}} LIMIT " + max;
+		}
+			
+		log.trace('[' + apiKey + '] ' + queryString);
 		
 		List<String> graphs = new ArrayList<String>();
 		Query  sparql = QueryFactory.create(queryString);
@@ -102,11 +137,11 @@ class AnnotationJenaStorageService {
 		}
 	}
 	
-	public Dataset retrieveAnnotationGraphs(apiKey, max, offset) {
+	public Dataset retrieveAnnotationGraphs(apiKey, max, offset, tgtUrl, tgtFgt) {
 		log.info '[' + apiKey + '] Retrieving annotation graphs';
 	
 		Dataset graphs;
-		List<String> graphNames = retrieveAnnotationGraphsNames(apiKey, max, offset);
+		List<String> graphNames = retrieveAnnotationGraphsNames(apiKey, max, offset, tgtUrl, tgtFgt);
 		graphNames.each { graphName ->
 			if(graphs==null) graphs =  virtuosoJenaStoreService.retrieveGraph(apiKey, graphName);
 			else {
@@ -118,4 +153,12 @@ class AnnotationJenaStorageService {
 		}
 		return graphs;
 	}	
+	
+	public Dataset retrieveAnnotationGraph(apiKey, uri) {
+		log.info '[' + apiKey + '] Retrieving annotation graph';
+	
+		Dataset graphs;
+		graphs =  virtuosoJenaStoreService.retrieveGraph(apiKey, uri);
+		return graphs;
+	}
 }

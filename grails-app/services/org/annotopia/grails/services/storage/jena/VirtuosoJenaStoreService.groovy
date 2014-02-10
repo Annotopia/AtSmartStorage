@@ -101,7 +101,7 @@ class VirtuosoJenaStoreService implements ITripleStore {
 				}
 				
 				InputStream inputStream = new ByteArrayInputStream(content.getBytes());
-				storeGraphs(inputStream, baseUri);		
+				storeGraphs(apiKey, inputStream, baseUri);		
 			} finally {
 
 			}
