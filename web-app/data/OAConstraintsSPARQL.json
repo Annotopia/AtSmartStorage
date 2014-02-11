@@ -1,0 +1,525 @@
+[{
+    "section": "2. Open Annotation Core",
+    "constraints": [
+      {
+        "ref": "2.1.0. (1) Body and Target Resources",
+        "url": "http://www.openannotation.org/spec/core/core.html#BodyTarget",
+        "description": "The Body and Target SHOULD be identified by HTTP URIs unless they are embedded within the Annotation.",
+        "severity": "warn",
+        "preconditionMessage": "No body or target present",
+        "precondition": "PREFIX oa: <http://www.w3.org/ns/oa#> ASK WHERE {  {?anno oa:hasBody ?res } UNION {?anno oa:hasTarget ?res}}",
+        "query": "PREFIX oa: <http://www.w3.org/ns/oa#> PREFIX cnt: <http://www.w3.org/2011/content#> SELECT ?res WHERE { {{?anno oa:hasBody ?res } UNION {?anno oa:hasTarget ?res} . FILTER (NOT EXISTS {?res oa:hasSource ?source})} UNION {?sr a oa:SpecificResource . ?sr oa:hasSource ?res} . MINUS {  {{?anno oa:hasBody ?res } UNION {?anno oa:hasTarget ?res} .  FILTER (NOT EXISTS{?res oa:hasSource ?source})}  UNION {?sr a oa:SpecificResource . ?sr oa:hasSource ?res} .  FILTER regex(str(?res),\"^http\") }  . MINUS { {{?anno oa:hasBody ?res } UNION {?anno oa:hasTarget ?res} .  FILTER (NOT EXISTS{?res oa:hasSource ?source})} UNION {?sr a oa:SpecificResource . ?sr oa:hasSource ?res} .  FILTER (EXISTS{{?res a cnt:ContentAsText} UNION {?res a cnt:ContentAsBase64}}) }} "
+      },
+      {
+        "ref": "2.1.0. (2) Body and Target Resources",
+        "url": "http://www.openannotation.org/spec/core/core.html#BodyTarget",
+        "description": "The oa:Annotation class MUST be associated with each Annotation.",
+        "severity": "error",
+        "preconditionMessage": "No Annotations identified",
+        "precondition": "PREFIX oa: <http://www.w3.org/ns/oa#> ASK WHERE {{?annotation oa:hasTarget ?t}UNION {?annotation a oa:Annotation}}",
+        "query": "PREFIX oa: <http://www.w3.org/ns/oa#> SELECT ?annotation WHERE {?annotation oa:hasTarget ?t . FILTER (NOT EXISTS { ?annotation a oa:Annotation })}"
+      },
+      {
+        "ref": "2.1.0. (3) Body and Target Resources",
+        "url": "http://www.openannotation.org/spec/core/core.html#BodyTarget",
+        "description": "Additional subclassing is ONLY RECOMMENDED in order to provide additional, community-specific constraints on the model.",
+        "severity": "warn",
+        "preconditionMessage":"No types identified",
+        "precondition": "ASK WHERE {?s a ?t}",
+        "query": "PREFIX oa: <http://www.w3.org/ns/oa#> PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> SELECT ?annosub WHERE { ?annosub rdfs:subClassOf oa:Annotation . MINUS {?annosub rdfs:subClassOf oa:Annotation . FILTER regex(str(?annosub),\"http://www.w3.org/ns/oa\")}}"
+      },
+      {
+        "ref": "2.1.0. (4) Body and Target Resources",
+        "url": "http://www.openannotation.org/spec/core/core.html#BodyTarget",
+        "description": "There SHOULD be 1 or more oa:hasBody relationships associated with an Annotation but there MAY be 0.",
+        "severity": "warn",
+        "preconditionMessage": "No Annotations identified",
+        "precondition": "PREFIX oa: <http://www.w3.org/ns/oa#> ASK WHERE {{?annotation oa:hasTarget ?t}UNION {?annotation a oa:Annotation}}",
+        "query": "PREFIX oa: <http://www.w3.org/ns/oa#> SELECT ?annotation WHERE { ?annotation oa:hasTarget ?t . FILTER (NOT EXISTS { ?annotation oa:hasBody ?body})}"
+      },
+      {
+          "ref": "2.1.0. (5) Body and Target Resources",
+          "url": "http://www.openannotation.org/spec/core/core.html#BodyTarget",
+          "description": "There MUST be 1 or more oa:hasTarget relationships associated with an Annotation.",
+          "severity": "error",
+          "preconditionMessage": "No Annotations identified",
+          "precondition": "PREFIX oa: <http://www.w3.org/ns/oa#> ASK WHERE {{?annotation oa:hasTarget ?t}UNION {?annotation a oa:Annotation}}",
+          "query": "PREFIX oa: <http://www.w3.org/ns/oa#> SELECT ?annotation WHERE { ?annotation a oa:Annotation . FILTER (NOT EXISTS { ?annotation oa:hasTarget ?t }) }"
+      },
+      {
+          "ref": "2.1.1. (1) Typing of Body and Target",
+          "url": "http://www.openannotation.org/spec/core/core.html#BodyTargetType",
+          "description": "There SHOULD be 1 or more content-based classes associated with the Body and Target resources of an Annotation.",
+          "severity": "warn",
+          "preconditionMessage": "No body or target present",
+          "precondition": "PREFIX oa: <http://www.w3.org/ns/oa#> ASK WHERE { {?annotation oa:hasBody ?resource } UNION {?annotation oa:hasTarget ?resource}}",
+          "query": "PREFIX oa: <http://www.w3.org/ns/oa#> SELECT ?resource WHERE { {?annotation oa:hasTarget ?resource} UNION {?annotation oa:hasBody ?resource} UNION {?annotation oa:hasTarget ?i . ?i oa:hasSource ?resource} UNION {?annotation oa:hasBody ?i . ?i oa:hasSource ?resource} . FILTER (NOT EXISTS { ?resource a ?type }) }"
+      },
+      {
+          "ref": "2.1.1. (2) Typing of Body and Target",
+          "url": "http://www.openannotation.org/spec/core/core.html#BodyTargetType",
+          "description": "The Dublin Core Types vocabulary is RECOMMENDED.",
+          "severity": "warn",
+          "preconditionMessage": "No body or target present",
+          "precondition": "PREFIX oa: <http://www.w3.org/ns/oa#> ASK WHERE { {?annotation oa:hasTarget ?resource} UNION {?annotation oa:hasBody ?resource} }",
+          "query": "PREFIX oa: <http://www.w3.org/ns/oa#> SELECT ?resource ?type WHERE { {?annotation oa:hasTarget ?resource . FILTER (NOT EXISTS{?resource oa:hasSource ?i})} UNION {?annotation oa:hasBody ?resource . FILTER (NOT EXISTS{?resource oa:hasSource ?i})} UNION {?annotation oa:hasTarget ?i . ?i oa:hasSource ?resource} UNION {?annotation oa:hasBody ?i . ?i oa:hasSource ?resource} .  FILTER NOT EXISTS{{?resource a ?type . FILTER regex(str(?type),\"^http://purl.org/dc/dcmitype/\")}UNION{?resource a ?type . FILTER regex(str(?type), \"http://www.w3.org/ns/oa#\")}}}"
+      },
+      {
+          "ref": "2.1.1. (3) Typing of Body and Target",
+          "url": "http://www.openannotation.org/spec/core/core.html#BodyTargetType",
+          "description": "The advice of the DCMI to encode images of text as dctypes:Text is NOT RECOMMENDED.",
+          "severity": "warn",
+          "preconditionMessage": "No body or target present",
+          "precondition": "PREFIX oa: <http://www.w3.org/ns/oa#> ASK  WHERE { {?annotation oa:hasTarget ?resource} UNION {?annotation oa:hasBody ?resource} }",
+          "query": "PREFIX oa: <http://www.w3.org/ns/oa#> SELECT ?resource ?type WHERE {{?annotation oa:hasTarget ?resource} UNION {?annotation oa:hasBody ?resource} UNION {?annotation oa:hasTarget ?i . ?i oa:hasSource ?resource} UNION {?annotation oa:hasBody ?i . ?i oa:hasSource ?resource} . ?resource a ?type . FILTER regex(str(?type),\"^http://purl.org/dc/dcmitype/Text$\") . FILTER regex(str(?resource), \"jpg|gif|png|tif\")}"
+      },
+      {
+          "ref": "2.1.2. (1) Embedded Textual Bodies",
+          "url": "http://www.openannotation.org/spec/core/core.html#BodyEmbed",
+          "description": "The cnt:ContentAsText class SHOULD be assigned to the embedded body resource, however it can be inferred from the presence of the mandatory cnt:chars property.",
+          "severity": "warn",
+          "preconditionMessage": "No embedded bodies identified",
+          "precondition": "PREFIX oa: <http://www.w3.org/ns/oa#> PREFIX cnt: <http://www.w3.org/2011/content#> ASK WHERE { {?res cnt:chars ?chars } UNION {?res a cnt:ContentAsText}}",
+          "query": "PREFIX oa: <http://www.w3.org/ns/oa#> PREFIX cnt: <http://www.w3.org/2011/content#> SELECT ?res WHERE {  ?res cnt:chars ?chars . FILTER (NOT EXISTS{?res a cnt:ContentAsText})}"
+      },
+      {
+          "ref": "2.1.2. (2) Embedded Textual Bodies",
+          "url": "http://www.openannotation.org/spec/core/core.html#BodyEmbed",
+          "description": "There MAY be 0 or more dc:language properties for an embedded body. Each language SHOULD be expressed as a language tag, as defined by RFC 3066.",
+          "severity": "warn",
+          "preconditionMessage": "No embedded bodies identified",
+          "precondition": "PREFIX oa: <http://www.w3.org/ns/oa#> PREFIX cnt: <http://www.w3.org/2011/content#> ASK WHERE { {?res cnt:chars ?chars } UNION {?res a cnt:ContentAsText} UNION {?res a cnt:ContentAsBase64}}",
+          "query": "PREFIX dc: <http://purl.org/dc/elements/1.1/> SELECT ?lang WHERE { ?s dc:language ?lang . MINUS {?s dc:language ?lang . FILTER regex(str(?lang), \"^[a-z]{2,3}(?:-[A-Z]{2,3}(?:-[a-zA-Z]{4})?)?$\") }}"
+      },
+      {
+          "ref": "2.1.3. (1) Tags and Semantic Tags",
+          "url": "http://www.openannotation.org/spec/core/core.html#Tagging",
+          "description": "The type oa:Tag (or subclass e.g. oa:SemanticTag) MUST be associated with the tagging resource.",
+          "severity": "error",
+          "preconditionMessage": "No tags identified",
+          "precondition": "PREFIX oa: <http://www.w3.org/ns/oa#> ASK WHERE { {?anno oa:motivatedBy oa:tagging} UNION { ?anno oa:hasBody ?tag . {?tag a oa:Tag } UNION {?tag a oa:SemanticTag } }}",
+          "query": "PREFIX oa: <http://www.w3.org/ns/oa#> SELECT ?anno  WHERE { ?anno oa:motivatedBy oa:tagging . FILTER (NOT EXISTS{?anno oa:hasBody ?tag . {?tag a oa:Tag } UNION {?tag a oa:SemanticTag } })}"
+      },
+      {
+          "ref": "2.1.3. (2) Tags and Semantic Tags",
+          "url": "http://www.openannotation.org/spec/core/core.html#Tagging",
+          "description": "Annotations that tag resources, either with text or semantic tags, SHOULD also have the oa:tagging motivation.",
+          "severity": "warn",
+          "preconditionMessage": "No tags identified",
+          "precondition": "PREFIX oa: <http://www.w3.org/ns/oa#> ASK WHERE { {?anno oa:motivatedBy oa:tagging} UNION { ?anno oa:hasBody ?tag . {?tag a oa:Tag } UNION {?tag a oa:SemanticTag } }}",
+          "query": "PREFIX oa: <http://www.w3.org/ns/oa#> SELECT ?anno  WHERE { {?anno oa:motivatedBy oa:tagging} UNION {?anno oa:hasBody ?tag . {?tag a oa:Tag } UNION {?tag a oa:SemanticTag }} . FILTER (NOT EXISTS{?anno oa:motivatedBy oa:tagging })}"
+      },
+      
+      {
+          "ref": "2.2.0. (1) Annotation Provenance",
+          "url": "http://www.openannotation.org/spec/core/core.html#Provenance",
+          "description": "There SHOULD be exactly 1 oa:annotatedBy relationship per Annotation but MAY be 0 or more than 1.",
+          "severity": "warn",
+          "preconditionMessage": "No Annotations identified",
+          "precondition": "PREFIX oa: <http://www.w3.org/ns/oa#> ASK WHERE {{?annotation oa:hasTarget ?t}UNION {?annotation a oa:Annotation}}",
+          "query": "PREFIX oa: <http://www.w3.org/ns/oa#> SELECT ?annotation WHERE { {?annotation oa:hasTarget ?t}UNION {?annotation a oa:Annotation} . OPTIONAL {?annotation oa:annotatedBy ?annotator }} GROUP BY ?annotation  having(count(distinct ?annotator) != 1)"
+      },
+      {
+          "ref": "2.2.0. (2) Annotation Provenance",
+          "url": "http://www.openannotation.org/spec/core/core.html#Provenance",
+          "description": "There SHOULD be exactly 1 oa:annotatedAt property per Annotation.",
+          "severity": "warn",
+          "preconditionMessage": "No Annotations identified",
+          "precondition": "PREFIX oa: <http://www.w3.org/ns/oa#> ASK WHERE {{?annotation oa:hasTarget ?t}UNION {?annotation a oa:Annotation}}",
+          "query": "PREFIX oa: <http://www.w3.org/ns/oa#> SELECT ?annotation WHERE { {?annotation oa:hasTarget ?t}UNION {?annotation a oa:Annotation} . OPTIONAL {?annotation oa:annotatedAt ?time }} GROUP BY ?annotation  having(count(distinct ?time) != 1)"
+      },
+      {
+          "ref": "2.2.0. (3) Annotation Provenance",
+          "url": "http://www.openannotation.org/spec/core/core.html#Provenance",
+          "description": "There MUST NOT be more than 1 oa:annotatedAt property per Annotation.",
+          "severity": "error",
+          "preconditionMessage": "No Annotations identified",
+          "precondition": "PREFIX oa: <http://www.w3.org/ns/oa#> ASK WHERE {{?annotation oa:hasTarget ?t}UNION {?annotation a oa:Annotation}}",
+          "query": "PREFIX oa: <http://www.w3.org/ns/oa#> SELECT ?annotation WHERE { {?annotation oa:hasTarget ?t}UNION {?annotation a oa:Annotation} . OPTIONAL {?annotation oa:annotatedAt ?time }} GROUP BY ?annotation  having(count(distinct ?time) > 1)"
+      },
+      {
+          "ref": "2.2.0. (4) Annotation Provenance",
+          "url": "http://www.openannotation.org/spec/core/core.html#Provenance",
+          "description": "The datetime for oa:annotatedAt and oa:serializedAt MUST be expressed in the xsd:dateTime (ISO 8601) format.",
+          "severity": "error",
+          "preconditionMessage": "oa:annotatedAt or oa:serializedAt property not present",
+          "precondition": "PREFIX oa: <http://www.w3.org/ns/oa#> ASK WHERE {  {?annotation oa:annotatedAt ?time} UNION {?annotation oa:serializedAt ?time}}",
+          "query": "PREFIX oa: <http://www.w3.org/ns/oa#> SELECT ?annotation ?time WHERE { {?annotation oa:annotatedAt ?time} UNION {?annotation oa:serializedAt ?time} MINUS { {?annotation oa:annotatedAt ?time} UNION {?annotation oa:serializedAt ?time} . FILTER regex(str(?time), \"[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]\")}}"
+      },
+      {
+          "ref": "2.2.0. (5) Annotation Provenance",
+          "url": "http://www.openannotation.org/spec/core/core.html#Provenance",
+          "description": "The datetime for oa:annotatedAt and oa:serializedAt SHOULD have a timezone specified, in the format YYYY-MM-DDThh:mm:ss[Z or -hh:mm:ss or +hh:mm:ss]",
+          "severity": "warn",
+          "preconditionMessage": "oa:annotatedAt or oa:serializedAt property not present",
+          "precondition": "PREFIX oa: <http://www.w3.org/ns/oa#> ASK WHERE {  {?annotation oa:annotatedAt ?time} UNION {?annotation oa:serializedAt ?time}}",
+          "query": "PREFIX oa: <http://www.w3.org/ns/oa#> SELECT ?annotation ?time WHERE {{?annotation oa:annotatedAt ?time} UNION {?annotation oa:serializedAt ?time}  MINUS { {?annotation oa:annotatedAt ?time} UNION {?annotation oa:serializedAt ?time} . FILTER regex(str(?time), \"[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]:[0-9][0-9]:[0-9][0-9](\\\\+[0-9][0-9]:[0-9][0-9]|-[0-9][0-9]:[0-9][0-9]|Z)\")}}"
+      },
+      {
+          "ref": "2.2.0. (6) Annotation Provenance",
+          "url": "http://www.openannotation.org/spec/core/core.html#Provenance",
+          "description": "There MUST NOT be more than 1 oa:serializedAt property per Annotation.",
+          "severity": "error",
+          "preconditionMessage": "No Annotations identified",
+          "precondition": "PREFIX oa: <http://www.w3.org/ns/oa#> ASK WHERE {{?annotation oa:hasTarget ?t}UNION {?annotation a oa:Annotation}}",
+          "query": "PREFIX oa: <http://www.w3.org/ns/oa#> SELECT ?annotation WHERE { ?annotation oa:hasTarget ?target . OPTIONAL {?annotation oa:serializedAt ?time }} group by ?annotation  having(count(distinct ?time) > 1)"
+      },
+      {
+          "ref": "2.2.1. (1) Agents",
+          "url": "http://www.openannotation.org/spec/core/core.html#ProvAgents",
+          "description": "It is RECOMMENDED to use foaf:Person, foaf:Organization or prov:SoftwareAgent as the class of the object of oa:annotatedBy.",
+          "severity": "warn",
+          "preconditionMessage": "oa:annotatedBy property not present",
+          "precondition": "PREFIX oa: <http://www.w3.org/ns/oa#> ASK WHERE {  ?annotation oa:annotatedBy ?agent}",
+          "query": "PREFIX oa: <http://www.w3.org/ns/oa#> PREFIX foaf: <http://xmlns.com/foaf/0.1/> PREFIX prov: <http://www.w3.org/ns/prov#> SELECT ?annotation WHERE { ?annotation oa:annotatedBy ?person . FILTER (NOT EXISTS{{?person a foaf:Person} UNION {?person a foaf:Organization} UNION {?person a prov:SoftwareAgent}})}"
+      },
+      {
+       
+          "ref": "2.2.1. (2) Agents",
+          "url": "http://www.openannotation.org/spec/core/core.html#ProvAgents",
+          "description": "It is RECOMMENDED to use prov:SoftwareAgent as the class of the object of oa:serializedBy.",
+          "severity": "warn",
+          "preconditionMessage": "oa:serializedBy property not present",
+          "precondition": "PREFIX oa: <http://www.w3.org/ns/oa#> ASK WHERE {  ?annotation oa:serializedBy ?agent}",
+          "query": "PREFIX oa: <http://www.w3.org/ns/oa#> PREFIX prov: <http://www.w3.org/ns/prov#> SELECT ?annotation WHERE {  ?annotation oa:serializedBy ?agent . FILTER (NOT EXISTS{?agent a prov:SoftwareAgent})}" 
+      },
+      {
+          "ref": "2.2.1. (3) Agents",
+          "url": "http://www.openannotation.org/spec/core/core.html#ProvAgents",
+          "description": "Each agent SHOULD have exactly 1 name property.",
+          "severity": "warn",
+          "preconditionMessage": "No Agents identified",
+          "precondition": "PREFIX oa: <http://www.w3.org/ns/oa#> PREFIX foaf: <http://xmlns.com/foaf/0.1/> PREFIX prov: <http://www.w3.org/ns/prov#> ASK WHERE { {?anno oa:annotatedBy ?agent} UNION {?anno oa:generatedBy ?agent} UNION {?agent a foaf:Person } UNION {?agent a foaf:Organization} UNION {?agent a prov:SoftwareAgent} .}",
+          "query": "PREFIX oa: <http://www.w3.org/ns/oa#> PREFIX foaf: <http://xmlns.com/foaf/0.1/> PREFIX prov: <http://www.w3.org/ns/prov#> SELECT ?agent WHERE { {?anno oa:annotatedBy ?agent} UNION {?anno oa:generatedBy ?agent} UNION {?agent a foaf:Person } UNION {?agent a foaf:Organization} UNION {?agent a prov:SoftwareAgent} . OPTIONAL {?agent foaf:name ?name }} group by ?agent  having(count(distinct ?name) != 1)"
+      },
+      {
+          "ref": "2.3. (1) Motivations",
+          "url": "http://www.openannotation.org/spec/core/core.html#Motivations",
+          "description": "Each Annotation SHOULD have at least one oa:motivatedBy relationship.",
+          "severity": "warn",
+          "preconditionMessage": "No Annotations identified",
+          "precondition": "PREFIX oa: <http://www.w3.org/ns/oa#> ASK WHERE {{?annotation oa:hasTarget ?t}UNION {?annotation a oa:Annotation}}",
+          "query": "PREFIX oa: <http://www.w3.org/ns/oa#> SELECT ?annotation WHERE { ?annotation oa:hasTarget ?t . FILTER (NOT EXISTS{?annotation oa:motivatedBy ?motivation})}"
+      }
+    ]
+},
+{
+    "section": "3. Specifiers and Specific Resources",
+    "constraints": [
+      {
+          "ref": "3.1.0. (1) Specifiers and Specific Resources",
+          "url": "http://www.openannotation.org/spec/core/specific.html#Specific",
+          "description": "The oa:SpecificResource class SHOULD be associated with a Specific Resource.",
+          "severity": "warn",
+          "preconditionMessage": "No SpecificResources identified",
+          "precondition": "PREFIX oa: <http://www.w3.org/ns/oa#> ASK WHERE { {?res oa:hasSource ?source } UNION {?res a oa:SpecificResource}}",
+          "query": "PREFIX oa: <http://www.w3.org/ns/oa#> SELECT ?res WHERE {  ?res oa:hasSource ?source . FILTER (NOT EXISTS{?res a oa:SpecificResource})}"
+      },
+      {
+          "ref": "3.1.0. (2) Specifiers and Specific Resources",
+          "url": "http://www.openannotation.org/spec/core/specific.html#Specific",
+          "description": "There MUST be exactly 1 oa:hasSource relationship associated with a Specific Resource.",
+          "severity": "error",
+          "preconditionMessage": "No SpecificResources identified",
+          "precondition": "PREFIX oa: <http://www.w3.org/ns/oa#> ASK WHERE { {?res oa:hasSource ?source } UNION {?res a oa:SpecificResource}}",
+          "query": "PREFIX oa: <http://www.w3.org/ns/oa#> SELECT ?res WHERE { {?res oa:hasSource ?source } UNION {?res a oa:SpecificResource} . OPTIONAL{?res oa:hasSource ?source}} group by ?res having(count(distinct ?source) != 1)"
+      },
+      {
+          "ref": "3.1.0. (3) Specifiers and Specific Resources",
+          "url": "http://www.openannotation.org/spec/core/specific.html#Specific",
+          "description": "Specific Resource SHOULD be identified by a globally unique URI, such as a UUID URN. If it is not considered important to allow other Annotations or systems to refer to the Specific Resource, then a blank node MAY be used instead.",
+          "severity": "warn",
+          "preconditionMessage": "No SpecificResources identified",
+          "precondition": "PREFIX oa: <http://www.w3.org/ns/oa#> ASK WHERE { {?res oa:hasSource ?source } UNION {?res a oa:SpecificResource}}",
+          "query": "PREFIX oa: <http://www.w3.org/ns/oa#> SELECT ?res WHERE { {?res oa:hasSource ?source } UNION {?res a oa:SpecificResource} . MINUS { {?res oa:hasSource ?source } UNION {?res a oa:SpecificResource} . FILTER regex(str(?res),\"^urn:uuid\", \"i\")}}"
+      },
+      {
+          "ref": "3.2.0. (1) Selectors",
+          "url": "http://www.openannotation.org/spec/core/specific.html#Selectors",
+          "description": "There MUST be exactly 0 or 1 oa:hasSelector relationship associated with a Specific Resource.",
+          "severity": "error",
+          "preconditionMessage": "No SpecificResources identified",
+          "precondition": "PREFIX oa: <http://www.w3.org/ns/oa#> ASK WHERE { {?res oa:hasSource ?source } UNION {?res a oa:SpecificResource}}",
+          "query": "PREFIX oa: <http://www.w3.org/ns/oa#> SELECT ?res WHERE {  {?res oa:hasSource ?source } UNION {?res a oa:SpecificResource} . ?res oa:hasSelector ?sel} group by ?res having (count(distinct ?sel) > 1)"
+      },
+      {
+          "ref": "3.2.1. (1) Fragment Selector",
+          "url": "http://www.openannotation.org/spec/core/specific.html#FragmentSelector",
+          "description": "It is RECOMMENDED to use oa:FragmentSelector rather than annotating the fragment URI directly.",
+          "severity": "warn",
+          "preconditionMessage": "No fragments identified",
+          "precondition": "PREFIX oa: <http://www.w3.org/ns/oa#> ASK WHERE { {?annotation oa:hasTarget ?res . FILTER regex(str(?res), \"#\") } UNION {?res a oa:FragmentSelector}}",
+          "query": "PREFIX oa: <http://www.w3.org/ns/oa#> SELECT ?annotation WHERE {  ?annotation oa:hasTarget ?target . FILTER regex(str(?target), \"#\") } "
+      },
+      {
+          "ref": "3.2.1. (2) Fragment Selector",
+          "url": "http://www.openannotation.org/spec/core/specific.html#FragmentSelector",
+          "description": "The oa:FragmentSelector MUST have exactly 1 rdf:value property.",
+          "severity": "error",
+          "preconditionMessage": "No FragmentSelectors identified",
+          "precondition": "PREFIX oa: <http://www.w3.org/ns/oa#> ASK WHERE { ?sel a oa:FragmentSelector }",
+          "query": "PREFIX oa: <http://www.w3.org/ns/oa#> PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> SELECT ?fragsel WHERE { ?fragsel a oa:FragmentSelector . OPTIONAL {?fragsel rdf:value ?val }} group by ?fragsel  having(count(distinct ?val) != 1)"
+      },
+      {
+          "ref": "3.2.1. (3) Fragment Selector",
+          "url": "http://www.openannotation.org/spec/core/specific.html#FragmentSelector",
+          "description": "The Fragment Selector SHOULD have a dcterms:conformsTo relationship.",
+          "severity": "warn",
+          "preconditionMessage": "No FragmentSelectors identified",
+          "precondition": "PREFIX oa: <http://www.w3.org/ns/oa#> ASK WHERE { ?sel a oa:FragmentSelector }",
+          "query": "PREFIX oa: <http://www.w3.org/ns/oa#> PREFIX dcterms: <http://purl.org/dc/terms/> SELECT ?sel WHERE {  ?sel a oa:FragmentSelector  . FILTER (NOT EXISTS{?sel dcterms:conformsTo ?c})}"
+      },
+      {
+          "ref": "3.2.2.1. (1) Text Position Selector",
+          "url": "http://www.openannotation.org/spec/core/specific.html#TextPositionSelector",
+          "description": "Each TextPositionSelector MUST have exactly 1 oa:start property.",
+          "severity": "error",
+          "preconditionMessage": "No TextPositionSelectors identified",
+          "precondition": "PREFIX oa: <http://www.w3.org/ns/oa#> ASK WHERE { ?sel a oa:TextPositionSelector }",
+          "query": "PREFIX oa: <http://www.w3.org/ns/oa#> SELECT ?sel WHERE { ?sel a oa:TextPositionSelector . OPTIONAL {?sel oa:start ?val }} group by ?sel having(count(distinct ?val) != 1)"
+      },
+      {
+          "ref": "3.2.2.1. (2) Text Position Selector",
+          "url": "http://www.openannotation.org/spec/core/specific.html#TextPositionSelector",
+          "description": "Each TextPositionSelector MUST have exactly 1 oa:end property.",
+          "severity": "error",
+          "preconditionMessage": "No TextPositionSelectors identified",
+          "precondition": "PREFIX oa: <http://www.w3.org/ns/oa#> ASK WHERE { ?sel a oa:TextPositionSelector }",
+          "query": "PREFIX oa: <http://www.w3.org/ns/oa#> SELECT ?sel WHERE { ?sel a oa:TextPositionSelector . OPTIONAL {?sel oa:end ?val }} group by ?sel having(count(distinct ?val) != 1)"
+      },
+      {
+          "ref": "3.2.2.1. (3) Text Position Selector",
+          "url": "http://www.openannotation.org/spec/core/specific.html#TextPositionSelector",
+          "description": "It is RECOMMENDED that a State be used in addition to a TextPositionSelector.",
+          "severity": "warn",
+          "preconditionMessage": "No TextPositionSelectors identified",
+          "precondition": "PREFIX oa: <http://www.w3.org/ns/oa#> ASK WHERE { ?sel a oa:TextPositionSelector }",
+          "query": "PREFIX oa: <http://www.w3.org/ns/oa#> PREFIX prov: <http://www.w3.org/ns/prov#> SELECT ?sel WHERE {  ?sel a oa:TextPositionSelector . ?res (oa:hasSelector | oa:item)+ ?sel . ?res a oa:SpecificResource . FILTER (NOT EXISTS{?res oa:hasState ?state})}"
+      },
+      {
+          "ref": "3.2.2.2. (1) Text Quote Selector",
+          "url": "http://www.openannotation.org/spec/core/specific.html#TextQuoteSelector",
+          "description": "Each TextQuoteSelector MUST have exactly 1 oa:exact property.",
+          "severity": "error",
+          "preconditionMessage": "No TextQuoteSelectors identified",
+          "precondition": "PREFIX oa: <http://www.w3.org/ns/oa#> ASK WHERE { ?sel a oa:TextQuoteSelector }",
+          "query": "PREFIX oa: <http://www.w3.org/ns/oa#> SELECT ?sel WHERE { ?sel a oa:TextQuoteSelector . OPTIONAL {?sel oa:exact ?val }} group by ?sel having(count(distinct ?val) != 1)"
+      },
+      {
+          "ref": "3.2.2.2. (2) Text Quote Selector",
+          "url": "http://www.openannotation.org/spec/core/specific.html#TextQuoteSelector",
+          "description": "Each TextQuoteSelector SHOULD have exactly 1 oa:prefix property.",
+          "severity": "warn",
+          "preconditionMessage": "No TextQuoteSelectors identified",
+          "precondition": "PREFIX oa: <http://www.w3.org/ns/oa#> ASK WHERE { ?sel a oa:TextQuoteSelector }",
+          "query": "PREFIX oa: <http://www.w3.org/ns/oa#> SELECT ?sel WHERE { ?sel a oa:TextQuoteSelector . OPTIONAL {?sel oa:prefix ?val }} group by ?sel having(count(distinct ?val) != 1)"
+      },
+      {
+          "ref": "3.2.2.2. (3) Text Quote Selector",
+          "url": "http://www.openannotation.org/spec/core/specific.html#TextQuoteSelector",
+          "description": "Each TextQuoteSelector MUST NOT have more than 1 oa:prefix property.",
+          "severity": "error",
+          "preconditionMessage": "No TextQuoteSelectors identified",
+          "precondition": "PREFIX oa: <http://www.w3.org/ns/oa#> ASK WHERE { ?sel a oa:TextQuoteSelector }",
+          "query": "PREFIX oa: <http://www.w3.org/ns/oa#> SELECT ?sel WHERE { ?sel a oa:TextQuoteSelector . OPTIONAL {?sel oa:prefix ?val }} group by ?sel having(count(distinct ?val) > 1)"
+      },
+      {
+          "ref": "3.2.2.2. (4) Text Quote Selector",
+          "url": "http://www.openannotation.org/spec/core/specific.html#TextQuoteSelector",
+          "description": "Each TextQuoteSelector SHOULD have exactly 1 oa:suffix property.",
+          "severity": "warn",
+          "preconditionMessage": "No TextQuoteSelectors identified",
+          "precondition": "PREFIX oa: <http://www.w3.org/ns/oa#> ASK WHERE { ?sel a oa:TextQuoteSelector }",
+          "query": "PREFIX oa: <http://www.w3.org/ns/oa#> SELECT ?sel WHERE { ?sel a oa:TextQuoteSelector . OPTIONAL {?sel oa:suffix ?val }} group by ?sel having(count(distinct ?val) != 1)"
+      },
+      {
+          "ref": "3.2.2.2. (5) Text Quote Selector",
+          "url": "http://www.openannotation.org/spec/core/specific.html#TextQuoteSelector",
+          "description": "Each TextQuoteSelector MUST NOT have more than 1 oa:suffix property.",
+          "severity": "error",
+          "preconditionMessage": "No TextQuoteSelectors identified",
+          "precondition": "PREFIX oa: <http://www.w3.org/ns/oa#> ASK WHERE { ?sel a oa:TextQuoteSelector }",
+          "query": "PREFIX oa: <http://www.w3.org/ns/oa#> SELECT ?sel WHERE { ?sel a oa:TextQuoteSelector .  OPTIONAL {?sel oa:suffix ?val }} group by ?sel having(count(distinct ?val) > 1)"
+      },
+      {
+          "ref": "3.2.2.3. (1) Data Position Selector",
+          "url": "http://www.openannotation.org/spec/core/specific.html#DataPositionSelector",
+          "description": "Each DataPositionSelector MUST have exactly 1 oa:start property.",
+          "severity": "error",
+          "preconditionMessage": "No DataPositionSelectors identified",
+          "precondition": "PREFIX oa: <http://www.w3.org/ns/oa#> ASK WHERE { ?sel a oa:DataPositionSelector }",
+          "query": "PREFIX oa: <http://www.w3.org/ns/oa#> SELECT ?sel WHERE { ?sel a oa:DataPositionSelector . OPTIONAL {?sel oa:start ?val }} group by ?sel having(count(distinct ?val) != 1)"
+      },
+      {
+          "ref": "3.2.2.3. (2) Data Position Selector",
+          "url": "http://www.openannotation.org/spec/core/specific.html#DataPositionSelector",
+          "description": "Each DataPositionSelector MUST have exactly 1 oa:end property.",
+          "severity": "error",
+          "preconditionMessage": "No DataPositionSelectors identified",
+          "precondition": "PREFIX oa: <http://www.w3.org/ns/oa#> ASK WHERE { ?sel a oa:DataPositionSelector }",
+          "query": "PREFIX oa: <http://www.w3.org/ns/oa#> SELECT ?sel WHERE { ?sel a oa:DataPositionSelector . OPTIONAL {?sel oa:end ?val }} group by ?sel having(count(distinct ?val) != 1)"
+      },
+      {
+          "ref": "3.3.0. (1) States",
+          "url": "http://www.openannotation.org/spec/core/specific.html#States",
+          "description": "There MAY be 0 or 1 oa:hasState relationship for each SpecificResource.",
+          "severity": "error",
+          "preconditionMessage": "No SpecificResources identified",
+          "precondition": "PREFIX oa: <http://www.w3.org/ns/oa#> ASK WHERE { {?res oa:hasSource ?source } UNION {?res a oa:SpecificResource}}",
+          "query": "PREFIX oa: <http://www.w3.org/ns/oa#> SELECT ?res WHERE { ?res oa:hasState ?state } group by ?res having (count(distinct ?state) > 1)"
+      },
+      {
+          "ref": "3.3.1. (1) Time State",
+          "url": "http://www.openannotation.org/spec/core/specific.html#TimeState",
+          "description": "The timestamp for oa:when MUST be expressed in the xsd:dateTime (ISO 8601) format.",
+          "severity": "error",
+          "preconditionMessage": "oa:when property not present",
+          "precondition": "PREFIX oa: <http://www.w3.org/ns/oa#> ASK WHERE { ?timestate oa:when ?when }",
+          "query": "PREFIX oa: <http://www.w3.org/ns/oa#> SELECT * WHERE { ?timestate oa:when ?when . MINUS { ?timestate oa:when ?when .  FILTER regex(str(?when), \"[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]\")}}"
+      },
+      {
+          "ref": "3.3.1. (2) Time State",
+          "url": "http://www.openannotation.org/spec/core/specific.html#TimeState",
+          "description": "The timestamp for oa:when SHOULD have a timezone specified, in the format YYYY-MM-DDThh:mm:ss[Z or -hh:mm:ss or +hh:mm:ss].",
+          "severity": "warn",
+          "preconditionMessage": "oa:when property not present",
+          "precondition": "PREFIX oa: <http://www.w3.org/ns/oa#> ASK WHERE { ?timestate oa:when ?when}",
+          "query": "PREFIX oa: <http://www.w3.org/ns/oa#> SELECT * WHERE { ?timestate oa:when ?when . MINUS { ?timestate oa:when ?when . FILTER regex(str(?when), \"[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]:[0-9][0-9]:[0-9][0-9](\\\\+[0-9][0-9]:[0-9][0-9]|-[0-9][0-9]:[0-9][0-9]|Z)\")}}"
+      },
+      {
+          "ref": "3.3.1. (3) Time State",
+          "url": "http://www.openannotation.org/spec/core/specific.html#TimeState",
+          "description": "There MAY be 0 or more oa:when or oa:cachedSource properties per TimeState, but there MUST be at least one of oa:when or oa:cachedSource.",
+          "severity": "error",
+          "preconditionMessage": "No TimeStates identified",
+          "precondition": "PREFIX oa: <http://www.w3.org/ns/oa#> ASK WHERE { ?timestate a oa:TimeState}",
+          "query": "PREFIX oa: <http://www.w3.org/ns/oa#> SELECT ?timestate WHERE { ?timestate a oa:TimeState . OPTIONAL{{?timestate oa:when ?val} UNION {?timestate oa:cachedSource ?val}}} group by ?timestate having(count(?val) < 1)"
+      },
+      {
+          "ref": "3.3.2. (1) Request Header State",
+          "url": "http://www.openannotation.org/spec/core/specific.html#HttpRequestState",
+          "description": "There MUST be exactly 1 rdf:value property per HTTPRequestState.",
+          "severity": "error",
+          "preconditionMessage": "No HTTPRequestStates identified",
+          "precondition":"PREFIX oa: <http://www.w3.org/ns/oa#> PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> ASK WHERE { ?state a oa:HTTPRequestState }",
+          "query": "PREFIX oa: <http://www.w3.org/ns/oa#> PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> SELECT ?state WHERE { ?state a oa:HTTPRequestState . OPTIONAL {?state rdf:value ?val }} group by ?state  having(count(distinct ?val) != 1)"
+      },
+      {
+          "ref": "3.4. (1) Styles",
+          "url": "http://www.openannotation.org/spec/core/specific.html#Style",
+          "description": "There MAY be 0 or 1 styledBy relationships for each Annotation.",
+          "severity": "error",
+          "preconditionMessage": "No Annotations identified",
+          "precondition": "PREFIX oa: <http://www.w3.org/ns/oa#> ASK WHERE {{?annotation oa:hasTarget ?t}UNION {?annotation a oa:Annotation}}",
+          "query": "PREFIX oa: <http://www.w3.org/ns/oa#> SELECT ?annotation WHERE { ?annotation oa:styledBy ?style . } group by ?annotation having(count(?style) > 1)"
+      }
+    ]
+},
+{
+    "section": "4. Multiplicity Constructs",
+    "constraints": [
+      {
+          "ref": "4.0. (1) Multiplicity",
+          "url": "http://www.openannotation.org/spec/core/multiplicity.html",
+          "description": "Multiplicity Constructs SHOULD have a globally unique URI to identify them, such as a UUID URN. They MAY instead be modeled using RDF blank nodes if it is not considered important that they be referenced directly by other Annotations or systems.",
+          "severity": "warn",
+          "preconditionMessage": "No multiplicity constructs identified",
+          "precondition":"PREFIX oa: <http://www.w3.org/ns/oa#> ASK WHERE { {?multiplicity a oa:Composite } UNION {?multiplicity a oa:Choice} UNION {?multiplicity a oa:List} }",
+          "query": "PREFIX oa: <http://www.w3.org/ns/oa#> SELECT ?multiplicity WHERE { {?multiplicity a oa:Composite } UNION {?multiplicity a oa:Choice} UNION {?multiplicity a oa:List}  MINUS {{{?multiplicity a oa:Composite } UNION {?multiplicity a oa:Choice} UNION {?multiplicity a oa:List}} . FILTER regex(str(?multiplicity),\"^urn:uuid\", \"i\")}}"
+      },
+      {
+          "ref": "4.0. (2) Multiplicity",
+          "url": "http://www.openannotation.org/spec/core/multiplicity.html",
+          "description": "There MUST be 1 or more item relationships for each multiplicity construct.",
+          "severity": "error",
+          "preconditionMessage": "No multiplicity constructs identified",
+          "precondition":"PREFIX oa: <http://www.w3.org/ns/oa#> ASK WHERE { {?multiplicity a oa:Composite } UNION {?multiplicity a oa:Choice} UNION {?multiplicity a oa:List} }",
+          "query": "PREFIX oa: <http://www.w3.org/ns/oa#> SELECT ?multiplicity WHERE { {?multiplicity a oa:Composite } UNION {?multiplicity a oa:Choice} UNION {?multiplicity a oa:List}. FILTER (NOT EXISTS { ?multiplicity oa:item ?item })}"
+      },
+      {
+          "ref": "4.1. (1) Choice",
+          "url": "http://www.openannotation.org/spec/core/multiplicity.html#Choice",
+          "description": "There SHOULD be exactly 1 default relationship for each Choice.",
+          "severity": "warn",
+          "preconditionMessage": "No Choices identified",
+          "precondition":"PREFIX oa: <http://www.w3.org/ns/oa#> ASK WHERE { ?choice a oa:Choice }",
+          "query": "PREFIX oa: <http://www.w3.org/ns/oa#> SELECT ?choice WHERE { ?choice a oa:Choice . OPTIONAL{?choice oa:default ?default} } group by ?choice  having(count(distinct ?default) != 1)"
+      },
+      {
+          "ref": "4.2. (1) Composite",
+          "url": "http://www.openannotation.org/spec/core/multiplicity.html#Composite",
+          "description": "Each Composite MUST have two or more constituent resources.",
+          "severity": "error",
+          "preconditionMessage": "No Composites identified",
+          "precondition":"PREFIX oa: <http://www.w3.org/ns/oa#> ASK WHERE { ?composite a oa:Composite }",
+          "query": "PREFIX oa: <http://www.w3.org/ns/oa#> SELECT ?composite WHERE { ?composite a oa:Composite . OPTIONAL{?composite oa:item ?item} } group by ?composite having(count(distinct ?item) < 2)"
+      }
+    ]
+},
+{
+    "section": "5. Publishing",
+    "constraints": [
+      {
+          "ref": "5.2. (1) Embedding Resources",
+          "url": "http://www.openannotation.org/spec/core/publishing.html#Embedding",
+          "description": "There MUST be exactly 1 cnt:chars property for a ContentAsText resource.",
+          "severity": "error",
+          "preconditionMessage": "No embedded text resources identified",
+          "precondition":"PREFIX oa: <http://www.w3.org/ns/oa#> PREFIX cnt: <http://www.w3.org/2011/content#> PREFIX dc: <http://purl.org/dc/elements/1.1/> ASK WHERE { ?res a cnt:ContentAsText } ",
+          "query": "PREFIX oa: <http://www.w3.org/ns/oa#> PREFIX cnt: <http://www.w3.org/2011/content#> SELECT ?resource  WHERE { ?resource a cnt:ContentAsText . OPTIONAL{?resource cnt:chars ?chars} } group by ?resource having(count(distinct ?chars) != 1)"
+      },
+      {
+          "ref": "5.2. (2) Embedding Resources",
+          "url": "http://www.openannotation.org/spec/core/publishing.html#Embedding",
+          "description": "There MUST be exactly 1 cnt:bytes property for a ContentAsBase64 resource.",
+          "severity": "error",
+          "preconditionMessage": "No embedded base64 resources identified",
+          "precondition":"PREFIX oa: <http://www.w3.org/ns/oa#> PREFIX cnt: <http://www.w3.org/2011/content#> PREFIX dc: <http://purl.org/dc/elements/1.1/> ASK WHERE { ?res a cnt:ContentAsBase64 } ",
+          "query": "PREFIX oa: <http://www.w3.org/ns/oa#> PREFIX cnt: <http://www.w3.org/2011/content#> select ?res WHERE { ?res a cnt:ContentAsBase64 . OPTIONAL{?res cnt:bytes ?bytes} } group by ?res having(count(distinct ?bytes) != 1)"
+      },
+      {
+          "ref": "5.2. (3) Embedding Resources",
+          "url": "http://www.openannotation.org/spec/core/publishing.html#Embedding",
+          "description": "There SHOULD be exactly 1 cnt:characterEncoding for a ContentAsText or ContentAsBase64 resource.",
+          "severity": "warn",
+          "preconditionMessage": "No embedded resources identified",
+          "precondition":"PREFIX oa: <http://www.w3.org/ns/oa#> PREFIX cnt: <http://www.w3.org/2011/content#> PREFIX dc: <http://purl.org/dc/elements/1.1/> ASK WHERE { {?res a cnt:ContentAsText .} UNION {?res a cnt:ContentAsBase64} UNION {?res a cnt:ContentAsXML} } ",
+          "query": "PREFIX oa: <http://www.w3.org/ns/oa#> PREFIX cnt: <http://www.w3.org/2011/content#> select ?res WHERE { {?res a cnt:ContentAsText .} UNION {?res a cnt:ContentAsBase64} UNION {?res a cnt:ContentAsXML} . OPTIONAL{?res cnt:characterEncoding ?encoding} } group by ?res having(count(distinct ?encoding) != 1)"
+      },
+      {
+          "ref": "5.2. (4) Embedding Resources",
+          "url": "http://www.openannotation.org/spec/core/publishing.html#Embedding",
+          "description": "There SHOULD be exactly 1 dc:format property associated with each embedded resource.",
+          "severity": "warn",
+          "preconditionMessage": "No embedded resources identified",
+          "precondition":"PREFIX oa: <http://www.w3.org/ns/oa#> PREFIX cnt: <http://www.w3.org/2011/content#> PREFIX dc: <http://purl.org/dc/elements/1.1/> ASK WHERE { {?res a cnt:ContentAsText .} UNION {?res a cnt:ContentAsBase64} UNION {?res a cnt:ContentAsXML} } ",
+          "query": "PREFIX oa: <http://www.w3.org/ns/oa#> PREFIX cnt: <http://www.w3.org/2011/content#> PREFIX dc: <http://purl.org/dc/elements/1.1/> select ?res WHERE { {?res a cnt:ContentAsText .} UNION {?res a cnt:ContentAsBase64} UNION {?res a cnt:ContentAsXML} . OPTIONAL{?res dc:format ?format} } group by ?res having(count(distinct ?format) != 1)"
+      }
+    ]
+},
+{
+    "section": "Appendix B. Extending Motivations",
+    "constraints": [
+      {
+          "ref": "B. (1) Extending Motivations",
+          "url": "http://www.openannotation.org/spec/core/appendices.html#ExtendingMotivations",
+          "description": "New Motivations MUST be instances of oa:Motivation, which is a subClass of skos:Concept.",
+          "severity": "error",
+          "preconditionMessage": "No new Motivations identified",
+          "precondition": "PREFIX oa: <http://www.w3.org/ns/oa#> ASK WHERE {?annotation oa:motivatedBy ?motivation . MINUS {?annotation oa:motivatedBy ?motivation . FILTER regex(str(?motivation),\"^http://www.w3.org/ns/oa\")}}",
+          "query": "PREFIX oa: <http://www.w3.org/ns/oa#> SELECT * WHERE { ?annotation oa:motivatedBy ?motivation . FILTER(NOT EXISTS {?motivation a oa:Motivation}) . MINUS {?annotation oa:motivatedBy ?motivation . FILTER regex(str(?motivation),\"http://www.w3.org/ns/oa\")}}"
+          
+      },
+      {
+          "ref": "B. (2) Extending Motivations",
+          "url": "http://www.openannotation.org/spec/core/appendices.html#ExtendingMotivations",
+          "description": "The skos:broader relationship SHOULD be asserted between the new Motivation and at least one existing Motivation, if there are any that are broader in scope. The skos:related or skos:closeMatch relationship SHOULD also be asserted to other similar concepts created by other communities.",
+          "severity": "warn",
+          "preconditionMessage":"No new Motivations identified",
+          "precondition": "PREFIX oa: <http://www.w3.org/ns/oa#> ASK WHERE {?annotation oa:motivatedBy ?motivation . MINUS {?annotation oa:motivatedBy ?motivation . FILTER regex(str(?motivation),\"^http://www.w3.org/ns/oa\")}}",
+          "query": "PREFIX oa: <http://www.w3.org/ns/oa#> PREFIX skos: <http://www.w3.org/2004/02/skos/core#> SELECT ?annotation ?motivation WHERE { ?annotation oa:motivatedBy ?motivation . FILTER (NOT EXISTS{?motivation skos:broader ?m}) . MINUS { ?annotation oa:motivatedBy ?motivation . FILTER regex(str(?motivation),\"http://www.w3.org/ns/oa\") } .}"
+      }
+    ]
+}
+]
+ 
