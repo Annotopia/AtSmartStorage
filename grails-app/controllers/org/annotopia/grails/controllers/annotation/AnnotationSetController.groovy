@@ -86,7 +86,9 @@ class AnnotationSetController {
 			int pages = (total/Integer.parseInt(max));
 			
 			if(total>0 && Integer.parseInt(offset)>=pages) {
-				def json = JSON.parse('{"status":"rejected" ,"message":"The requested page ' + offset + ' does not exist, the page index limit is ' + (pages==0?"0":(pages-1))+ '"}');
+				log.info("[" + apiKey + "] The requested page " + offset + " does not exist, the page index limit is " + (pages==0?"0":(pages-1)) );
+				def json = JSON.parse('{"status":"rejected" ,"message":"The requested page ' + offset + ' does not exist, the page index limit is ' + (pages==0?"0":(pages-1))+ '"' + 
+					',"duration": "' + (System.currentTimeMillis()-startTime) + 'ms", ' + '}');
 				render(status: 401, text: json, contentType: "text/json", encoding: "UTF-8");
 				return;
 			}
@@ -107,7 +109,9 @@ class AnnotationSetController {
 				
 				response.outputStream <<  ']}}';
 				response.outputStream.flush()
-			} else {
+			} else { 
+				// No Annotation Sets found with the specified criteria
+				log.info("[" + apiKey + "] No Annotation Sets found with the specified criteria");
 				response.contentType = "text/json;charset=UTF-8"
 				response.outputStream << '{"status":"empty","message":"No results with the chosen criteria" , "result": {' + 
 					'"total":"' + total + '", ' +
@@ -133,7 +137,10 @@ class AnnotationSetController {
 				response.outputStream <<  ']}}';
 				response.outputStream.flush()
 			} else {
-				def json = JSON.parse('{"status":"notfound" ,"message":"The requested resource ' + getCurrentUrl(request) + ' has not been found"}');
+				// Annotation Set not found
+				log.info("[" + apiKey + "] Graph not found");
+				def json = JSON.parse('{"status":"notfound" ,"message":"The requested resource ' + getCurrentUrl(request) + ' has not been found"' +
+					',"duration": "' + (System.currentTimeMillis()-startTime) + 'ms", ' + '}');
 				render(status: 404, text: json, contentType: "text/json", encoding: "UTF-8");
 				return;
 			}
