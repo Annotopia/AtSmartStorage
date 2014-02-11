@@ -46,6 +46,7 @@ class AnnotationSetController {
 	// curl -i -X GET http://localhost:8080/AtSmartStorage/annotationset --header "Content-Type: application/json" --data '{"apiKey":"testkey" ,  "tgtUrl":"http://www.jbiomedsem.com/content/2/S2/S4"}'
 	// curl -i -X GET http://localhost:8080/AtSmartStorage/annotationset --header "Content-Type: application/json" --data '{"apiKey":"testkey" ,  "tgtUrl":"http://www.jbiomedsem.com/content/2/S2/S4", "tgtFgt":"true"}'
 	// curl -i -X GET http://localhost:8080/AtSmartStorage/annotationset/86 --header "Content-Type: application/json" --data '{"apiKey":"testkey"}'
+	// curl -i -X GET http://localhost:8080/AtSmartStorage/annotationset --header "Content-Type: application/json" --data '{"apiKey":"testkey" ,  "tgtUrl":"http://www.jbiomedsem.com/content/2/S2/S4", "tgtFgt":"true", "max":"1"}'
 	
 	def show = {
 		long startTime = System.currentTimeMillis();
@@ -81,26 +82,48 @@ class AnnotationSetController {
 			
 			def result = ']}'
 	
-			int total = annotationJenaStorageService.countAnnotationGraphs(apiKey);
+			int total = annotationJenaStorageService.countAnnotationGraphs(apiKey, tgtUrl, tgtFgt);
+			int pages = (total/Integer.parseInt(max));
+			
+			if(total>0 && Integer.parseInt(offset)>=pages) {
+				def json = JSON.parse('{"status":"rejected" ,"message":"The requested page ' + offset + ' does not exist, the page index limit is ' + (pages==0?"0":(pages-1))+ '"}');
+				render(status: 401, text: json, contentType: "text/json", encoding: "UTF-8");
+				return;
+			}
+			
 			Dataset graphs = annotationJenaStorageService.listAnnotationSet(apiKey, max, offset, tgtUrl, tgtFgt, tgtExt, tgtIds);
 	
-			response.contentType = "text/json;charset=UTF-8"
-			response.outputStream << '{"status":"success", "result": {' + 
-				'"total":"' + total + '", ' +
-				'"duration": "' + (System.currentTimeMillis()-startTime) + 'ms", ' +
-				'"offset": "' + offset + '", ' +
-				'"max": "' + max + '", ' +
-				'"items":['
-					
-			RDFDataMgr.write(response.outputStream, graphs, JenaJSONLD.JSONLD);
-			
-			response.outputStream <<  ']}}';
-			response.outputStream.flush()
+			if(graphs!=null) {
+				response.contentType = "text/json;charset=UTF-8"
+				response.outputStream << '{"status":"results", "result": {' + 
+					'"total":"' + total + '", ' +
+					'"pages":"' + pages + '", ' +
+					'"duration": "' + (System.currentTimeMillis()-startTime) + 'ms", ' +
+					'"offset": "' + offset + '", ' +
+					'"max": "' + max + '", ' +
+					'"items":['
+						
+				RDFDataMgr.write(response.outputStream, graphs, JenaJSONLD.JSONLD);
+				
+				response.outputStream <<  ']}}';
+				response.outputStream.flush()
+			} else {
+				response.contentType = "text/json;charset=UTF-8"
+				response.outputStream << '{"status":"empty","message":"No results with the chosen criteria" , "result": {' + 
+					'"total":"' + total + '", ' +
+					'"pages":"' + pages + '", ' +
+					'"duration": "' + (System.currentTimeMillis()-startTime) + 'ms", ' +
+					'"offset": "' + offset + '", ' +
+					'"max": "' + max + '", ' +
+					'"items":['
+				response.outputStream <<  ']}}';
+				response.outputStream.flush()
+			}
 		} else {
 			Dataset graphs =  annotationJenaStorageService.retrieveAnnotationGraph(apiKey, getCurrentUrl(request));
 			
 			response.contentType = "text/json;charset=UTF-8"
-			response.outputStream << '{"status":"success", "result": {' +
+			response.outputStream << '{"status":"result", "result": {' +
 				'"duration": "' + (System.currentTimeMillis()-startTime) + 'ms", ' +
 				'"items":['
 					
