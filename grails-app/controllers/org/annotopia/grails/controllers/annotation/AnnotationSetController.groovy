@@ -113,7 +113,7 @@ class AnnotationSetController {
 				// No Annotation Sets found with the specified criteria
 				log.info("[" + apiKey + "] No Annotation Sets found with the specified criteria");
 				response.contentType = "text/json;charset=UTF-8"
-				response.outputStream << '{"status":"empty","message":"No results with the chosen criteria" , "result": {' + 
+				response.outputStream << '{"status":"nocontent","message":"No results with the chosen criteria" , "result": {' + 
 					'"total":"' + total + '", ' +
 					'"pages":"' + pages + '", ' +
 					'"duration": "' + (System.currentTimeMillis()-startTime) + 'ms", ' +
@@ -147,6 +147,37 @@ class AnnotationSetController {
 		}
 	}
 	
+	// curl -i -X POST http://localhost:8080/AtSmartStorage/annotationset
+	// curl -i -X POST http://localhost:8080/AtSmartStorage/annotationset --header "Content-Type: application/json" --data '{"apiKey":"testkey"}'
+	// curl -i -X POST http://localhost:8080/AtSmartStorage/annotationset --header "Content-Type: application/json" --data '{"apiKey":"testkey", "set":{"@context":"https://gist.github.com/hubgit/6105255/raw/36f89110f7cb28fb605f7722048167d82644f946/open-annotation-context.json" ,"@graph" : [ {"@id" : "http://www.example.org/ann1","@type" : "http://www.w3.org/ns/oa#Annotation","http://www.w3.org/ns/oa#hasBody" : {"@id" : "http://www.example.org/body3"},"http://www.w3.org/ns/oa#hasTarget" : {"@id" : "http://www.example.org/target3"} } ],"@id" : "http://annotopiaserver.org/annotationset/90"}}'
+	def save = {
+		long startTime = System.currentTimeMillis();
+		
+		def apiKey = request.JSON.apiKey;
+		boolean allowed = (
+			grailsApplication.config.annotopia.storage.testing.enabled=='true' &&
+			apiKey==grailsApplication.config.annotopia.storage.testing.apiKey
+		);
+		if(!allowed) {
+			def json = JSON.parse('{"status":"rejected" ,"message":"Api Key missing or invalid"}');
+			render(status: 401, text: json, contentType: "text/json", encoding: "UTF-8");
+			return;
+		}
+		
+		if(request.JSON.set!=null) {
+			log.warn("TODO: Validation of the annotation content!");
+			virtuosoJenaStoreService.store(apiKey, request.JSON.set.toString(), "");
+			render 'saving set \n';
+			return;
+		} else {
+			// Annotation Set not found
+			log.info("[" + apiKey + "] Annotation set not found");
+			def json = JSON.parse('{"status":"nocontent" ,"message":"The request does not carry the payload or payload cannot be read"' +
+				',"duration": "' + (System.currentTimeMillis()-startTime) + 'ms", ' + '}');
+			render(status: 200, text: json, contentType: "text/json", encoding: "UTF-8");
+		}
+	}
+	
 	static String getCurrentUrl(HttpServletRequest request){
 		StringBuilder sb = new StringBuilder()
 		sb << request.getRequestURL().substring(0,request.getRequestURL().indexOf("/", 7))
@@ -156,11 +187,5 @@ class AnnotationSetController {
 			sb << request.getAttribute("javax.servlet.forward.query_string")
 		}
 		return sb.toString();
-	}
-	
-	// curl -i -X POST http://localhost:8080/AtSmartStorage/annotationset
-	def save = {
-		println 'save';
-		render 'save set \n';
 	}
 }
