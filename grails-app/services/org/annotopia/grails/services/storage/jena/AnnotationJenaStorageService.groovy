@@ -50,7 +50,7 @@ class AnnotationJenaStorageService {
 		retrieveAnnotationGraphs(apiKey, max, offset, tgtUrl, tgtFgt);
 	}
 	
-	public int countAnnotationGraphs(apiKey) {
+	public int countAnnotationGraphs(apiKey, tgtUrl, tgtFgt) {
 		VirtGraph set = new VirtGraph (
 			grailsApplication.config.annotopia.storage.triplestore.host,
 			grailsApplication.config.annotopia.storage.triplestore.user,
@@ -58,6 +58,16 @@ class AnnotationJenaStorageService {
 		
 		String queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> " +
 			"SELECT (COUNT(DISTINCT ?g) AS ?total) WHERE { GRAPH ?g { ?s a oa:Annotation }}";
+			
+		if(tgtUrl!=null && tgtFgt=="false") {
+			queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> " +
+				"SELECT (COUNT(DISTINCT ?g) AS ?total) WHERE { GRAPH ?g { ?s a oa:Annotation . ?s oa:hasTarget <" + tgtUrl + "> }}";
+		} else if(tgtUrl!=null && tgtFgt=="true") {
+			queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> " +
+				"SELECT (COUNT(DISTINCT ?g) AS ?total) WHERE { GRAPH ?g { ?s a oa:Annotation .  {?s oa:hasTarget <" + tgtUrl +
+				"> } UNION {?s oa:hasTarget ?t. ?t a oa:SpecificResource. ?t oa:hasSource <" + tgtUrl + ">}}}";
+		}
+			
 		log.trace('[' + apiKey + '] ' +  queryString);
 			
 		int totalCount = 0;
@@ -107,14 +117,15 @@ class AnnotationJenaStorageService {
 			grailsApplication.config.annotopia.storage.triplestore.pass);
 		
 		String queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> " +
-			"SELECT DISTINCT ?g WHERE { GRAPH ?g { ?s a oa:Annotation }} LIMIT " + max;
+			"SELECT DISTINCT ?g WHERE { GRAPH ?g { ?s a oa:Annotation }} LIMIT " + max + " OFFSET " + offset;
 		
 		if(tgtUrl!=null && tgtFgt=="false") {
 			queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> " +
-				"SELECT DISTINCT ?g WHERE { GRAPH ?g { ?s a oa:Annotation . ?s oa:hasTarget <" + tgtUrl + "> }} LIMIT " + max;
+				"SELECT DISTINCT ?g WHERE { GRAPH ?g { ?s a oa:Annotation . ?s oa:hasTarget <" + tgtUrl + "> }} LIMIT " + max + " OFFSET " + offset;
 		} else if(tgtUrl!=null && tgtFgt=="true") {
 			queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> " +
-				"SELECT DISTINCT ?g WHERE { GRAPH ?g { ?s a oa:Annotation . {?s oa:hasTarget <" + tgtUrl + "> } UNION {?s oa:hasTarget ?t. ?t a oa:SpecificResource. ?t oa:hasSource <" + tgtUrl + ">}}} LIMIT " + max;
+				"SELECT DISTINCT ?g WHERE { GRAPH ?g { ?s a oa:Annotation . {?s oa:hasTarget <" + tgtUrl + 
+				"> } UNION {?s oa:hasTarget ?t. ?t a oa:SpecificResource. ?t oa:hasSource <" + tgtUrl + ">}}} LIMIT " + max + " OFFSET " + offset;
 		}
 			
 		log.trace('[' + apiKey + '] ' + queryString);
