@@ -122,15 +122,21 @@ class AnnotationSetController {
 		} else {
 			Dataset graphs =  annotationJenaStorageService.retrieveAnnotationGraph(apiKey, getCurrentUrl(request));
 			
-			response.contentType = "text/json;charset=UTF-8"
-			response.outputStream << '{"status":"result", "result": {' +
-				'"duration": "' + (System.currentTimeMillis()-startTime) + 'ms", ' +
-				'"items":['
-					
-			RDFDataMgr.write(response.outputStream, graphs, JenaJSONLD.JSONLD);
-			
-			response.outputStream <<  ']}}';
-			response.outputStream.flush()
+			if(!graphs.getNamedModel(getCurrentUrl(request)).isEmpty()) {
+				response.contentType = "text/json;charset=UTF-8"
+				response.outputStream << '{"status":"result", "result": {' +
+					'"duration": "' + (System.currentTimeMillis()-startTime) + 'ms", ' +
+					'"items":['
+						
+				RDFDataMgr.write(response.outputStream, graphs, JenaJSONLD.JSONLD);
+				
+				response.outputStream <<  ']}}';
+				response.outputStream.flush()
+			} else {
+				def json = JSON.parse('{"status":"notfound" ,"message":"The requested resource ' + getCurrentUrl(request) + ' has not been found"}');
+				render(status: 404, text: json, contentType: "text/json", encoding: "UTF-8");
+				return;
+			}
 		}
 	}
 	
