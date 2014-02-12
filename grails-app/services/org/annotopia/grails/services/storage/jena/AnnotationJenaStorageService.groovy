@@ -165,6 +165,15 @@ class AnnotationJenaStorageService {
 		return graphs;
 	}	
 	
+	public void storeAnnotationSet(apiKey, set, flavor, validate) {
+		
+		if(validate!='OFF') {
+			log.warn("[" + apiKey + "] TODO: Validation of the annotation set content with flavor " + flavor + " requested but not implemented!");
+		}
+		
+		virtuosoJenaStoreService.store(apiKey, set, "");
+	}
+	
 	public Dataset retrieveAnnotationGraph(apiKey, uri) {
 		log.info '[' + apiKey + '] Retrieving annotation graph';
 	
