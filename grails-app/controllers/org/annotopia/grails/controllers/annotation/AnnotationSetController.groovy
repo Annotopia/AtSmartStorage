@@ -72,13 +72,15 @@ class AnnotationSetController {
 			def tgtFgt = request.JSON.tgtFgt
 			def tgtExt = request.JSON.tgtExt
 			def tgtIds = request.JSON.tgtIds
+			def flavor = request.JSON.flavor
 			log.info("[" + apiKey + "] List >>" + 
 				" max:" + max +
 				" offset:" + offset +
 				((tgtUrl!=null) ? (" tgtUrl:" + tgtUrl):"") +
 				((tgtFgt!=null) ? (" tgtFgt:" + tgtFgt):"") +
 				((tgtExt!=null) ? (" tgtExt:" + tgtExt):"") + 
-				((tgtIds!=null) ? (" tgtIds:" + tgtIds):""));
+				((tgtIds!=null) ? (" tgtIds:" + tgtIds):"") +
+				((flavor!=null) ? (" flavor:" + flavor):""));
 			
 			def result = ']}'
 	
@@ -149,7 +151,9 @@ class AnnotationSetController {
 	
 	// curl -i -X POST http://localhost:8080/AtSmartStorage/annotationset
 	// curl -i -X POST http://localhost:8080/AtSmartStorage/annotationset --header "Content-Type: application/json" --data '{"apiKey":"testkey"}'
-	// curl -i -X POST http://localhost:8080/AtSmartStorage/annotationset --header "Content-Type: application/json" --data '{"apiKey":"testkey", "set":{"@context":"https://gist.github.com/hubgit/6105255/raw/36f89110f7cb28fb605f7722048167d82644f946/open-annotation-context.json" ,"@graph" : [ {"@id" : "http://www.example.org/ann1","@type" : "http://www.w3.org/ns/oa#Annotation","http://www.w3.org/ns/oa#hasBody" : {"@id" : "http://www.example.org/body3"},"http://www.w3.org/ns/oa#hasTarget" : {"@id" : "http://www.example.org/target3"} } ],"@id" : "http://annotopiaserver.org/annotationset/90"}}'
+	// curl -i -X POST http://localhost:8080/AtSmartStorage/annotationset --header "Content-Type: application/json" --data '{"apiKey":"testkey", "set":{"@context":"https://gist.github.com/hubgit/6105255/raw/36f89110f7cb28fb605f7722048167d82644f946/open-annotation-context.json" ,"@graph" : [ {"@id" : "http://www.example.org/ann1","@type" : "http://www.w3.org/ns/oa#Annotation","http://www.w3.org/ns/oa#hasBody" : {"@id" : "http://www.example.org/body3"},"http://www.w3.org/ns/oa#hasTarget" : {"@id" : "http://www.example.org/target3"} } ],"@id" : "http://annotopiaserver.org/annotationset/92"}}'
+	// curl -i -X POST http://localhost:8080/AtSmartStorage/annotationset --header "Content-Type: application/json" --data '{"apiKey":"testkey", "validate":"ON", "flavor":"OA", "set":{"@context":"https://gist.github.com/hubgit/6105255/raw/36f89110f7cb28fb605f7722048167d82644f946/open-annotation-context.json" ,"@graph" : [ {"@id" : "http://www.example.org/ann1","@type" : "http://www.w3.org/ns/oa#Annotation","http://www.w3.org/ns/oa#hasBody" : {"@id" : "http://www.example.org/body3"},"http://www.w3.org/ns/oa#hasTarget" : {"@id" : "http://www.example.org/target3"} } ],"@id" : "http://annotopiaserver.org/annotationset/92"}}'
+	
 	def save = {
 		long startTime = System.currentTimeMillis();
 		
@@ -164,9 +168,13 @@ class AnnotationSetController {
 			return;
 		}
 		
-		if(request.JSON.set!=null) {
-			log.warn("TODO: Validation of the annotation content!");
-			virtuosoJenaStoreService.store(apiKey, request.JSON.set.toString(), "");
+		def set = request.JSON.set
+		def flavor = (request.JSON.flavor!=null)?request.JSON.flavor:"OA";
+		def validate = (request.JSON.validate!=null)?request.JSON.validate:"OFF";
+				
+		if(set!=null) {
+			log.warn("[" + apiKey + "] TODO: Validation of the annotation set content requested but not implemented yest!");
+			annotationJenaStorageService.storeAnnotationSet(apiKey, set.toString(), flavor, validate);
 			render 'saving set \n';
 			return;
 		} else {
