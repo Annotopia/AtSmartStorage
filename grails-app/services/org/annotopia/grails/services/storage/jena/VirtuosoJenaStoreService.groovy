@@ -59,13 +59,13 @@ class VirtuosoJenaStoreService implements ITripleStore {
 	@Override
 	public String store(String apiKey, File annotationFile) {
 		
-		log.info 'Loading file: ' + annotationFile.getName();	
+		log.info '[' + apiKey + '] Storing file: ' + annotationFile.getName();	
 		store(apiKey, annotationFile, null);
 	}
 	
 	@Override
 	public String store(String apiKey, File annotationFile, String baseUri) {
-		log.info 'Loading file: ' + annotationFile.getName() + ' with baseUri: ' + baseUri;
+		log.info '[' + apiKey + '] Storing file: ' + annotationFile.getName() + ' with baseUri: ' + baseUri;
 		
 		try {
 			try {
@@ -91,8 +91,7 @@ class VirtuosoJenaStoreService implements ITripleStore {
 
 	@Override
 	public String store(String apiKey, String content, String baseUri) {
-		log.info 'Loading content with baseUri: ' + baseUri;
-		
+		log.info '[' + apiKey + '] Storing content with baseUri: ' + baseUri;
 		try {
 			try {
 				if(content == null || content.isEmpty()) {
@@ -139,7 +138,7 @@ class VirtuosoJenaStoreService implements ITripleStore {
 	}
 	
 	public boolean doesGraphExists(String apiKey, String graphUri) {
-		log.info 'Checking graph existance: ' + graphUri;		
+		log.info '[' + apiKey + '] Checking graph existance: ' + graphUri;		
 
 		// The ASK method seems not working so I am using a more elaborate
 		// methodology
@@ -173,7 +172,7 @@ class VirtuosoJenaStoreService implements ITripleStore {
 	
 	@Override
 	public boolean dropGraph(String apiKey, String graphUri) {
-		log.info 'Removing graph: ' + graphUri;
+		log.info '[' + apiKey + '] Removing graph: ' + graphUri;
 		
 		try {
 			VirtGraph graph = new VirtGraph (
@@ -200,7 +199,7 @@ class VirtuosoJenaStoreService implements ITripleStore {
 		
 		// Default graph management
 		if(dataset.getDefaultModel()!=null && dataset.getDefaultModel().size()>0) {
-			log.debug "graph: * (default)"
+			log.debug '[' + apiKey + '] Storing graph: * (default)'
 			log.debug grailsApplication.config.annotopia.storage.triplestore.host
 			VirtGraph virtGraph = new VirtGraph (
 				grailsApplication.config.annotopia.storage.triplestore.host,
@@ -214,7 +213,7 @@ class VirtuosoJenaStoreService implements ITripleStore {
 		Iterator<String> names = dataset.listNames()
 		while(names.hasNext()) {
 			String name = names.next();
-			log.debug "graph: " + name
+			log.debug '[' + apiKey + '] Storing graph: ' + name
 			Model model = dataset.getNamedModel(name)
 			VirtGraph virtGraph = new VirtGraph (name,
 				grailsApplication.config.annotopia.storage.triplestore.host,
