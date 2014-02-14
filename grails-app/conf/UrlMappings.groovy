@@ -1,11 +1,11 @@
 class UrlMappings {
 
 	static mappings = {
-		"/annotationset/$id?"{
+		"/storage/annotationset/$id?"{
 			controller = "annotationSet"
-			action = [GET:"show", POST:"save"]
+			action = [GET:"show", POST:"save", PUT:"update"]
 		}
-		"/annotation/$id?"{
+		"/storage/annotation/$id?"{
 			controller = "annotation"
 			action = [GET:"show", POST:"save"]
 		}

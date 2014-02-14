@@ -1,5 +1,7 @@
 import grails.util.Metadata;
 
+grails.app.context="/"
+
 // Necessary for Grails 2.0 as the variable ${appName} is not available 
 // anymore in the log4j closure. It needs the import above.
 def appName = Metadata.current.getApplicationName();
