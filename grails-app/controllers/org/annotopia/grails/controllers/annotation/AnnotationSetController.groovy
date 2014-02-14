@@ -43,8 +43,6 @@ class AnnotationSetController {
 	def virtuosoJenaStoreService
 	def annotationJenaStorageService
 	
-	// curl -X PUT -d arg=val -d arg2=val2 http://localhost:8080/AtSmartStorage/annotationSet/
-	
 	// curl -i -X GET http://localhost:8080/storage/annotationset
 	// curl -i -X GET http://localhost:8080/storage/annotationset --header "Content-Type: application/json" --data '{"apiKey":"testkey"}'
 	// curl -i -X GET http://localhost:8080/storage/annotationset --header "Content-Type: application/json" --data '{"apiKey":"testkey" ,  "tgtUrl":"http://www.jbiomedsem.com/content/2/S2/S4"}'
