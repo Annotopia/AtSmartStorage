@@ -22,6 +22,8 @@ package org.annotopia.grails.controllers.annotation
 
 import grails.converters.JSON
 
+import java.text.SimpleDateFormat
+
 import javax.servlet.http.HttpServletRequest
 
 import org.apache.jena.riot.RDFDataMgr
@@ -36,17 +38,19 @@ import com.hp.hpl.jena.query.Dataset
  */
 class AnnotationSetController {
 
+	SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssz")
+	
 	def virtuosoJenaStoreService
 	def annotationJenaStorageService
 	
 	// curl -X PUT -d arg=val -d arg2=val2 http://localhost:8080/AtSmartStorage/annotationSet/
 	
-	// curl -i -X GET http://localhost:8080/AtSmartStorage/annotationset
-	// curl -i -X GET http://localhost:8080/AtSmartStorage/annotationset --header "Content-Type: application/json" --data '{"apiKey":"testkey"}'
-	// curl -i -X GET http://localhost:8080/AtSmartStorage/annotationset --header "Content-Type: application/json" --data '{"apiKey":"testkey" ,  "tgtUrl":"http://www.jbiomedsem.com/content/2/S2/S4"}'
-	// curl -i -X GET http://localhost:8080/AtSmartStorage/annotationset --header "Content-Type: application/json" --data '{"apiKey":"testkey" ,  "tgtUrl":"http://www.jbiomedsem.com/content/2/S2/S4", "tgtFgt":"true"}'
-	// curl -i -X GET http://localhost:8080/AtSmartStorage/annotationset/86 --header "Content-Type: application/json" --data '{"apiKey":"testkey"}'
-	// curl -i -X GET http://localhost:8080/AtSmartStorage/annotationset --header "Content-Type: application/json" --data '{"apiKey":"testkey" ,  "tgtUrl":"http://www.jbiomedsem.com/content/2/S2/S4", "tgtFgt":"true", "max":"1"}'
+	// curl -i -X GET http://localhost:8080/storage/annotationset
+	// curl -i -X GET http://localhost:8080/storage/annotationset --header "Content-Type: application/json" --data '{"apiKey":"testkey"}'
+	// curl -i -X GET http://localhost:8080/storage/annotationset --header "Content-Type: application/json" --data '{"apiKey":"testkey" ,  "tgtUrl":"http://www.jbiomedsem.com/content/2/S2/S4"}'
+	// curl -i -X GET http://localhost:8080/storage/annotationset --header "Content-Type: application/json" --data '{"apiKey":"testkey" ,  "tgtUrl":"http://www.jbiomedsem.com/content/2/S2/S4", "tgtFgt":"true"}'
+	// curl -i -X GET http://localhost:8080/storage/annotationset/86 --header "Content-Type: application/json" --data '{"apiKey":"testkey"}'
+	// curl -i -X GET http://localhost:8080/storage/annotationset --header "Content-Type: application/json" --data '{"apiKey":"testkey" ,  "tgtUrl":"http://www.jbiomedsem.com/content/2/S2/S4", "tgtFgt":"true", "max":"1"}'
 	
 	def show = {
 		long startTime = System.currentTimeMillis();
@@ -64,8 +68,8 @@ class AnnotationSetController {
 		
 		if(params.id==null) {
 			// Pagination
-			def max = (request.JSON.max!=null)?request.JSON.max:10;
-			def offset = (request.JSON.offset!=null)?request.JSON.offset:0;
+			def max = (request.JSON.max!=null)?request.JSON.max:"10";
+			def offset = (request.JSON.offset!=null)?request.JSON.offset:"0";
 			
 			// Target filters
 			def tgtUrl = request.JSON.tgtUrl
@@ -87,7 +91,7 @@ class AnnotationSetController {
 			int total = annotationJenaStorageService.countAnnotationGraphs(apiKey, tgtUrl, tgtFgt);
 			int pages = (total/Integer.parseInt(max));
 			
-			if(total>0 && Integer.parseInt(offset)>=pages) {
+			if(total>0 && Integer.parseInt(offset)>0 && Integer.parseInt(offset)>=pages) {
 				log.info("[" + apiKey + "] The requested page " + offset + " does not exist, the page index limit is " + (pages==0?"0":(pages-1)) );
 				def json = JSON.parse('{"status":"rejected" ,"message":"The requested page ' + offset + ' does not exist, the page index limit is ' + (pages==0?"0":(pages-1))+ '"' + 
 					',"duration": "' + (System.currentTimeMillis()-startTime) + 'ms", ' + '}');
@@ -149,11 +153,10 @@ class AnnotationSetController {
 		}
 	}
 	
-	// curl -i -X POST http://localhost:8080/AtSmartStorage/annotationset
-	// curl -i -X POST http://localhost:8080/AtSmartStorage/annotationset --header "Content-Type: application/json" --data '{"apiKey":"testkey"}'
-	// curl -i -X POST http://localhost:8080/AtSmartStorage/annotationset --header "Content-Type: application/json" --data '{"apiKey":"testkey", "set":{"@context":"https://gist.github.com/hubgit/6105255/raw/36f89110f7cb28fb605f7722048167d82644f946/open-annotation-context.json" ,"@graph" : [ {"@id" : "http://www.example.org/ann1","@type" : "http://www.w3.org/ns/oa#Annotation","http://www.w3.org/ns/oa#hasBody" : {"@id" : "http://www.example.org/body3"},"http://www.w3.org/ns/oa#hasTarget" : {"@id" : "http://www.example.org/target3"} } ],"@id" : "http://annotopiaserver.org/annotationset/92"}}'
-	// curl -i -X POST http://localhost:8080/AtSmartStorage/annotationset --header "Content-Type: application/json" --data '{"apiKey":"testkey", "validate":"ON", "flavor":"OA", "set":{"@context":"https://gist.github.com/hubgit/6105255/raw/36f89110f7cb28fb605f7722048167d82644f946/open-annotation-context.json" ,"@graph" : [ {"@id" : "http://www.example.org/ann1","@type" : "http://www.w3.org/ns/oa#Annotation","http://www.w3.org/ns/oa#hasBody" : {"@id" : "http://www.example.org/body3"},"http://www.w3.org/ns/oa#hasTarget" : {"@id" : "http://www.example.org/target3"} } ],"@id" : "http://annotopiaserver.org/annotationset/92"}}'
-	
+	// curl -i -X POST http://localhost:8080/storage/annotationset
+	// curl -i -X POST http://localhost:8080/storage/annotationset --header "Content-Type: application/json" --data '{"apiKey":"testkey"}'
+	// curl -i -X POST http://localhost:8080/storage/annotationset --header "Content-Type: application/json" --data '{"apiKey":"testkey", "set":{"@context":"https://gist.github.com/hubgit/6105255/raw/36f89110f7cb28fb605f7722048167d82644f946/open-annotation-context.json" ,"@graph" : [ {"@id" : "http://www.example.org/ann1","@type" : "http://www.w3.org/ns/oa#Annotation","http://www.w3.org/ns/oa#hasBody" : {"@id" : "http://www.example.org/body3"},"http://www.w3.org/ns/oa#hasTarget" : {"@id" : "http://www.example.org/target3"} } ],"@id" : "http://annotopiaserver.org/annotationset/92"}}'
+	// curl -i -X POST http://localhost:8080/storage/annotationset --header "Content-Type: application/json" --data '{"apiKey":"testkey", "validate":"ON", "flavor":"OA", "set":{"@context":"https://gist.github.com/hubgit/6105255/raw/36f89110f7cb28fb605f7722048167d82644f946/open-annotation-context.json" ,"@graph" : [ {"@id" : "http://www.example.org/ann1","@type" : "http://www.w3.org/ns/oa#Annotation","http://www.w3.org/ns/oa#hasBody" : {"@id" : "http://www.example.org/body3"},"http://www.w3.org/ns/oa#hasTarget" : {"@id" : "http://www.example.org/target3"} } ],"@id" : "http://annotopiaserver.org/annotationset/92"}}'
 	def save = {
 		long startTime = System.currentTimeMillis();
 		
@@ -174,7 +177,67 @@ class AnnotationSetController {
 				
 		if(set!=null) {
 			log.warn("[" + apiKey + "] TODO: Validation of the annotation set content requested but not implemented yest!");
+			
+			
+			// Updating URIs
+			println 'graphURI: ' + set["@id"]
+			println 'annURI: ' + set['@graph'][0]["@id"]
+			
+			def graphUriBuffer = set["@id"];
+			def annotationUriBuffer = set['@graph'][0]["@id"];
+			
+			def finalGraphUri = org.annotopia.grails.services.storage.utils.UUID.uuid();
+			def finalAnnotationUri = org.annotopia.grails.services.storage.utils.UUID.uuid();
+			
+			set.put("@id", getCurrentUrl(request) + '/' + finalGraphUri);
+			set['@graph'][0].put("@id", getCurrentUrl(request) + '/' + finalAnnotationUri);
+			
+			// Updating provenance
+			set['@graph'][0].put("http://purl.org/pav/createdOn", dateFormat.format((new Date())));
+			set['@graph'][0].put("http://purl.org/pav/lastSavedOn", dateFormat.format((new Date())));			
+			
 			annotationJenaStorageService.storeAnnotationSet(apiKey, set.toString(), flavor, validate);
+			
+			response.contentType = "text/json;charset=UTF-8"
+			response.outputStream << '{"status":"saved", "result": {' +
+				'"duration": "' + (System.currentTimeMillis()-startTime) + 'ms", ' +
+				'"items":['
+					
+			// RDFDataMgr.write(response.outputStream, graphs, JenaJSONLD.JSONLD);
+			
+			response.outputStream <<  ']}}';
+			response.outputStream.flush()
+		} else {
+			// Annotation Set not found
+			log.info("[" + apiKey + "] Annotation set not found");
+			def json = JSON.parse('{"status":"nocontent" ,"message":"The request does not carry the payload or payload cannot be read"' +
+				',"duration": "' + (System.currentTimeMillis()-startTime) + 'ms", ' + '}');
+			render(status: 200, text: json, contentType: "text/json", encoding: "UTF-8");
+		}
+	}
+	
+	// curl -i -X PUT http://localhost:8080/storage/annotationset/87 --header "Content-Type: application/json" --data '{"apiKey":"testkey", "validate":"ON", "flavor":"OA", "set":{"@context":"https://gist.github.com/hubgit/6105255/raw/36f89110f7cb28fb605f7722048167d82644f946/open-annotation-context.json" ,"@graph" : [ {"@id" : "http://www.example.org/ann1","@type" : "http://www.w3.org/ns/oa#Annotation","http://www.w3.org/ns/oa#hasBody" : {"@id" : "http://www.example.org/body3"},"http://www.w3.org/ns/oa#hasTarget" : {"@id" : "http://www.example.org/target3"} } ],"@id" : "http://localhost:8080/AtSmartStorage/annotationset/87"}}'
+	def update = {
+		long startTime = System.currentTimeMillis();
+		
+		def apiKey = request.JSON.apiKey;
+		boolean allowed = (
+			grailsApplication.config.annotopia.storage.testing.enabled=='true' &&
+			apiKey==grailsApplication.config.annotopia.storage.testing.apiKey
+		);
+		if(!allowed) {
+			def json = JSON.parse('{"status":"rejected" ,"message":"Api Key missing or invalid"}');
+			render(status: 401, text: json, contentType: "text/json", encoding: "UTF-8");
+			return;
+		}
+		
+		def set = request.JSON.set
+		def flavor = (request.JSON.flavor!=null)?request.JSON.flavor:"OA";
+		def validate = (request.JSON.validate!=null)?request.JSON.validate:"OFF";
+		
+		if(set!=null) {
+			log.warn("[" + apiKey + "] TODO: Validation of the annotation set content requested but not implemented yest!");
+			annotationJenaStorageService.updateAnnotationSet(apiKey, getCurrentUrl(request), set.toString(), flavor, validate);
 			render 'saving set \n';
 			return;
 		} else {
