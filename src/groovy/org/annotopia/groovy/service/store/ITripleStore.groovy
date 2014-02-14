@@ -67,6 +67,40 @@ interface ITripleStore {
 	public String store(String apiKey, String content, String baseUri);
 	
 	/**
+	 * Updates the triples/quads loaded from a file.
+	 * @param apiKey	The API key of the system requesting the transaction
+	 * @param content Triples/quads in a file.
+	 * @return
+	 */
+	public String update(String apiKey, File content);
+	
+	/**
+	 * Updates the triples/quads loaded from a file.
+	 * @param apiKey	The API key of the system requesting the transaction
+	 * @param content Triples/quads in a file.
+	 * @param baseUri Base URI (defaults to uri).
+	 * @return
+	 */
+	public String update(String apiKey, File content, String baseUri);
+	
+	/**
+	 * Updates the triples/quads loaded through a String.
+	 * @param apiKey	The API key of the system requesting the transaction
+	 * @param content Triples/quads in a String.
+	 * @return
+	 */
+	public String update(String apiKey, String content);
+	
+	/**
+	 * Updates the triples/quads loaded through a String
+	 * @param apiKey	The API key of the system requesting the transaction
+	 * @param content Triples/quads in a String.
+	 * @param baseUri Base URI (defaults to uri).
+	 * @return
+	 */
+	public String update(String apiKey, String content, String baseUri);
+	
+	/**
 	 * Retrieves the graph identified by the given URI
 	 * @param apiKey	The API key of the system requesting the transaction
 	 * @param graphUri	The URI identifying the graph to retrieve
