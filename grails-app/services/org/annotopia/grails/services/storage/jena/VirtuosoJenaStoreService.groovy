@@ -20,6 +20,8 @@
  */
 package org.annotopia.grails.services.storage.jena
 
+import java.io.File;
+
 import grails.util.Environment
 
 import org.annotopia.groovy.service.store.ITripleStore
@@ -56,6 +58,10 @@ class VirtuosoJenaStoreService implements ITripleStore {
 
 	def grailsApplication
 	
+	
+	// -----------------------------------------------------------------------
+	//    STORE
+	// -----------------------------------------------------------------------
 	@Override
 	public String store(String apiKey, File annotationFile) {
 		
@@ -85,7 +91,7 @@ class VirtuosoJenaStoreService implements ITripleStore {
 
 	@Override
 	public String store(String apiKey, String content) {
-		log.info 'Loading content: ' + content;	
+		log.info '[' + apiKey + '] Loading content: ' + content;	
 		store(apiKey, content, null);
 	}
 
@@ -109,6 +115,33 @@ class VirtuosoJenaStoreService implements ITripleStore {
 		}
 	}
 	
+	// -----------------------------------------------------------------------
+	//    UPDATE
+	// -----------------------------------------------------------------------
+	@Override
+	public String update(String apiKey, File annotationFile) {
+		log.info '[' + apiKey + '] Updating from file: ' + annotationFile.getName();	
+		update(apiKey, annotationFile, null);
+	}
+
+	@Override
+	public String update(String apiKey, File annotationFile, String baseUri) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public String update(String apiKey, String content) {
+		log.info '[' + apiKey + '] Updating from content: ' + content;	
+		store(apiKey, content, null);
+	}
+
+	@Override
+	public String update(String apiKey, String content, String baseUri) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+		
 	@Override
 	public Dataset retrieveGraph(String apiKey, String graphUri) {
 		log.info '[' + apiKey + '] Retrieving graph: ' + graphUri;
@@ -180,6 +213,23 @@ class VirtuosoJenaStoreService implements ITripleStore {
 				grailsApplication.config.annotopia.storage.triplestore.user,
 				grailsApplication.config.annotopia.storage.triplestore.pass);
 			String str = "DROP SILENT GRAPH <" + graphUri + ">";
+			VirtuosoUpdateRequest vur = VirtuosoUpdateFactory.create(str, graph);
+			vur.exec();
+		} catch (Exception e) {
+			println e.getMessage();
+		}
+	}
+	
+	@Override
+	public boolean clearGraph(String apiKey, String graphUri) {
+		log.info '[' + apiKey + '] Clearing graph: ' + graphUri;
+		
+		try {
+			VirtGraph graph = new VirtGraph (
+				grailsApplication.config.annotopia.storage.triplestore.host,
+				grailsApplication.config.annotopia.storage.triplestore.user,
+				grailsApplication.config.annotopia.storage.triplestore.pass);
+			String str = "CLEAR GRAPH <" + graphUri + ">";
 			VirtuosoUpdateRequest vur = VirtuosoUpdateFactory.create(str, graph);
 			vur.exec();
 		} catch (Exception e) {
