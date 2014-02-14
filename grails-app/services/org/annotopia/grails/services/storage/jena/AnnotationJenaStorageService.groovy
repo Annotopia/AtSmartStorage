@@ -50,6 +50,15 @@ class AnnotationJenaStorageService {
 		retrieveAnnotationGraphs(apiKey, max, offset, tgtUrl, tgtFgt);
 	}
 	
+	public listAnnotation(apiKey, max, offset, tgtUrl, tgtFgt, tgtExt, tgtIds) {
+		log.info '[' + apiKey + '] List annotation sets' +
+			'max:' + max +
+			'offset:' + offset +
+			'tgtUrl:' + tgtUrl +
+			'tgtFgt:' + tgtFgt;
+		retrieveAnnotationGraphs(apiKey, max, offset, tgtUrl, tgtFgt);
+	}
+	
 	public int countAnnotationGraphs(apiKey, tgtUrl, tgtFgt) {
 		VirtGraph set = new VirtGraph (
 			grailsApplication.config.annotopia.storage.triplestore.host,
@@ -182,6 +191,44 @@ class AnnotationJenaStorageService {
 		
 		virtuosoJenaStoreService.clearGraph(apiKey, graphUri);
 		virtuosoJenaStoreService.store(apiKey, set, "");
+	}
+	
+	public Dataset retrieveAnnotation(apiKey, uri) {
+
+		log.info '[' + apiKey + '] Retrieving annotation ' + uri;
+	
+		VirtGraph set = new VirtGraph (
+			grailsApplication.config.annotopia.storage.triplestore.host,
+			grailsApplication.config.annotopia.storage.triplestore.user,
+			grailsApplication.config.annotopia.storage.triplestore.pass);
+		
+		String queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> " +
+			"SELECT DISTINCT ?g WHERE { GRAPH ?g { <" + uri + "> a oa:Annotation }}";
+			
+		log.trace('[' + apiKey + '] ' + queryString);
+		
+		Dataset graphs;
+		Query  sparql = QueryFactory.create(queryString);
+		VirtuosoQueryExecution vqe = VirtuosoQueryExecutionFactory.create (sparql, set);
+		
+		try {
+			ResultSet results = vqe.execSelect();
+			while (results.hasNext()) {
+				QuerySolution result = results.nextSolution();
+				RDFNode graph_name = result.get("g");
+				if(graphs==null) graphs =  virtuosoJenaStoreService.retrieveGraph(apiKey, graph_name.toString()); 
+				else {
+					Dataset ds = virtuosoJenaStoreService.retrieveGraph(apiKey, graph_name.toString());
+					ds.listNames().each { name ->
+						graphs.addNamedModel(name, ds.getNamedModel(name));
+					}
+				}
+			}
+			return graphs;
+		} catch (Exception e) {
+			log.error(e.getMessage());
+			return null;
+		}
 	}
 	
 	public Dataset retrieveAnnotationGraph(apiKey, uri) {
