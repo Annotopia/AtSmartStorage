@@ -183,6 +183,15 @@ class AnnotationJenaStorageService {
 		virtuosoJenaStoreService.store(apiKey, set, "");
 	}
 	
+	public void storeAnnotation(apiKey, annotation, flavor, validate) {
+		
+		if(validate!='OFF') {
+			log.warn("[" + apiKey + "] TODO: Validation of the annotation content with flavor " + flavor + " requested but not implemented!");
+		}
+		
+		virtuosoJenaStoreService.store(apiKey, annotation, "");
+	}
+	
 	public void updateAnnotationSet(apiKey, graphUri, set, flavor, validate) {
 		
 		if(validate!='OFF') {

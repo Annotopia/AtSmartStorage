@@ -237,6 +237,35 @@ class VirtuosoJenaStoreService implements ITripleStore {
 		}
 	}
 	
+	private storeDataset(String apiKey, Dataset dataset) {
+		// Default graph management
+		if(dataset.getDefaultModel()!=null && dataset.getDefaultModel().size()>0) {
+			log.debug '[' + apiKey + '] Storing graph: * (default)'
+			log.debug grailsApplication.config.annotopia.storage.triplestore.host
+			VirtGraph virtGraph = new VirtGraph (
+				grailsApplication.config.annotopia.storage.triplestore.host,
+				grailsApplication.config.annotopia.storage.triplestore.user,
+				grailsApplication.config.annotopia.storage.triplestore.pass);
+			VirtModel virtModel = new VirtModel(virtGraph);
+			virtModel.add(dataset.getDefaultModel())
+			printDebugData(dataset.getDefaultModel());
+		}
+		
+		Iterator<String> names = dataset.listNames()
+		while(names.hasNext()) {
+			String name = names.next();
+			log.debug '[' + apiKey + '] Storing graph: ' + name
+			Model model = dataset.getNamedModel(name)
+			VirtGraph virtGraph = new VirtGraph (name,
+				grailsApplication.config.annotopia.storage.triplestore.host,
+				grailsApplication.config.annotopia.storage.triplestore.user,
+				grailsApplication.config.annotopia.storage.triplestore.pass);
+			VirtModel virtModel = new VirtModel(virtGraph);
+			virtModel.add(model);
+			printDebugData(model);
+		}
+	}
+	
 	private storeGraphs(String apiKey, InputStream inputStream, String baseUri) {
 		JenaJSONLD.init(); // Only needed once
 		

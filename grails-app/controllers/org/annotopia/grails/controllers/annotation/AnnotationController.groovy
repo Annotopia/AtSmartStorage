@@ -39,6 +39,11 @@ import com.hp.hpl.jena.query.QueryFactory
 import com.hp.hpl.jena.query.QuerySolution
 import com.hp.hpl.jena.query.ResultSet
 import com.hp.hpl.jena.rdf.model.Model
+import com.hp.hpl.jena.rdf.model.Property
+import com.hp.hpl.jena.rdf.model.Resource
+import com.hp.hpl.jena.rdf.model.ResourceFactory
+import com.hp.hpl.jena.rdf.model.Statement
+import com.hp.hpl.jena.rdf.model.StmtIterator
 
 /**
  * This is the REST API for managing Annotation.
@@ -50,6 +55,7 @@ class AnnotationController {
 	SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssz")
 
 	def annotationJenaStorageService;
+	def virtuosoJenaStoreService;
 	
 	// curl -i -X GET http://localhost:8080/s/annotation
 	// curl -i -X GET http://localhost:8080/s/annotation --header "Content-Type: application/json" --data '{"apiKey":"testkey"}'
@@ -161,6 +167,14 @@ class AnnotationController {
 	// curl -i -X POST http://localhost:8080/s/annotation --header "Content-Type: application/json" --data '{"apiKey":"testkey", "validate":"ON", "flavor":"OA", "item":{"@context":"https://gist.github.com/hubgit/6105255/raw/36f89110f7cb28fb605f7722048167d82644f946/open-annotation-context.json" ,"@graph" : [ {"@id" : "http://www.example.org/ann1","@type" : "http://www.w3.org/ns/oa#Annotation","http://www.w3.org/ns/oa#hasBody" : {"@id" : "http://www.example.org/body3"},"http://www.w3.org/ns/oa#hasTarget" : {"@id" : "http://www.example.org/target3"} } ],"@id" : "http://annotopiaserver.org/annotationset/92"}}'
 	
 	// curl -i -X POST http://localhost:8080/s/annotation --header "Content-Type: application/json" --data '{"apiKey":"testkey", "item":{"@context": "https://gist.github.com/hubgit/6105255/raw/36f89110f7cb28fb605f7722048167d82644f946/open-annotation-context.json","@graph": [{"@id": "urn:temp:3","@type": "rdf:Graph","@graph": {"@id": "urn:temp:4","@type": "oa:Annotation","hasBody": "urn:temp:5","hasTarget": "http://www.example.org/target1"}},{"@id": "urn:temp:5","@type": "rdf:Graph","@graph": {"@id": "http://www.example.org/artifact1","label": "yolo body"}}]}}'
+
+	// Annotation and specific resource
+	// curl -i -X POST http://localhost:8080/s/annotation --header "Content-Type: application/json" --data '{"apiKey":"testkey", "item":{"@context": "https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/OAContext.json","@graph": [{"@id": "urn:temp:5","@type": "rdf:Graph","@graph": {"@id": "http://www.example.org/artifact1","label": "yolo body"}},{"@id": "urn:temp:6","@type": "rdf:Graph","@graph": {"@id": "urn:temp:7","@type": "oa:Annotation","hasBody": "http://paolociccarese.info","hasTarget": {"@id": "urn:temp:8","@type": "oa:SpecificResource","hasSelector": {"@id": "urn:temp:9","@type": "oa:FragmentSelector","conformsTo": "http://www.w3.org/TR/media-frags/","value": "xywh=10,10,5,5"},"hasSource": {"@id": "http://www.example.org/images/logo.jpg","@type": "dctypes:Image"}}}}]}}'	
+	// Multiple annotations
+	// curl -i -X POST http://localhost:8080/s/annotation --header "Content-Type: application/json" --data '{"apiKey":"testkey", "item":{"@context": "https://gist.github.com/hubgit/6105255/raw/36f89110f7cb28fb605f7722048167d82644f946/open-annotation-context.json","@graph": [{"@id": "urn:temp:3","@type": "rdf:Graph","@graph": {"@id": "urn:temp:4","@type": "oa:Annotation","hasBody": "urn:temp:5","hasTarget": "http://www.example.org/target1"}},{"@id": "urn:temp:5","@type": "rdf:Graph","@graph": {"@id": "http://www.example.org/artifact1","label": "yolo body"}},{"@id": "urn:temp:6","@type": "rdf: Graph","@graph": {"@id": "urn:temp:7","@type": "oa:Annotation","hasBody": "http://paolociccarese.info","hasTarget": "http: //www.example.org/target1"}}]}}'
+	
+	// Multiple annotations and specific resource
+	// curl -i -X POST http://localhost:8080/s/annotation --header "Content-Type: application/json" --data '{"apiKey":"testkey", "item":{"@context": "https://gist.github.com/hubgit/6105255/raw/36f89110f7cb28fb605f7722048167d82644f946/open-annotation-context.json","@graph": [{"@id": "urn:temp:3","@type": "rdf:Graph","@graph": {"@id": "urn:temp:4","@type": "oa:Annotation","hasBody": "urn:temp:5","hasTarget": "http://www.example.org/target1"}},{"@id": "urn:temp:5","@type": "rdf:Graph","@graph": {"@id": "http://www.example.org/artifact1","label": "yolo body"}},{"@id": "urn:temp:6","@type": "rdf:Graph","@graph": {"@id": "urn:temp:7","@type": "oa:Annotation","hasBody": "http://paolociccarese.info","hasTarget": {"@id": "urn:temp:8","@type": "oa:SpecificResource","hasSelector": {"@id": "urn:temp:9","@type": "oa:FragmentSelector","conformsTo": "http://www.w3.org/TR/media-frags/","value": "xywh=10,10,5,5"},"hasSource": {"@id": "http://www.example.org/images/logo.jpg","@type": "dctypes:Image"}}}}]}}'	
 	
 	// Not sure abou this one
 	// curl -i -X POST http://localhost:8080/s/annotation --header "Content-Type: application/json" --data '{"apiKey": "testkey","item": {"@context": "https://gist.github.com/hubgit/6105255/raw/36f89110f7cb28fb605f7722048167d82644f946/open-annotation-context.json","@graph": [{"@id": "urn:temp:3","@type": "rdf:Graph","@graph": {"@id": "urn:temp:4","@type": "oa:Annotation","hasBody": {"@id": "urn:temp:5","@type": "rdf:Graph","@graph": {"@id": "http://www.example.org/artifact1","label": "yolo body"}},"hasTarget": "http://www.example.org/target1"}}]}}'
@@ -187,23 +201,26 @@ class AnnotationController {
 		if(item!=null) {
 			log.warn("[" + apiKey + "] TODO: Validation of the Annotation content requested but not implemented yest!");
 			
-			println item
-			
 			Dataset dataset = DatasetFactory.createMem();
 			
 			try {
 				// Using the RIOT reader
-				RDFDataMgr.read(dataset, new ByteArrayInputStream(item.toString().getBytes("UTF-8")), "http://localhost/jsonld/", JenaJSONLD.JSONLD);
+				RDFDataMgr.read(dataset, new ByteArrayInputStream(item.toString().getBytes("UTF-8")), JenaJSONLD.JSONLD);
+				
+//				ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+//				RDFDataMgr.write(outputStream, dataset, JenaJSONLD.JSONLD);
+//				println outputStream.toString();
+				
 			} catch (Exception ex) {
 				HashMap<String,Object> errorResult = new HashMap<String, Object>();
-				errorResult.put("exception", createException("Content parsing failed", "Failure while: loading of the content to validate " + ex.toString()));
+				//errorResult.put("exception", createException("Content parsing failed", "Failure while: loading of the content to validate " + ex.toString()));
 				//finalResult.add(errorResult);
 				//return finalResult;
 				return errorResult;
 			}
 			
 			// Query all graphs
-			log.info("Graphs detection...");
+			log.info("[" + apiKey + "] Graphs detection...");
 			int totalDetectedGraphs = 0;
 			Set<String> graphsUris = new HashSet<String>();
 			Query  sparqlGraphs = QueryFactory.create("PREFIX oa: <http://www.w3.org/ns/oa#> SELECT DISTINCT ?g WHERE { GRAPH ?g { ?s ?p ?o . }}");
@@ -214,11 +231,11 @@ class AnnotationController {
 				graphsUris.add(querySolution.get("g").toString());
 				totalDetectedGraphs++;
 			}
-			log.info("Graphs detected " + totalDetectedGraphs);
+			log.info("[" + apiKey + "] Graphs detected " + totalDetectedGraphs);
 			
 			// Query for graphs containing annotation
 			// See: https://www.mail-archive.com/wikidata-l@lists.wikimedia.org/msg00370.html
-			log.info("Annotation graphs detection...");
+			log.info("[" + apiKey + "] Annotation graphs detection...");
 			HashMap<String, Model> models = new HashMap<String, Model>();
 			boolean graphRepresentationDetected = false;
 			int totalDetectedAnnotationGraphs = 0;
@@ -229,106 +246,198 @@ class AnnotationController {
 			ResultSet rAnnotationGraphs = qAnnotationGraphs.execSelect();
 			while (rAnnotationGraphs.hasNext()) {
 				QuerySolution querySolution = rAnnotationGraphs.nextSolution();
-				annotationsGraphsUris.add(querySolution.get("g").toString());
-				graphsUris.remove(querySolution.get("g").toString());
-				annotationUris.add(querySolution.get("s").toString());
+				
+				Resource graphUri = querySolution.getResource("g");				
+				annotationsGraphsUris.add(graphUri.toString());
+				graphsUris.remove(graphUri.toString());
+				
+				Resource annUri = querySolution.getResource("s");
+				annotationUris.add(annUri.toString());
+				
+				// Add saving data
+				addCreationDetails(dataset.getNamedModel(graphUri.toString()), annUri);
+				
 				graphRepresentationDetected = true;
 				totalDetectedAnnotationGraphs++;
 			}
-			log.info("Annotation graphs detected " + totalDetectedAnnotationGraphs);
-			
+			log.info("[" + apiKey + "] Annotation graphs detected " + totalDetectedAnnotationGraphs);
+
 			if(annotationsGraphsUris.size()>1) {
 				// Annotation Set not found
-				log.info("[" + apiKey + "] Multiple Annotation graphs detected");
+				log.info("[" + apiKey + "] Multiple Annotation graphs detected... request rejected.");
 				def json = JSON.parse('{"status":"nocontent" ,"message":"The request carries multiple Annotations or Annotation Graphs"' +
 					',"duration": "' + (System.currentTimeMillis()-startTime) + 'ms", ' + '}');
 				render(status: 200, text: json, contentType: "text/json", encoding: "UTF-8");
 				return;
 			}
 			
-			String content = item.toString();
+			boolean defaultGraphDetected = false;
+			if(totalDetectedGraphs==0) {
+				Query  sparqlSpecificResources = QueryFactory.create("PREFIX oa: <http://www.w3.org/ns/oa#> SELECT ?s WHERE { ?s a oa:Annotation . }");
+				QueryExecution qSpecificResources  = QueryExecutionFactory.create (sparqlSpecificResources, dataset);
+				ResultSet rSpecificResources = qSpecificResources.execSelect();
+				while (rSpecificResources.hasNext()) {
+					QuerySolution querySolution = rSpecificResources.nextSolution();
+					Resource annUri = querySolution.getResource("s");
+					annotationUris.add(annUri.toString());
+					defaultGraphDetected=true;
+					
+					// Add saving data
+					addCreationDetails(dataset.getDefaultModel(), annUri);
+				}
+			}
+			
+			if(defaultGraphDetected) {
+				log.info("[" + apiKey + "] Default Annotation graphs detected");
+			}
+						
+			// Query Specific Resources
+			log.info("[" + apiKey + "] Specific Resources detection...");
+			int totalDetectedSpecificResources = 0;
+			Set<String> specificResourcesUris = new HashSet<String>();
+			Query  sparqlSpecificResources = QueryFactory.create("PREFIX oa: <http://www.w3.org/ns/oa#> SELECT DISTINCT ?s WHERE " +
+				"{{ GRAPH ?g { ?s a oa:SpecificResource . }} UNION { ?s a oa:SpecificResource } FILTER (!isBlank(?s))}");
+			QueryExecution qSpecificResources  = QueryExecutionFactory.create (sparqlSpecificResources, dataset);
+			ResultSet rSpecificResources = qSpecificResources.execSelect();
+			while (rSpecificResources.hasNext()) {
+				QuerySolution querySolution = rSpecificResources.nextSolution();
+				specificResourcesUris.add(querySolution.get("s").toString());
+				totalDetectedSpecificResources++;
+			}
+			log.info("[" + apiKey + "] Identifiable Specific Resources detected " + totalDetectedSpecificResources);
+			
+			// Query Specific Resources
+			log.info("[" + apiKey + "] Content as Text detection...");
+			int totalEmbeddedTextualBodies = 0;
+			Set<String> embeddedTextualBodiesUris = new HashSet<String>();
+			Query  sparqlEmbeddedTextualBodies = QueryFactory.create("PREFIX cnt:<http://www.w3.org/2011/content#> SELECT DISTINCT ?s WHERE " +
+				"{{ GRAPH ?g { ?s a cnt:ContentAsText . }} UNION { ?s a cnt:ContentAsText . } FILTER (!isBlank(?s)) }");
+			QueryExecution qEmbeddedTextualBodies  = QueryExecutionFactory.create (sparqlEmbeddedTextualBodies, dataset);
+			ResultSet rEmbeddedTextualBodies = qEmbeddedTextualBodies.execSelect();
+			while (rEmbeddedTextualBodies.hasNext()) {
+				QuerySolution querySolution = rEmbeddedTextualBodies.nextSolution();
+				embeddedTextualBodiesUris.add(querySolution.get("s").toString());
+				println querySolution.get("s").toString()
+				println querySolution.get("s").getURI()
+				totalEmbeddedTextualBodies++;
+			}
+			log.info("[" + apiKey + "] Identifiable Content as Text detected " + totalEmbeddedTextualBodies);
+			
+			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+			RDFDataMgr.write(outputStream, dataset, JenaJSONLD.JSONLD);
+			String content = outputStream.toString();
 			
 			if(graphRepresentationDetected) {
 				annotationsGraphsUris.each {
-					println '*******annograph ' + it
+					def uri = org.annotopia.grails.services.storage.utils.UUID.uuid();
+					println '*annotation graph ' + it + ' with uri ' + uri
 					content = content.replaceAll(Pattern.quote(it), 
-						'http://' + grailsApplication.config.grails.server.host + ':' + grailsApplication.config.grails.server.port.http + '/s/graph/' + 
-							org.annotopia.grails.services.storage.utils.UUID.uuid());
+						'http://' + grailsApplication.config.grails.server.host + ':' + 
+						grailsApplication.config.grails.server.port.http + '/s/graph/' + uri);
 				}
 				annotationUris.each {
-					println '***********annot ' + it
+					def uri = org.annotopia.grails.services.storage.utils.UUID.uuid();
+					println '*******annotation ' + it + ' with uri ' + uri
 					content = content.replaceAll(Pattern.quote(it), 
-						'http://' + grailsApplication.config.grails.server.host + ':' + grailsApplication.config.grails.server.port.http + '/s/annotation/' +
-							org.annotopia.grails.services.storage.utils.UUID.uuid());
+						'http://' + grailsApplication.config.grails.server.host + ':' + 
+						grailsApplication.config.grails.server.port.http + '/s/annotation/' + uri);
 				}
 				graphsUris.each {
-					println '***********other ' + it
+					def uri = org.annotopia.grails.services.storage.utils.UUID.uuid();
+					println '************graph ' + it + ' with uri ' + uri
 					content = content.replaceAll(Pattern.quote(it), 
-						'http://' + grailsApplication.config.grails.server.host + ':' + grailsApplication.config.grails.server.port.http + '/s/graph/' +
-							org.annotopia.grails.services.storage.utils.UUID.uuid());
+						'http://' + grailsApplication.config.grails.server.host + ':' + 
+						grailsApplication.config.grails.server.port.http + '/s/graph/' + uri);
 				}
-			}
-			
-			println content;
-			
-			
-			/*
-			if(graphRepresentationDetected) {
-				annotationsGraphsUris.each {
-					println '*********** ' + it
-					
-					// TODO validation
-					
-					// New URIs
-					def finalGraphUri = org.annotopia.grails.services.storage.utils.UUID.uuid();
-					def finalAnnotationUri = org.annotopia.grails.services.storage.utils.UUID.uuid();
-					def graphUri = 'http://' + grailsApplication.config.grails.server.host + ':' + grailsApplication.config.grails.server.port.http + '/s/graph/' + finalGraphUri;
-					def annotationUri = 'http://' + grailsApplication.config.grails.server.host + ':' + grailsApplication.config.grails.server.port.http + '/s/annotation/' + finalAnnotationUri;
-					
-					Model m = dataset.getNamedModel(it);
-					
-					//models.put(graphUri, m);
+				specificResourcesUris.each {
+					def uri = org.annotopia.grails.services.storage.utils.UUID.uuid();
+					println '************spres ' + it + ' with uri ' + uri
+					content = content.replaceAll(Pattern.quote(it),
+						'http://' + grailsApplication.config.grails.server.host + ':' +
+						grailsApplication.config.grails.server.port.http + '/s/resource/' + uri);
+				}
+				embeddedTextualBodiesUris.each {
+					def uri = org.annotopia.grails.services.storage.utils.UUID.uuid();
+					println '************cntat ' + it + ' with uri ' + uri
+					content = content.replaceAll(Pattern.quote(it),
+						'http://' + grailsApplication.config.grails.server.host + ':' +
+						grailsApplication.config.grails.server.port.http + '/s/content/' + uri);
+				}
+			} else if(defaultGraphDetected) {
+				annotationUris.each {
+					def uri = org.annotopia.grails.services.storage.utils.UUID.uuid();
+					println '*******annotation ' + it + ' with uri ' + uri
+					content = content.replaceAll(Pattern.quote(it),
+						'http://' + grailsApplication.config.grails.server.host + ':' +
+						grailsApplication.config.grails.server.port.http + '/s/annotation/' + uri);
+				}
+				specificResourcesUris.each {
+					def uri = org.annotopia.grails.services.storage.utils.UUID.uuid();
+					println '************spres ' + it + ' with uri ' + uri
+					content = content.replaceAll(Pattern.quote(it),
+						'http://' + grailsApplication.config.grails.server.host + ':' +
+						grailsApplication.config.grails.server.port.http + '/s/resource/' + uri);
+				}
+				embeddedTextualBodiesUris.each {
+					def uri = org.annotopia.grails.services.storage.utils.UUID.uuid();
+					println '************cntat ' + it + ' with uri ' + uri
+					content = content.replaceAll(Pattern.quote(it),
+						'http://' + grailsApplication.config.grails.server.host + ':' +
+						grailsApplication.config.grails.server.port.http + '/s/content/' + uri);
 				}
 			} else {
-				println '--- DEFAULT GRAPH CASE'
-				models.put("default", dataset.getDefaultModel());
+				// Annotation Set not found
+				log.info("[" + apiKey + "] Annotation not found " + content);
+				def json = JSON.parse('{"status":"nocontent" ,"message":"The request does not carry acceptable payload or payload cannot be read"' +
+					',"duration": "' + (System.currentTimeMillis()-startTime) + 'ms", ' + '}');
+				render(status: 200, text: json, contentType: "text/json", encoding: "UTF-8");
+				return;
 			}
 			
-			models.keySet().each { key ->
-				println key + ' ' + models.get(key);
+			Dataset dataset2 = DatasetFactory.createMem();
+			if(defaultGraphDetected) {
+				RDFDataMgr.read(dataset2, new ByteArrayInputStream(content.toString().getBytes("UTF-8")), JenaJSONLD.JSONLD);
+							
+				// Swap blank nodes with URI
+				swapBlankNodesWithURIs(
+					dataset2.getDefaultModel(), 
+					ResourceFactory.createProperty("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"), 
+					ResourceFactory.createResource("http://www.w3.org/2011/content#ContentAsText"), "content");
+				
+				def uri = org.annotopia.grails.services.storage.utils.UUID.uuid();
+				Dataset dataset3 = DatasetFactory.createMem();
+				dataset3.addNamedModel('http://' + grailsApplication.config.grails.server.host + ':' + 
+						grailsApplication.config.grails.server.port.http + '/s/graph/' + uri, dataset2.getDefaultModel());		
+				
+				//virtuosoJenaStoreService.storeDataset(apiKey, dataset3);
+				
+				response.contentType = "text/json;charset=UTF-8"
+				response.outputStream << '{"status":"saved", "result": {' +
+					'"duration": "' + (System.currentTimeMillis()-startTime) + 'ms", ' +
+					'"item":['
+						
+				RDFDataMgr.write(response.outputStream, dataset3, JenaJSONLD.JSONLD);
+				
+				response.outputStream <<  ']}}';
+				response.outputStream.flush()
+				
+			} else {
+				RDFDataMgr.read(dataset2, new ByteArrayInputStream(content.toString().getBytes("UTF-8")), JenaJSONLD.JSONLD);
+				
+				response.contentType = "text/json;charset=UTF-8"
+				response.outputStream << '{"status":"saved", "result": {' +
+					'"duration": "' + (System.currentTimeMillis()-startTime) + 'ms", ' +
+					'"item":['
+						
+				//response.outputStream << content
+						
+				RDFDataMgr.write(response.outputStream, dataset2, JenaJSONLD.JSONLD);
+				
+				response.outputStream <<  ']}}';
+				response.outputStream.flush()
 			}
 			
 			
-			
-			// Updating URIs
-			println 'graphURI: ' + item["@id"]
-			println 'annURI: ' + item['@graph'][0]["@id"]
-			
-			def graphUriBuffer = item["@id"];
-			def annotationUriBuffer = item['@graph'][0]["@id"];
-			
-			def finalGraphUri = org.annotopia.grails.services.storage.utils.UUID.uuid();
-			def finalAnnotationUri = org.annotopia.grails.services.storage.utils.UUID.uuid();
-			
-			item.put("@id", 'http://' + grailsApplication.config.grails.server.host + ':' + grailsApplication.config.grails.server.port.http + '/s/annotationgraph/' + finalGraphUri);
-			item['@graph'][0].put("@id", 'http://' + grailsApplication.config.grails.server.host + ':' + grailsApplication.config.grails.server.port.http + '/s/annotation/' + finalAnnotationUri);
-			
-			// Updating provenance
-			item['@graph'][0].put("http://purl.org/pav/createdOn", dateFormat.format((new Date())));
-			item['@graph'][0].put("http://purl.org/pav/lastSavedOn", dateFormat.format((new Date())));			
-			
-			annotationJenaStorageService.storeAnnotationSet(apiKey, item.toString(), flavor, validate);
-			*/
-			
-			response.contentType = "text/json;charset=UTF-8"
-			response.outputStream << '{"status":"saved", "result": {' +
-				'"duration": "' + (System.currentTimeMillis()-startTime) + 'ms", ' +
-				'"items":['
-					
-			// RDFDataMgr.write(response.outputStream, graphs, JenaJSONLD.JSONLD);
-			
-			response.outputStream <<  ']}}';
-			response.outputStream.flush()
 		} else {
 			// Annotation Set not found
 			log.info("[" + apiKey + "] Annotation not found");
@@ -336,6 +445,40 @@ class AnnotationController {
 				',"duration": "' + (System.currentTimeMillis()-startTime) + 'ms", ' + '}');
 			render(status: 200, text: json, contentType: "text/json", encoding: "UTF-8");
 		}
+	}
+	
+	private void swapBlankNodesWithURIs(Model model, Property property, Resource resource, String uriType) {
+		def uuid = org.annotopia.grails.services.storage.utils.UUID.uuid();
+		def nUri = 'http://' + grailsApplication.config.grails.server.host + ':' + 
+						grailsApplication.config.grails.server.port.http + '/s/' + uriType + '/' + uuid;
+		def rUri = ResourceFactory.createResource(nUri);
+
+		def blankNode;
+		List<Statement> s = new ArrayList<Statement>();
+		StmtIterator statements = model.listStatements(null, property, resource);
+		statements.each {
+			blankNode =  it.getSubject()
+			StmtIterator statements2 = model.listStatements(it.getSubject(), null, null);
+			statements2 .each { its ->
+				s.add(model.createStatement(rUri, its.getPredicate(), its.getObject()));
+			}
+		}
+		model.removeAll(blankNode, null, null);
+	
+		StmtIterator statements3 = model.listStatements(null, null, blankNode);
+		statements3.each { its2 ->
+			s.add(model.createStatement(its2.getSubject(), its2.getPredicate(), rUri));
+		}
+		model.removeAll(null, null, blankNode);
+		
+		s.each {
+			model.add(it);
+		}
+	}
+	
+	private void addCreationDetails(Model model, Resource resource) {
+		model.add(resource, ResourceFactory.createProperty("http://purl.org/pav/createdAt"), ResourceFactory.createPlainLiteral(dateFormat.format(new Date())));
+		model.add(resource, ResourceFactory.createProperty("http://purl.org/pav/lastUpdatedOn"), ResourceFactory.createPlainLiteral(dateFormat.format(new Date())));
 	}
 	
 	static String getCurrentUrl(HttpServletRequest request){
