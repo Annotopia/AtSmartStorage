@@ -24,12 +24,15 @@ import grails.converters.JSON
 
 import java.text.SimpleDateFormat
 
-import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletRequest
 
+import org.annotopia.groovy.service.store.StoreServiceException
 import org.apache.jena.riot.RDFDataMgr
 
 import com.github.jsonldjava.jena.JenaJSONLD
 import com.hp.hpl.jena.query.Dataset
+import com.hp.hpl.jena.query.DatasetFactory
+import com.hp.hpl.jena.rdf.model.Resource
 
 /**
  * This is the REST API for managing Open Annotation content.
@@ -60,7 +63,6 @@ class OpenAnnotationController {
 		long startTime = System.currentTimeMillis();
 		
 		def apiKey = request.JSON.apiKey;
-
 		if(!apiKeyAuthenticationService.isApiKeyValid(request.getRemoteAddr(), apiKey)) {
 			invalidApiKey(request.getRemoteAddr()); return;
 		}
@@ -97,39 +99,28 @@ class OpenAnnotationController {
 			}
 			
 			Set<Dataset> annotationGraphs = annotationJenaStorageService.listAnnotation(apiKey, max, offset, tgtUrl, tgtFgt, tgtExt, tgtIds);
-			if(annotationGraphs!=null) {
-				response.contentType = "text/json;charset=UTF-8"
-				response.outputStream << '{"status":"results", "result": {' +
-					'"total":"' + annotationsTotal + '", ' +
+			def summaryPrefix = '"total":"' + annotationsTotal + '", ' +
 					'"pages":"' + annotationsPages + '", ' +
 					'"duration": "' + (System.currentTimeMillis()-startTime) + 'ms", ' +
 					'"offset": "' + offset + '", ' +
 					'"max": "' + max + '", ' +
-					'"items":['
-				
+					'"items":[';
+			response.contentType = "text/json;charset=UTF-8"
+			if(annotationGraphs!=null) {
+				response.outputStream << '{"status":"results", "result": {' + summaryPrefix	
 				boolean firstStreamed = false // To add the commas between items
 				annotationGraphs.each { annotationGraph ->
 					if(firstStreamed) response.outputStream << ','
 					RDFDataMgr.write(response.outputStream, annotationGraph, JenaJSONLD.JSONLD);
 					firstStreamed = true;
 				}
-				
-				response.outputStream <<  ']}}';
-				response.outputStream.flush()
 			} else {
 				// No Annotation Sets found with the specified criteria
-				log.info("[" + apiKey + "] No Annotation found with the specified criteria");
-				response.contentType = "text/json;charset=UTF-8"
-				response.outputStream << '{"status":"nocontent","message":"No results with the chosen criteria" , "result": {' +
-					'"total":"' + annotationsTotal + '", ' +
-					'"pages":"' + annotationsPages + '", ' +
-					'"duration": "' + (System.currentTimeMillis()-startTime) + 'ms", ' +
-					'"offset": "' + offset + '", ' +
-					'"max": "' + max + '", ' +
-					'"items":['
-				response.outputStream <<  ']}}';
-				response.outputStream.flush()
+				log.info("[" + apiKey + "] No Annotation found with the specified criteria");			
+				response.outputStream << '{"status":"nocontent","message":"No results with the chosen criteria" , "result": {' + summaryPrefix
 			}
+			response.outputStream <<  ']}}';
+			response.outputStream.flush()
 		}
 		// GET of the annotation identified by the current url
 		// Note that the content that is returned might not be the bare Annotation
@@ -152,12 +143,83 @@ class OpenAnnotationController {
 		}
 	}
 	
-	private invalidApiKey(def ip) {
+	/*
+	 * POST
+	 *
+	 * It accepts an annotation item formatted according to the Open Annotation specification
+	 * http://www.openannotation.org/spec/core/
+	 * 
+	 * The annotation can be wrapped in a graph or not.
+	 */
+	def save = {
+		long startTime = System.currentTimeMillis();
+		
+		def apiKey = request.JSON.apiKey;
+		if(!apiKeyAuthenticationService.isApiKeyValid(request.getRemoteAddr(), apiKey)) {
+			invalidApiKey(request.getRemoteAddr()); return;
+		}
+		
+		def item = request.JSON.item
+		def flavor = (request.JSON.flavor!=null)?request.JSON.flavor:"OA";
+		def validate = (request.JSON.validate!=null)?request.JSON.validate:"OFF";
+				
+		if(item!=null) {
+			log.warn("[" + apiKey + "] TODO: Validation of the Annotation content requested but not implemented yest!");
+			
+			
+			Dataset inMemoryDataset = DatasetFactory.createMem();
+			try {
+				RDFDataMgr.read(inMemoryDataset, new ByteArrayInputStream(item.toString().getBytes("UTF-8")), JenaJSONLD.JSONLD);
+			} catch (Exception ex) {
+				def message = "Annotation cannot be read";
+				render(status: 500, text: returnMessage(apiKey, "invalidcontent", message, startTime), contentType: "text/json", encoding: "UTF-8");
+				return;
+			}
+			
+			Dataset savedAnnotation;
+			try {
+				savedAnnotation = annotationJenaStorageService.saveAnnotationDataset(apiKey, startTime, inMemoryDataset);
+			} catch(StoreServiceException exception) {
+				render(status: exception.status, text: exception.text, contentType: exception.contentType, encoding: exception.encoding);
+			}
+			
+			if(savedAnnotation!=null) { 
+				response.contentType = "text/json;charset=UTF-8"
+				response.outputStream << '{"status":"saved", "result": {' +
+					'"duration": "' + (System.currentTimeMillis()-startTime) + 'ms", ' +
+					'"item":['
+						
+				RDFDataMgr.write(response.outputStream, savedAnnotation, JenaJSONLD.JSONLD);
+				
+				response.outputStream <<  ']}}';
+				response.outputStream.flush()
+			} else {
+				// Dataset returned null
+				def message = "Null Dataset. Something went terribly wrong";
+				render(status: 500, text: returnMessage(apiKey, "exception", message, startTime), contentType: "text/json", encoding: "UTF-8");
+			}
+		} else {
+			// Annotation Set not found
+			def message = "No annotation found in the request";
+			render(status: 200, text: returnMessage(apiKey, "nocontent", message, startTime), contentType: "text/json", encoding: "UTF-8");
+		}
+	}
+	
+	/**
+	 * Logging and message for invalid API key.
+	 * @param ip	Ip of the client that issued the request
+	 */
+	private void invalidApiKey(def ip) {
 		log.warn("Unauthorized request performed by IP: " + ip)
 		def json = JSON.parse('{"status":"rejected" ,"message":"Api Key missing or invalid"}');
 		render(status: 401, text: json, contentType: "text/json", encoding: "UTF-8");
 	}
 	
+	/**
+	 * Returns the current URL.
+	 * @param request 	The HTTP request
+	 * @return	The current URL
+	 */
 	static String getCurrentUrl(HttpServletRequest request){
 		StringBuilder sb = new StringBuilder()
 		sb << request.getRequestURL().substring(0,request.getRequestURL().indexOf("/", 7))
@@ -169,6 +231,14 @@ class OpenAnnotationController {
 		return sb.toString();
 	}
 	
+	/**
+	 * Creates a JSON message for the response.
+	 * @param apiKey	The API key of the client that issued the request
+	 * @param status	The status of the response
+	 * @param message	The message of the response
+	 * @param startTime	The start time to calculate the duration
+	 * @return The JSON message
+	 */
 	private returnMessage(def apiKey, def status, def message, def startTime) {
 		log.info("[" + apiKey + "] " + message);
 		return JSON.parse('{"status":"' + status + '","message":"' + message +
