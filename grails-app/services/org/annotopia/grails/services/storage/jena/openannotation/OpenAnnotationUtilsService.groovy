@@ -1,0 +1,109 @@
+/*
+ * Copyright 2014 Massachusetts General Hospital
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+package org.annotopia.grails.services.storage.jena.openannotation
+
+import com.hp.hpl.jena.query.Dataset
+import com.hp.hpl.jena.query.Query
+import com.hp.hpl.jena.query.QueryExecution
+import com.hp.hpl.jena.query.QueryExecutionFactory
+import com.hp.hpl.jena.query.QueryFactory
+import com.hp.hpl.jena.query.QuerySolution
+import com.hp.hpl.jena.query.ResultSet
+import com.hp.hpl.jena.rdf.model.Model
+import com.hp.hpl.jena.rdf.model.Resource
+import com.hp.hpl.jena.rdf.model.ResourceFactory
+
+/**
+ * This service provides some utilities for analyzing Open Annotation content.
+ *
+ * @author Paolo Ciccarese <paolo.ciccarese@gmail.com>
+ */
+class OpenAnnotationUtilsService {
+
+	/**
+	 * Verifies if there are Annotation items in the default graph and returns the total number.
+	 * @param apiKey			The API key of the client that issued the request
+	 * @param dataset			The dataset containing the annotations
+	 * @param annotationUris	The set of annotationUris
+	 * @param closure			This closure is executed after the query.
+	 * @return The total number of detected annotations in the default graph
+	 */
+	public int detectAnnotationsInDefaultGraph(apiKey, Dataset dataset, Set<Resource> annotationUris, Closure closure) {
+		log.info("[" + apiKey + "] Detection of Annotation in Default Graph...");
+		
+		String query = "PREFIX oa: <http://www.w3.org/ns/oa#> SELECT DISTINCT ?s WHERE { ?s a oa:Annotation . }"
+		log.trace("[" + apiKey + "] Query: " + query);
+		
+		int annotationsInDefaultGraphsCounter = 0;	
+		QueryExecution queryExecution  = QueryExecutionFactory.create (QueryFactory.create(query), dataset);
+		ResultSet rAnnotationsInDefaultGraph = queryExecution.execSelect();
+		while (rAnnotationsInDefaultGraph.hasNext()) {
+			Resource annUri = rAnnotationsInDefaultGraph.nextSolution().getResource("s");
+			annotationsInDefaultGraphsCounter++;
+			annotationUris.add(annUri);
+			
+			// Alters the triples with the Annotation as subject
+			closure(dataset.getDefaultModel(), annUri);
+		}
+		
+		if(annotationsInDefaultGraphsCounter>0) log.info("[" + apiKey + "] Annotation in Default Graph detected");
+		else log.info("[" + apiKey + "] No Annotation in Default Graph detected");
+		annotationsInDefaultGraphsCounter
+	}
+	
+	/**
+	 * Detects all the named graphs containing an Annotation instance.
+	 * @param apiKey				The API key of the client that issued the request
+	 * @param dataset				The dataset containing the annotations
+	 * @param graphsUris			The full set of URIs of named graphs in the dataset
+	 * @param annotationsGraphsUris The full set of Annotation URIs in Graphs belonging to the dataset
+	 * @param annotationUris		The set of annotationUris
+	 * @param closure				This closure is executed after the query.
+	 * @return The total number of detected annotations in named graphs
+	 */
+	public int detectAnnotationsInNamedGraph(apiKey, Dataset dataset, Set<Resource> graphsUris, 
+			Set<Resource> annotationsGraphsUris, Set<Resource> annotationUris, Closure closure) {
+		log.info("[" + apiKey + "] Annotation graphs detection...");
+		HashMap<String, Model> models = new HashMap<String, Model>();
+		int annotationGraphsCounter = 0;
+		
+		Query  sparqlAnnotationGraphs = QueryFactory.create("PREFIX oa: <http://www.w3.org/ns/oa#> SELECT ?s ?g WHERE { GRAPH ?g { ?s a oa:Annotation . }}");
+		QueryExecution qAnnotationGraphs = QueryExecutionFactory.create (sparqlAnnotationGraphs, dataset);
+		ResultSet rAnnotationGraphs = qAnnotationGraphs.execSelect();
+		while (rAnnotationGraphs.hasNext()) {
+			QuerySolution querySolution = rAnnotationGraphs.nextSolution();
+			
+			Resource graphUri = querySolution.getResource("g");
+			annotationsGraphsUris.add(graphUri);
+			graphsUris.remove(graphUri);
+			
+			Resource annUri = querySolution.getResource("s");
+			annotationUris.add(annUri);
+			
+			// Add saving data
+			closure(dataset.getNamedModel(graphUri.toString()), annUri);
+
+			annotationGraphsCounter++;
+		}
+		log.info("[" + apiKey + "] Annotation graphs " + annotationGraphsCounter);
+		annotationGraphsCounter
+	}
+}

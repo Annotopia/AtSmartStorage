@@ -58,6 +58,7 @@ class AnnotationJenaStorageService {
 	SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssz")
 	
 	def grailsApplication
+	def jenaUtilsServices;
 	def virtuosoJenaStoreService
 	def openAnnotationUtilsService
 	
@@ -336,21 +337,22 @@ class AnnotationJenaStorageService {
 		
 		Set<Resource> annotationUris = new HashSet<Resource>();
 		
+		def addUpdateDetails = { model, resource ->
+			model.add(resource, ResourceFactory.createProperty("http://purl.org/pav/lastUpdatedOn"),
+				ResourceFactory.createPlainLiteral(dateFormat.format(new Date())));
+		}
+		
 		// Detection of default graph
-		int annotationsInDefaultGraphsCounter = openAnnotationUtilsService.detectAnnotationsInDefaultGraph(apiKey, dataset, annotationUris)
+		int annotationsInDefaultGraphsCounter = openAnnotationUtilsService.detectAnnotationsInDefaultGraph(apiKey, dataset, annotationUris,addUpdateDetails )
 		boolean defaultGraphDetected = (annotationsInDefaultGraphsCounter>0);
 			
-		
 		// Detect all named graphs
-		Set<Resource> graphsUris = openAnnotationUtilsService.detectNamedGraphs(apiKey, dataset);
+		Set<Resource> graphsUris = jenaUtilsServices.detectNamedGraphs(apiKey, dataset);
 
 		// Query for graphs containing annotation
 		// See: https://www.mail-archive.com/wikidata-l@lists.wikimedia.org/msg00370.html
 		Set<Resource> annotationsGraphsUris = new HashSet<Resource>();
-		def addUpdateDetails = { model, resource ->
-			model.add(resource, ResourceFactory.createProperty("http://purl.org/pav/lastUpdatedOn"), 
-				ResourceFactory.createPlainLiteral(dateFormat.format(new Date())));
-		}
+		
 		int detectedAnnotationGraphsCounter = openAnnotationUtilsService.detectAnnotationsInNamedGraph(
 			apiKey, dataset, graphsUris, annotationsGraphsUris, annotationUris, addUpdateDetails)
 
@@ -462,21 +464,22 @@ class AnnotationJenaStorageService {
 		
 		Set<Resource> annotationUris = new HashSet<Resource>();
 		
-		// Detection of default graph
-		int annotationsInDefaultGraphsCounter = openAnnotationUtilsService.detectAnnotationsInDefaultGraph(apiKey, dataset, annotationUris)
-		boolean defaultGraphDetected = (annotationsInDefaultGraphsCounter>0);
-			
-		
-		// Detect all named graphs
-		Set<Resource> graphsUris = openAnnotationUtilsService.detectNamedGraphs(apiKey, dataset);
-
-		// Query for graphs containing annotation
-		// See: https://www.mail-archive.com/wikidata-l@lists.wikimedia.org/msg00370.html
-		Set<Resource> annotationsGraphsUris = new HashSet<Resource>();
 		def addCreationDetails = { model, resource ->
 			model.add(resource, ResourceFactory.createProperty("http://purl.org/pav/createdAt"), ResourceFactory.createPlainLiteral(dateFormat.format(new Date())));
 			model.add(resource, ResourceFactory.createProperty("http://purl.org/pav/lastUpdatedOn"), ResourceFactory.createPlainLiteral(dateFormat.format(new Date())));
 		}
+		
+		// Detection of default graph
+		int annotationsInDefaultGraphsCounter = openAnnotationUtilsService.detectAnnotationsInDefaultGraph(apiKey, dataset, annotationUris, addCreationDetails)
+		boolean defaultGraphDetected = (annotationsInDefaultGraphsCounter>0);
+			
+		
+		// Detect all named graphs
+		Set<Resource> graphsUris = jenaUtilsServices.detectNamedGraphs(apiKey, dataset);
+
+		// Query for graphs containing annotation
+		// See: https://www.mail-archive.com/wikidata-l@lists.wikimedia.org/msg00370.html
+		Set<Resource> annotationsGraphsUris = new HashSet<Resource>();
 		int detectedAnnotationGraphsCounter = openAnnotationUtilsService.detectAnnotationsInNamedGraph(
 			apiKey, dataset, graphsUris, annotationsGraphsUris, annotationUris, addCreationDetails)
 		
