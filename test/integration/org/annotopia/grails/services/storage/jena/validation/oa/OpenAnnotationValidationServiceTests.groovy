@@ -33,7 +33,7 @@ import org.junit.Before
  *
  * @author Paolo Ciccarese <paolo.ciccarese@gmail.com>
  */
-@TestFor(org.annotopia.grails.services.storage.jena.validation.oa.OpenAnnotationValidationService)
+@TestFor(org.annotopia.grails.services.storage.jena.openannotation.OpenAnnotationValidationService)
 class OpenAnnotationValidationServiceTests {
 
 	def virtuosoJenaStoreService;
