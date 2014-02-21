@@ -29,10 +29,10 @@ import javax.servlet.http.HttpServletRequest
 import org.annotopia.groovy.service.store.StoreServiceException
 import org.apache.jena.riot.RDFDataMgr
 
+import com.github.jsonldjava.core.JSONLDProcessor
 import com.github.jsonldjava.jena.JenaJSONLD
 import com.hp.hpl.jena.query.Dataset
 import com.hp.hpl.jena.query.DatasetFactory
-import com.hp.hpl.jena.rdf.model.Resource
 
 /**
  * This is the REST API for managing Open Annotation content.
@@ -149,7 +149,10 @@ class OpenAnnotationController {
 	 * It accepts an annotation item formatted according to the Open Annotation specification
 	 * http://www.openannotation.org/spec/core/
 	 * 
-	 * The annotation can be wrapped in a graph or not.
+	 * The single annotation can be wrapped in a graph or not. This is not currently handling 
+	 * multiple annotations.
+	 * 
+	 * Validation not yet implemented.
 	 */
 	def save = {
 		long startTime = System.currentTimeMillis();
@@ -190,6 +193,70 @@ class OpenAnnotationController {
 					'"item":['
 						
 				RDFDataMgr.write(response.outputStream, savedAnnotation, JenaJSONLD.JSONLD);
+				
+				response.outputStream <<  ']}}';
+				response.outputStream.flush()
+			} else {
+				// Dataset returned null
+				def message = "Null Dataset. Something went terribly wrong";
+				render(status: 500, text: returnMessage(apiKey, "exception", message, startTime), contentType: "text/json", encoding: "UTF-8");
+			}
+		} else {
+			// Annotation Set not found
+			def message = "No annotation found in the request";
+			render(status: 200, text: returnMessage(apiKey, "nocontent", message, startTime), contentType: "text/json", encoding: "UTF-8");
+		}
+	}
+	
+	/*
+	 * PUT
+	 *
+	 * It accepts updates existing annotation item formatted according to the Open Annotation specification
+	 * http://www.openannotation.org/spec/core/
+	 *
+	 * The single annotation can be wrapped in a graph or not. This is not currently handling
+	 * multiple annotations.
+	 *
+	 * Validation not yet implemented.
+	 */
+	def update = {
+		long startTime = System.currentTimeMillis();
+		
+		def apiKey = request.JSON.apiKey;
+		if(!apiKeyAuthenticationService.isApiKeyValid(request.getRemoteAddr(), apiKey)) {
+			invalidApiKey(request.getRemoteAddr()); return;
+		}
+		
+		def item = request.JSON.item
+		def flavor = (request.JSON.flavor!=null)?request.JSON.flavor:"OA";
+		def validate = (request.JSON.validate!=null)?request.JSON.validate:"OFF";
+				
+		if(item!=null) {
+			log.warn("[" + apiKey + "] TODO: Validation of the Annotation content requested but not implemented yest!");
+			
+			Dataset inMemoryDataset = DatasetFactory.createMem();
+			try {
+				RDFDataMgr.read(inMemoryDataset, new ByteArrayInputStream(item.toString().getBytes("UTF-8")), JenaJSONLD.JSONLD);
+			} catch (Exception ex) {
+				def message = "Annotation cannot be read";
+				render(status: 500, text: returnMessage(apiKey, "invalidcontent", message, startTime), contentType: "text/json", encoding: "UTF-8");
+				return;
+			}
+			
+			Dataset updatedAnnotation;
+			try {
+				updatedAnnotation = annotationJenaStorageService.updateAnnotationDataset(apiKey, startTime, inMemoryDataset);
+			} catch(StoreServiceException exception) {
+				render(status: exception.status, text: exception.text, contentType: exception.contentType, encoding: exception.encoding);
+			}
+			
+			if(updatedAnnotation!=null) {
+				response.contentType = "text/json;charset=UTF-8"
+				response.outputStream << '{"status":"updated", "result": {' +
+					'"duration": "' + (System.currentTimeMillis()-startTime) + 'ms", ' +
+					'"item":['
+						
+				RDFDataMgr.write(response.outputStream, updatedAnnotation, JenaJSONLD.JSONLD);
 				
 				response.outputStream <<  ']}}';
 				response.outputStream.flush()

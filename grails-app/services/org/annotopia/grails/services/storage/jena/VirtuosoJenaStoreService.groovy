@@ -154,13 +154,15 @@ class VirtuosoJenaStoreService implements ITripleStore {
 		String queryString = "CONSTRUCT { ?s ?p ?o . } FROM <" + graphUri + "> WHERE {" +
 				"?s ?p ?o . " +
 			"}" ;
-		Query  sparql = QueryFactory.create(queryString);
-		
-		Model model = ModelFactory.createMemModelMaker().createModel(graphUri);
-		Dataset dataset = DatasetFactory.createMem();
-		VirtuosoQueryExecution vqe = VirtuosoQueryExecutionFactory.create (sparql, set);
+		log.trace '[' + apiKey + '] ' + queryString
 		
 		try {
+			Query  sparql = QueryFactory.create(queryString);
+			
+			Model model = ModelFactory.createMemModelMaker().createModel(graphUri);
+			Dataset dataset = DatasetFactory.createMem();
+			VirtuosoQueryExecution vqe = VirtuosoQueryExecutionFactory.create (sparql, set);
+		
 			model = vqe.execConstruct();
 			dataset.addNamedModel(graphUri, model);
 			return dataset;
@@ -235,6 +237,23 @@ class VirtuosoJenaStoreService implements ITripleStore {
 		} catch (Exception e) {
 			println e.getMessage();
 		}
+	}
+
+	private updateDataset(String apiKey, Dataset dataset) {
+		Iterator<String> names = dataset.listNames()
+		while(names.hasNext()) {
+			String name = names.next();
+			log.debug '[' + apiKey + '] Updating graph: ' + name
+			
+			clearGraph(apiKey, name);
+			
+			
+			
+			// Query update of stored graph
+			
+		}
+		
+		storeDataset(apiKey, dataset);
 	}
 	
 	private storeDataset(String apiKey, Dataset dataset) {

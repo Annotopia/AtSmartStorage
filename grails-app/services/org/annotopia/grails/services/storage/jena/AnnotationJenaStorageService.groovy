@@ -20,6 +20,8 @@
  */
 package org.annotopia.grails.services.storage.jena
 
+import java.text.SimpleDateFormat;
+
 import grails.converters.JSON
 
 import org.annotopia.groovy.service.store.StoreServiceException
@@ -53,6 +55,8 @@ import com.hp.hpl.jena.rdf.model.StmtIterator
  */
 class AnnotationJenaStorageService {
 
+	SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssz")
+	
 	def grailsApplication
 	def virtuosoJenaStoreService
 	def openAnnotationUtilsService
@@ -328,6 +332,132 @@ class AnnotationJenaStorageService {
 		return graphs;
 	}
 	
+	public Dataset updateAnnotationDataset(apiKey, startTime, Dataset dataset) {
+		
+		Set<Resource> annotationUris = new HashSet<Resource>();
+		
+		// Detection of default graph
+		int annotationsInDefaultGraphsCounter = openAnnotationUtilsService.detectAnnotationsInDefaultGraph(apiKey, dataset, annotationUris)
+		boolean defaultGraphDetected = (annotationsInDefaultGraphsCounter>0);
+			
+		
+		// Detect all named graphs
+		Set<Resource> graphsUris = openAnnotationUtilsService.detectNamedGraphs(apiKey, dataset);
+
+		// Query for graphs containing annotation
+		// See: https://www.mail-archive.com/wikidata-l@lists.wikimedia.org/msg00370.html
+		Set<Resource> annotationsGraphsUris = new HashSet<Resource>();
+		def addUpdateDetails = { model, resource ->
+			model.add(resource, ResourceFactory.createProperty("http://purl.org/pav/lastUpdatedOn"), 
+				ResourceFactory.createPlainLiteral(dateFormat.format(new Date())));
+		}
+		int detectedAnnotationGraphsCounter = openAnnotationUtilsService.detectAnnotationsInNamedGraph(
+			apiKey, dataset, graphsUris, annotationsGraphsUris, annotationUris, addUpdateDetails)
+
+		if(defaultGraphDetected && detectedAnnotationGraphsCounter>0) {
+			log.info("[" + apiKey + "] Mixed Annotation content detected... request rejected.");
+			def json = JSON.parse('{"status":"nocontent" ,"message":"The request carries a mix of Annotations and Annotation Graphs"' +
+				',"duration": "' + (System.currentTimeMillis()-startTime) + 'ms", ' + '}');
+			throw new StoreServiceException(200, json, "text/json", "UTF-8");
+		} else if(annotationUris.size()>1) {
+			// Annotation Set not found
+			log.info("[" + apiKey + "] Multiple Annotation graphs detected... request rejected.");
+			def json = JSON.parse('{"status":"nocontent" ,"message":"The request carries multiple Annotations or Annotation Graphs"' +
+				',"duration": "' + (System.currentTimeMillis()-startTime) + 'ms", ' + '}');
+			throw new StoreServiceException(200, json, "text/json", "UTF-8");
+		}
+		
+		String content;
+		if(detectedAnnotationGraphsCounter>0) {
+			// Query Specific Resources
+			log.info("[" + apiKey + "] Identifiable Specific Resources detection...");
+			int totalDetectedSpecificResources = 0;
+			Set<Resource> specificResourcesUris = new HashSet<Resource>();
+			Query  sparqlSpecificResources = QueryFactory.create("PREFIX oa: <http://www.w3.org/ns/oa#> SELECT DISTINCT ?s ?g WHERE " +
+				"{{ GRAPH ?g { ?s a oa:SpecificResource . }}}");
+			QueryExecution qSpecificResources  = QueryExecutionFactory.create (sparqlSpecificResources, dataset);
+			ResultSet rSpecificResources = qSpecificResources.execSelect();
+			while (rSpecificResources.hasNext()) {
+				QuerySolution querySolution = rSpecificResources.nextSolution();
+				specificResourcesUris.add(querySolution.get("s"));
+				totalDetectedSpecificResources++;
+			}
+			log.info("[" + apiKey + "] Identifiable Specific Resources " + totalDetectedSpecificResources);
+			
+			// Query Embedded Resources
+			log.info("[" + apiKey + "] Identifiable Content as Text detection...");
+			int totalEmbeddedTextualBodies = 0;
+			Set<Resource> embeddedTextualBodiesUris = new HashSet<Resource>();
+			//Query  sparqlEmbeddedTextualBodies = QueryFactory.create("PREFIX cnt:<http://www.w3.org/2011/content#> SELECT DISTINCT ?s WHERE " +
+			//"{{ GRAPH ?g { ?s a cnt:ContentAsText . }} UNION { ?s a cnt:ContentAsText . } FILTER (!isBlank(?s)) }");
+			Query  sparqlEmbeddedTextualBodies = QueryFactory.create("PREFIX cnt:<http://www.w3.org/2011/content#> SELECT DISTINCT ?s ?g WHERE " +
+				"{{ GRAPH ?g { ?s a cnt:ContentAsText . }} }");
+			QueryExecution qEmbeddedTextualBodies  = QueryExecutionFactory.create (sparqlEmbeddedTextualBodies, dataset);
+			ResultSet rEmbeddedTextualBodies = qEmbeddedTextualBodies.execSelect();
+			while (rEmbeddedTextualBodies.hasNext()) {
+				QuerySolution querySolution = rEmbeddedTextualBodies.nextSolution();
+				embeddedTextualBodiesUris.add(querySolution.get("s"));
+				totalEmbeddedTextualBodies++;
+			}
+			log.info("[" + apiKey + "] Identifiable Content as Text " + totalEmbeddedTextualBodies);
+			
+			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+			RDFDataMgr.write(outputStream, dataset, JenaJSONLD.JSONLD);
+			content = outputStream.toString();
+		} else if(defaultGraphDetected) {
+			// Do nothing
+		} else {
+			// Annotation Set not found
+			log.info("[" + apiKey + "] Annotation not found " + content);
+			def json = JSON.parse('{"status":"nocontent" ,"message":"The request does not carry acceptable payload or payload cannot be read"' +
+				',"duration": "' + (System.currentTimeMillis()-startTime) + 'ms", ' + '}');
+			throw new StoreServiceException(200, json, "text/json", "UTF-8");
+		}
+		
+		if(defaultGraphDetected) {
+			String annotationUri;
+			annotationUris.each{
+				annotationUri = it
+			}
+			
+			if(annotationUri!=null) {
+				String graphName;
+				Set<String> names = retrieveAnnotationGraphNames(apiKey, annotationUri)
+				names.each {
+					graphName = it
+				}
+
+				if(graphName!=null) {
+					Dataset dataset3 = DatasetFactory.createMem();
+					dataset3.addNamedModel(graphName, dataset.getDefaultModel());
+					
+					virtuosoJenaStoreService.updateDataset(apiKey, dataset3);
+					
+					return dataset3;
+				} else {
+					// Annotation not found
+					log.info("[" + apiKey + "] Annotation not found " + content);
+					def json = JSON.parse('{"status":"nocontent" ,"message":"The request does not carry acceptable payload or payload cannot be read"' +
+						',"duration": "' + (System.currentTimeMillis()-startTime) + 'ms", ' + '}');
+					throw new StoreServiceException(200, json, "text/json", "UTF-8");
+				}
+			} else {
+				// Annotation not found
+				log.info("[" + apiKey + "] Annotation not found " + content);
+				def json = JSON.parse('{"status":"nocontent" ,"message":"The request does not carry acceptable payload or payload cannot be read"' +
+					',"duration": "' + (System.currentTimeMillis()-startTime) + 'ms", ' + '}');
+				throw new StoreServiceException(200, json, "text/json", "UTF-8");
+			}
+		} else {
+			Dataset workingDataset = DatasetFactory.createMem();
+			RDFDataMgr.read(workingDataset, new ByteArrayInputStream(content.toString().getBytes("UTF-8")), JenaJSONLD.JSONLD);
+			
+			virtuosoJenaStoreService.updateDataset(apiKey, workingDataset);
+			
+			return workingDataset;
+		}
+	}
+	
 	public Dataset saveAnnotationDataset(apiKey, startTime, Dataset dataset) {
 		
 		Set<Resource> annotationUris = new HashSet<Resource>();
@@ -343,7 +473,12 @@ class AnnotationJenaStorageService {
 		// Query for graphs containing annotation
 		// See: https://www.mail-archive.com/wikidata-l@lists.wikimedia.org/msg00370.html
 		Set<Resource> annotationsGraphsUris = new HashSet<Resource>();
-		int detectedAnnotationGraphsCounter = openAnnotationUtilsService.detectAnnotationsInNamedGraph(apiKey, dataset, graphsUris, annotationsGraphsUris, annotationUris)
+		def addCreationDetails = { model, resource ->
+			model.add(resource, ResourceFactory.createProperty("http://purl.org/pav/createdAt"), ResourceFactory.createPlainLiteral(dateFormat.format(new Date())));
+			model.add(resource, ResourceFactory.createProperty("http://purl.org/pav/lastUpdatedOn"), ResourceFactory.createPlainLiteral(dateFormat.format(new Date())));
+		}
+		int detectedAnnotationGraphsCounter = openAnnotationUtilsService.detectAnnotationsInNamedGraph(
+			apiKey, dataset, graphsUris, annotationsGraphsUris, annotationUris, addCreationDetails)
 		
 		if(defaultGraphDetected && detectedAnnotationGraphsCounter>0) {
 			log.info("[" + apiKey + "] Mixed Annotation content detected... request rejected.");
@@ -407,7 +542,6 @@ class AnnotationJenaStorageService {
 			log.info("[" + apiKey + "] Annotation not found " + content);
 			def json = JSON.parse('{"status":"nocontent" ,"message":"The request does not carry acceptable payload or payload cannot be read"' +
 				',"duration": "' + (System.currentTimeMillis()-startTime) + 'ms", ' + '}');
-			//render(status: 200, text: json, contentType: "text/json", encoding: "UTF-8");
 			throw new StoreServiceException(200, json, "text/json", "UTF-8");
 		}
 		
@@ -459,7 +593,6 @@ class AnnotationJenaStorageService {
 		def originalSubject;
 		List<Statement> s = new ArrayList<Statement>();
 		StmtIterator statements = model.listStatements(null, property, resource);
-		println property.toString() + " - " + resource.toString();
 		statements.each {
 			originalSubject =  it.getSubject()
 			StmtIterator statements2 = model.listStatements(it.getSubject(), null, null);
