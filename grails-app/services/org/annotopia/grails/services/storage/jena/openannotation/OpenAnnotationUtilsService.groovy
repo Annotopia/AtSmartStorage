@@ -49,11 +49,11 @@ class OpenAnnotationUtilsService {
 	public int detectAnnotationsInDefaultGraph(apiKey, Dataset dataset, Set<Resource> annotationUris, Closure closure) {
 		log.info("[" + apiKey + "] Detection of Annotation in Default Graph...");
 		
-		String query = "PREFIX oa: <http://www.w3.org/ns/oa#> SELECT DISTINCT ?s WHERE { ?s a oa:Annotation . }"
-		log.trace("[" + apiKey + "] Query: " + query);
+		String QUERY = "PREFIX oa: <http://www.w3.org/ns/oa#> SELECT DISTINCT ?s WHERE { ?s a oa:Annotation . }"
+		log.trace("[" + apiKey + "] Query: " + QUERY);
 		
 		int annotationsInDefaultGraphsCounter = 0;	
-		QueryExecution queryExecution  = QueryExecutionFactory.create (QueryFactory.create(query), dataset);
+		QueryExecution queryExecution  = QueryExecutionFactory.create (QueryFactory.create(QUERY), dataset);
 		ResultSet rAnnotationsInDefaultGraph = queryExecution.execSelect();
 		while (rAnnotationsInDefaultGraph.hasNext()) {
 			Resource annUri = rAnnotationsInDefaultGraph.nextSolution().getResource("s");
@@ -81,12 +81,13 @@ class OpenAnnotationUtilsService {
 	 */
 	public int detectAnnotationsInNamedGraph(apiKey, Dataset dataset, Set<Resource> graphsUris, 
 			Set<Resource> annotationsGraphsUris, Set<Resource> annotationUris, Closure closure) {
-		log.info("[" + apiKey + "] Annotation graphs detection...");
-		HashMap<String, Model> models = new HashMap<String, Model>();
-		int annotationGraphsCounter = 0;
+		log.info("[" + apiKey + "] Detection of Annotation in Named Graphs...");
 		
-		Query  sparqlAnnotationGraphs = QueryFactory.create("PREFIX oa: <http://www.w3.org/ns/oa#> SELECT ?s ?g WHERE { GRAPH ?g { ?s a oa:Annotation . }}");
-		QueryExecution qAnnotationGraphs = QueryExecutionFactory.create (sparqlAnnotationGraphs, dataset);
+		String QUERY = "PREFIX oa: <http://www.w3.org/ns/oa#> SELECT ?s ?g WHERE { GRAPH ?g { ?s a oa:Annotation . }}";
+		log.trace("[" + apiKey + "] Query: " + QUERY);
+		
+		int annotationGraphsCounter = 0;
+		QueryExecution qAnnotationGraphs = QueryExecutionFactory.create (QueryFactory.create(QUERY), dataset);
 		ResultSet rAnnotationGraphs = qAnnotationGraphs.execSelect();
 		while (rAnnotationGraphs.hasNext()) {
 			QuerySolution querySolution = rAnnotationGraphs.nextSolution();
