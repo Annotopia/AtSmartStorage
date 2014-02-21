@@ -34,7 +34,7 @@ import com.hp.hpl.jena.rdf.model.Resource
  *
  * @author Paolo Ciccarese <paolo.ciccarese@gmail.com>
  */
-class JenaUtilsServices {
+class JenaUtilsService {
 
 	/**
 	 * Retrieves the set of all Named Graphs

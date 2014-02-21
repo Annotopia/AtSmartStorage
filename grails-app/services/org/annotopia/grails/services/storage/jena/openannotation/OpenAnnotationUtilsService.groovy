@@ -77,7 +77,7 @@ class OpenAnnotationUtilsService {
 	 * @param annotationsGraphsUris The full set of Annotation URIs in Graphs belonging to the dataset
 	 * @param annotationUris		The set of annotationUris
 	 * @param closure				This closure is executed after the query.
-	 * @return The total number of detected annotations in named graphs
+	 * @return The total number of detected Annotations in Named Graphs
 	 */
 	public int detectAnnotationsInNamedGraph(apiKey, Dataset dataset, Set<Resource> graphsUris, 
 			Set<Resource> annotationsGraphsUris, Set<Resource> annotationUris, Closure closure) {
@@ -106,5 +106,55 @@ class OpenAnnotationUtilsService {
 		}
 		log.info("[" + apiKey + "] Annotation graphs " + annotationGraphsCounter);
 		annotationGraphsCounter
+	}
+			
+	/**
+	 * Detects all the Specific Resources that are defined in Named Graphs.
+	 * @param apiKey				The API key of the client that issued the request
+	 * @param dataset				The dataset containing the annotations
+	 * @param specificResourcesUris The full set of Specific Resources URIs in Graphs belonging to the dataset
+	 * @return The total number of detected Specific Resources in Named Graphs.
+	 */
+	public int detectSpecificResourcesAsNamedGraphs(apiKey, Dataset dataset, Set<Resource> specificResourcesUris) {
+		log.info("[" + apiKey + "] Specific Resources in Named Graphs detection...");
+		
+		String QUERY = "PREFIX oa: <http://www.w3.org/ns/oa#> SELECT DISTINCT ?s WHERE " +
+			"{{ GRAPH ?g { ?s a oa:SpecificResource . }}}";
+		log.trace("[" + apiKey + "] Query: " + QUERY);
+		
+		int specificResourcesGraphsCounter = 0;
+		QueryExecution qSpecificResources  = QueryExecutionFactory.create (QueryFactory.create(QUERY), dataset);
+		ResultSet rSpecificResources = qSpecificResources.execSelect();
+		while (rSpecificResources.hasNext()) {
+			QuerySolution querySolution = rSpecificResources.nextSolution();
+			specificResourcesUris.add(querySolution.get("s"));
+			specificResourcesGraphsCounter++;
+		}
+		log.info("[" + apiKey + "] Identifiable Specific Resources " + specificResourcesGraphsCounter);
+		specificResourcesGraphsCounter
+	}
+	
+	/**
+	 * Detects all the Content As Text instances defined in Named Graphs
+	 * @param apiKey					The API key of the client that issued the request
+	 * @param dataset					The dataset containing the annotations
+	 * @param embeddedTextualBodiesUris The full set of Content As Text URIs in Graphs belonging to the dataset
+	 * @return The total number of detected Content As Text in Named Graphs.
+	 */
+	public int detectContextAsTextInNamedGraphs(apiKey, Dataset dataset, Set<Resource> embeddedTextualBodiesUris) {
+		log.info("[" + apiKey + "] Identifiable Content as Text detection...");
+		String QUERY = "PREFIX cnt:<http://www.w3.org/2011/content#> SELECT DISTINCT ?s WHERE " +
+			"{{ GRAPH ?g { ?s a cnt:ContentAsText . }} }"
+		
+		int embeddedTextualBodiesCounter = 0;
+		QueryExecution qEmbeddedTextualBodies  = QueryExecutionFactory.create (QueryFactory.create(QUERY), dataset);
+		ResultSet rEmbeddedTextualBodies = qEmbeddedTextualBodies.execSelect();
+		while (rEmbeddedTextualBodies.hasNext()) {
+			QuerySolution querySolution = rEmbeddedTextualBodies.nextSolution();
+			embeddedTextualBodiesUris.add(querySolution.get("s"));
+			embeddedTextualBodiesCounter++;
+		}
+		log.info("[" + apiKey + "] Identifiable Content as Text " + embeddedTextualBodiesCounter);
+		embeddedTextualBodiesCounter
 	}
 }

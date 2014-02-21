@@ -21,6 +21,7 @@
 package org.annotopia.grails.services.storage.jena
 
 import java.text.SimpleDateFormat;
+import java.util.Set;
 
 import grails.converters.JSON
 
@@ -58,7 +59,7 @@ class AnnotationJenaStorageService {
 	SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssz")
 	
 	def grailsApplication
-	def jenaUtilsServices;
+	def jenaUtilsService;
 	def virtuosoJenaStoreService
 	def openAnnotationUtilsService
 	
@@ -347,7 +348,7 @@ class AnnotationJenaStorageService {
 		boolean defaultGraphDetected = (annotationsInDefaultGraphsCounter>0);
 			
 		// Detect all named graphs
-		Set<Resource> graphsUris = jenaUtilsServices.detectNamedGraphs(apiKey, dataset);
+		Set<Resource> graphsUris = jenaUtilsService.detectNamedGraphs(apiKey, dataset);
 
 		// Query for graphs containing annotation
 		// See: https://www.mail-archive.com/wikidata-l@lists.wikimedia.org/msg00370.html
@@ -372,36 +373,14 @@ class AnnotationJenaStorageService {
 		String content;
 		if(detectedAnnotationGraphsCounter>0) {
 			// Query Specific Resources
-			log.info("[" + apiKey + "] Identifiable Specific Resources detection...");
-			int totalDetectedSpecificResources = 0;
 			Set<Resource> specificResourcesUris = new HashSet<Resource>();
-			Query  sparqlSpecificResources = QueryFactory.create("PREFIX oa: <http://www.w3.org/ns/oa#> SELECT DISTINCT ?s ?g WHERE " +
-				"{{ GRAPH ?g { ?s a oa:SpecificResource . }}}");
-			QueryExecution qSpecificResources  = QueryExecutionFactory.create (sparqlSpecificResources, dataset);
-			ResultSet rSpecificResources = qSpecificResources.execSelect();
-			while (rSpecificResources.hasNext()) {
-				QuerySolution querySolution = rSpecificResources.nextSolution();
-				specificResourcesUris.add(querySolution.get("s"));
-				totalDetectedSpecificResources++;
-			}
-			log.info("[" + apiKey + "] Identifiable Specific Resources " + totalDetectedSpecificResources);
-			
-			// Query Embedded Resources
-			log.info("[" + apiKey + "] Identifiable Content as Text detection...");
-			int totalEmbeddedTextualBodies = 0;
+			int totalDetectedSpecificResources = openAnnotationUtilsService
+				.detectSpecificResourcesAsNamedGraphs(apiKey, dataset,specificResourcesUris)
+
+			// Query Content As Text
 			Set<Resource> embeddedTextualBodiesUris = new HashSet<Resource>();
-			//Query  sparqlEmbeddedTextualBodies = QueryFactory.create("PREFIX cnt:<http://www.w3.org/2011/content#> SELECT DISTINCT ?s WHERE " +
-			//"{{ GRAPH ?g { ?s a cnt:ContentAsText . }} UNION { ?s a cnt:ContentAsText . } FILTER (!isBlank(?s)) }");
-			Query  sparqlEmbeddedTextualBodies = QueryFactory.create("PREFIX cnt:<http://www.w3.org/2011/content#> SELECT DISTINCT ?s ?g WHERE " +
-				"{{ GRAPH ?g { ?s a cnt:ContentAsText . }} }");
-			QueryExecution qEmbeddedTextualBodies  = QueryExecutionFactory.create (sparqlEmbeddedTextualBodies, dataset);
-			ResultSet rEmbeddedTextualBodies = qEmbeddedTextualBodies.execSelect();
-			while (rEmbeddedTextualBodies.hasNext()) {
-				QuerySolution querySolution = rEmbeddedTextualBodies.nextSolution();
-				embeddedTextualBodiesUris.add(querySolution.get("s"));
-				totalEmbeddedTextualBodies++;
-			}
-			log.info("[" + apiKey + "] Identifiable Content as Text " + totalEmbeddedTextualBodies);
+			int totalEmbeddedTextualBodies = openAnnotationUtilsService
+				.detectContextAsTextInNamedGraphs(apiKey, dataset, embeddedTextualBodiesUris);
 			
 			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 			RDFDataMgr.write(outputStream, dataset, JenaJSONLD.JSONLD);
@@ -475,7 +454,7 @@ class AnnotationJenaStorageService {
 			
 		
 		// Detect all named graphs
-		Set<Resource> graphsUris = jenaUtilsServices.detectNamedGraphs(apiKey, dataset);
+		Set<Resource> graphsUris = jenaUtilsService.detectNamedGraphs(apiKey, dataset);
 
 		// Query for graphs containing annotation
 		// See: https://www.mail-archive.com/wikidata-l@lists.wikimedia.org/msg00370.html
@@ -499,36 +478,14 @@ class AnnotationJenaStorageService {
 		String content;
 		if(detectedAnnotationGraphsCounter>0) {
 			// Query Specific Resources
-			log.info("[" + apiKey + "] Identifiable Specific Resources detection...");
-			int totalDetectedSpecificResources = 0;
 			Set<Resource> specificResourcesUris = new HashSet<Resource>();
-			Query  sparqlSpecificResources = QueryFactory.create("PREFIX oa: <http://www.w3.org/ns/oa#> SELECT DISTINCT ?s ?g WHERE " +
-				"{{ GRAPH ?g { ?s a oa:SpecificResource . }}}");
-			QueryExecution qSpecificResources  = QueryExecutionFactory.create (sparqlSpecificResources, dataset);
-			ResultSet rSpecificResources = qSpecificResources.execSelect();
-			while (rSpecificResources.hasNext()) {
-				QuerySolution querySolution = rSpecificResources.nextSolution();
-				specificResourcesUris.add(querySolution.get("s"));
-				totalDetectedSpecificResources++;
-			}
-			log.info("[" + apiKey + "] Identifiable Specific Resources " + totalDetectedSpecificResources);
+			int totalDetectedSpecificResources = openAnnotationUtilsService
+				.detectSpecificResourcesAsNamedGraphs(apiKey, dataset,specificResourcesUris)
 			
-			// Query Embedded Resources
-			log.info("[" + apiKey + "] Identifiable Content as Text detection...");
-			int totalEmbeddedTextualBodies = 0;
+			// Query Content As Text
 			Set<Resource> embeddedTextualBodiesUris = new HashSet<Resource>();
-			//Query  sparqlEmbeddedTextualBodies = QueryFactory.create("PREFIX cnt:<http://www.w3.org/2011/content#> SELECT DISTINCT ?s WHERE " +
-			//"{{ GRAPH ?g { ?s a cnt:ContentAsText . }} UNION { ?s a cnt:ContentAsText . } FILTER (!isBlank(?s)) }");
-			Query  sparqlEmbeddedTextualBodies = QueryFactory.create("PREFIX cnt:<http://www.w3.org/2011/content#> SELECT DISTINCT ?s ?g WHERE " +
-				"{{ GRAPH ?g { ?s a cnt:ContentAsText . }} }");
-			QueryExecution qEmbeddedTextualBodies  = QueryExecutionFactory.create (sparqlEmbeddedTextualBodies, dataset);
-			ResultSet rEmbeddedTextualBodies = qEmbeddedTextualBodies.execSelect();
-			while (rEmbeddedTextualBodies.hasNext()) {
-				QuerySolution querySolution = rEmbeddedTextualBodies.nextSolution();
-				embeddedTextualBodiesUris.add(querySolution.get("s"));
-				totalEmbeddedTextualBodies++;
-			}
-			log.info("[" + apiKey + "] Identifiable Content as Text " + totalEmbeddedTextualBodies);
+			int totalEmbeddedTextualBodies = openAnnotationUtilsService
+				.detectContextAsTextInNamedGraphs(apiKey, dataset, embeddedTextualBodiesUris);
 			
 			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 			RDFDataMgr.write(outputStream, dataset, JenaJSONLD.JSONLD);
