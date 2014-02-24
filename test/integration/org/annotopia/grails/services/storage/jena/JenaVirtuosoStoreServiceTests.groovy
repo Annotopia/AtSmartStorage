@@ -74,7 +74,7 @@ class JenaVirtuosoStoreServiceTests extends GroovyTestCase {
 		jenaVirtuosoStoreService.dropGraph(grailsApplication.config.annotopia.storage.testing.apiKey, "http://example.org/tests/graph/001")
 		assertFalse "Graph deletion", jenaVirtuosoStoreService.doesGraphExists(grailsApplication.config.annotopia.storage.testing.apiKey, "http://example.org/tests/graph/001");
 	}
-
+	
 	@After
 	public void tearDown() throws Exception {
 	}

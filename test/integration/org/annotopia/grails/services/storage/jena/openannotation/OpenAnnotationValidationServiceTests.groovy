@@ -18,7 +18,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.annotopia.grails.services.storage.jena.validation.oa;
+package org.annotopia.grails.services.storage.jena.openannotation;
 
 import static org.junit.Assert.*
 import grails.test.mixin.TestFor
