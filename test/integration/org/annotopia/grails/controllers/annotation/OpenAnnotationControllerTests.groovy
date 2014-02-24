@@ -29,10 +29,20 @@ import grails.test.mixin.TestFor
 @TestFor(OpenAnnotationController)
 class OpenAnnotationControllerTests extends GroovyTestCase {
 
+	def grailsApplication = new org.codehaus.groovy.grails.commons.DefaultGrailsApplication()
+	
 	void testShowInvalidApiKey() {
-			def c = new OpenAnnotationController()
-			c.show()
-			
-			assertEquals 401, response.status
+		def c = new OpenAnnotationController()
+		c.show()
+		
+		assertEquals 401, response.status
+	}
+	
+	void testShowValidApiKey() {
+		def c = new OpenAnnotationController()
+		c.request.JSON = '{"apiKey":"' + grailsApplication.config.annotopia.storage.testing.apiKey + '"}'
+		c.show()
+		
+		assertEquals 200, response.status
 	}
 }
