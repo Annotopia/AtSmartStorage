@@ -18,14 +18,13 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.annotopia.grails.services.storage.jena
-
-import java.io.File;
+package org.annotopia.grails.services.storage.jena.virtuoso
 
 import grails.util.Environment
 
 import org.annotopia.groovy.service.store.ITripleStore
 import org.apache.jena.riot.RDFDataMgr
+import org.apache.jena.riot.RDFFormat
 
 import virtuoso.jena.driver.VirtGraph
 import virtuoso.jena.driver.VirtModel
@@ -34,56 +33,39 @@ import virtuoso.jena.driver.VirtuosoQueryExecutionFactory
 import virtuoso.jena.driver.VirtuosoUpdateFactory
 import virtuoso.jena.driver.VirtuosoUpdateRequest
 
-import com.github.jsonldjava.jena.JenaJSONLD
-import com.hp.hpl.jena.graph.Graph
-import com.hp.hpl.jena.graph.Triple
 import com.hp.hpl.jena.query.Dataset
 import com.hp.hpl.jena.query.DatasetFactory
-import com.hp.hpl.jena.query.Query
 import com.hp.hpl.jena.query.QueryFactory
-import com.hp.hpl.jena.query.QuerySolution
-import com.hp.hpl.jena.query.ResultSet
 import com.hp.hpl.jena.rdf.model.Model
-import com.hp.hpl.jena.rdf.model.ModelFactory
-import com.hp.hpl.jena.rdf.model.RDFNode
-
 
 /**
- * This is the service that allows to connect to the Virtuoso
- * triple store via Jena APIs.
- * 
+ * Basic storage services for Virtuoso Triple store.
+ *
  * @author Paolo Ciccarese <paolo.ciccarese@gmail.com>
  */
-class VirtuosoJenaStoreService implements ITripleStore {
-
-	def grailsApplication
+class JenaVirtuosoStoreService implements ITripleStore {
 	
+	def grailsApplication
 	
 	// -----------------------------------------------------------------------
 	//    STORE
 	// -----------------------------------------------------------------------
 	@Override
-	public String store(String apiKey, File annotationFile) {
-		
+	public String store(String apiKey, File annotationFile) {		
 		log.info '[' + apiKey + '] Storing file: ' + annotationFile.getName();	
 		store(apiKey, annotationFile, null);
 	}
 	
 	@Override
 	public String store(String apiKey, File annotationFile, String baseUri) {
-		log.info '[' + apiKey + '] Storing file: ' + annotationFile.getName() + ' with baseUri: ' + baseUri;
-		
+		log.info '[' + apiKey + '] Storing file: ' + annotationFile.getName() + ' with baseUri: ' + baseUri;		
 		try {
-			try {
-				if(annotationFile == null || !annotationFile.exists()) {
-					log.error "File not found: " + annotationFile;
-					throw new IllegalArgumentException("File not found: " + annotationFile);
-				}
-				InputStream inputStream = new FileInputStream(annotationFile);
-				storeGraphs(inputStream, baseUri);	
-			} finally {
-
+			if(annotationFile == null || !annotationFile.exists()) {
+				log.error "File not found: " + annotationFile;
+				throw new IllegalArgumentException("File not found: " + annotationFile);
 			}
+			InputStream inputStream = new FileInputStream(annotationFile);
+			storeGraphs(inputStream, baseUri);	
 		} catch (Exception e) {
 			System.out.println( e.getMessage());
 		}
@@ -99,164 +81,18 @@ class VirtuosoJenaStoreService implements ITripleStore {
 	public String store(String apiKey, String content, String baseUri) {
 		log.info '[' + apiKey + '] Storing content with baseUri: ' + baseUri;
 		try {
-			try {
-				if(content == null || content.isEmpty()) {
-					log.error "Content not valid: " + content;
-					throw new IllegalArgumentException("Content not valid: " + content);
-				}
-				
-				InputStream inputStream = new ByteArrayInputStream(content.getBytes());
-				storeGraphs(apiKey, inputStream, baseUri);		
-			} finally {
-
-			}
+			if(content == null || content.isEmpty()) {
+				log.error "Content not valid: " + content;
+				throw new IllegalArgumentException("Content not valid: " + content);
+			}				
+			InputStream inputStream = new ByteArrayInputStream(content.getBytes());
+			storeGraphs(apiKey, inputStream, baseUri);		
 		} catch (Exception e) {
 			System.out.println( e.getMessage());
 		}
 	}
 	
-	// -----------------------------------------------------------------------
-	//    UPDATE
-	// -----------------------------------------------------------------------
-	@Override
-	public String update(String apiKey, File annotationFile) {
-		log.info '[' + apiKey + '] Updating from file: ' + annotationFile.getName();	
-		update(apiKey, annotationFile, null);
-	}
-
-	@Override
-	public String update(String apiKey, File annotationFile, String baseUri) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public String update(String apiKey, String content) {
-		log.info '[' + apiKey + '] Updating from content: ' + content;	
-		store(apiKey, content, null);
-	}
-
-	@Override
-	public String update(String apiKey, String content, String baseUri) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-		
-	@Override
-	public Dataset retrieveGraph(String apiKey, String graphUri) {
-		log.info '[' + apiKey + '] Retrieving graph: ' + graphUri;
-		
-		VirtGraph set = new VirtGraph (graphUri,
-			grailsApplication.config.annotopia.storage.triplestore.host,
-			grailsApplication.config.annotopia.storage.triplestore.user,
-			grailsApplication.config.annotopia.storage.triplestore.pass);
-		
-		String queryString = "CONSTRUCT { ?s ?p ?o . } FROM <" + graphUri + "> WHERE {" +
-				"?s ?p ?o . " +
-			"}" ;
-		log.trace '[' + apiKey + '] ' + queryString
-		
-		try {
-			Query  sparql = QueryFactory.create(queryString);
-			
-			Model model = ModelFactory.createMemModelMaker().createModel(graphUri);
-			Dataset dataset = DatasetFactory.createMem();
-			VirtuosoQueryExecution vqe = VirtuosoQueryExecutionFactory.create (sparql, set);
-		
-			model = vqe.execConstruct();
-			dataset.addNamedModel(graphUri, model);
-			return dataset;
-		} catch (Exception e) {
-			log.error(e.getMessage());
-			return null;
-		} 
-	}
-	
-	public boolean doesGraphExists(String apiKey, String graphUri) {
-		log.info '[' + apiKey + '] Checking graph existance: ' + graphUri;		
-
-		// The ASK method seems not working so I am using a more elaborate
-		// methodology
-		
-		/* 
-		VirtGraph set = new VirtGraph (
-			grailsApplication.config.annotopia.storage.triplestore.host,
-			grailsApplication.config.annotopia.storage.triplestore.user,
-			grailsApplication.config.annotopia.storage.triplestore.pass);	
-		
-		String query = "ASK { GRAPH <" + graphUri + "> { ?s ?p ?o . } }";
-		log.info 'Query: ' + query;
-		
-		Query sparql = QueryFactory.create(query);
-		VirtuosoQueryExecution vqe = VirtuosoQueryExecutionFactory.create (sparql, set);
-		boolean result =  vqe.execAsk();
-		log.info 'Result: ' + result;
-		return	result
-		*/
-		
-		Dataset dataset = retrieveGraph(apiKey, graphUri);
-		boolean existenceFlag = false;
-		Iterator<String> graphNames = dataset.listNames()
-		while(graphNames.hasNext()) {
-			String graphName = graphNames.next();
-			if(dataset.getNamedModel(graphName).size()>0)
-				existenceFlag = true;
-		}
-		return existenceFlag;
-	}
-	
-	@Override
-	public boolean dropGraph(String apiKey, String graphUri) {
-		log.info '[' + apiKey + '] Removing graph: ' + graphUri;
-		
-		try {
-			VirtGraph graph = new VirtGraph (
-				grailsApplication.config.annotopia.storage.triplestore.host,
-				grailsApplication.config.annotopia.storage.triplestore.user,
-				grailsApplication.config.annotopia.storage.triplestore.pass);
-			String str = "DROP SILENT GRAPH <" + graphUri + ">";
-			VirtuosoUpdateRequest vur = VirtuosoUpdateFactory.create(str, graph);
-			vur.exec();
-		} catch (Exception e) {
-			println e.getMessage();
-		}
-	}
-	
-	@Override
-	public boolean clearGraph(String apiKey, String graphUri) {
-		log.info '[' + apiKey + '] Clearing graph: ' + graphUri;
-		
-		try {
-			VirtGraph graph = new VirtGraph (
-				grailsApplication.config.annotopia.storage.triplestore.host,
-				grailsApplication.config.annotopia.storage.triplestore.user,
-				grailsApplication.config.annotopia.storage.triplestore.pass);
-			String str = "CLEAR GRAPH <" + graphUri + ">";
-			VirtuosoUpdateRequest vur = VirtuosoUpdateFactory.create(str, graph);
-			vur.exec();
-		} catch (Exception e) {
-			println e.getMessage();
-		}
-	}
-
-	private updateDataset(String apiKey, Dataset dataset) {
-		Iterator<String> names = dataset.listNames()
-		while(names.hasNext()) {
-			String name = names.next();
-			log.debug '[' + apiKey + '] Updating graph: ' + name
-			
-			clearGraph(apiKey, name);
-			
-			
-			
-			// Query update of stored graph
-			
-		}
-		
-		storeDataset(apiKey, dataset);
-	}
-	
-	private storeDataset(String apiKey, Dataset dataset) {
+	public storeDataset(String apiKey, Dataset dataset) {
 		// Default graph management
 		if(dataset.getDefaultModel()!=null && dataset.getDefaultModel().size()>0) {
 			log.debug '[' + apiKey + '] Storing graph: * (default)'
@@ -286,13 +122,13 @@ class VirtuosoJenaStoreService implements ITripleStore {
 	}
 	
 	private storeGraphs(String apiKey, InputStream inputStream, String baseUri) {
-		JenaJSONLD.init(); // Only needed once
+		//JenaJSONLD.init(); // Only needed once
 		
 		Dataset dataset = DatasetFactory.createMem();
 		
 		// Using the RIOT reader
-		if(baseUri!=null && !baseUri.isEmpty()) RDFDataMgr.read(dataset, inputStream, baseUri, JenaJSONLD.JSONLD);
-		else RDFDataMgr.read(dataset, inputStream, JenaJSONLD.JSONLD);
+		if(baseUri!=null && !baseUri.isEmpty()) RDFDataMgr.read(dataset, inputStream, baseUri, RDFFormat.JSONLD);
+		else RDFDataMgr.read(dataset, inputStream, RDFFormat.JSONLD);
 		printDebugData(dataset);
 		
 		// Default graph management
@@ -324,11 +160,139 @@ class VirtuosoJenaStoreService implements ITripleStore {
 	}
 	
 	private printDebugData(def data) {
-		if (Environment.current == Environment.DEVELOPMENT && 
+		if (Environment.current == Environment.DEVELOPMENT &&
 				Boolean.parseBoolean(grailsApplication.config.annotopia.debug.storage.environment.trace.data)) {
 			println '-----START-DEVELOPMENT-DEBUG-DATA-----';
-			RDFDataMgr.write(System.out, data, JenaJSONLD.JSONLD);
+			RDFDataMgr.write(System.out, data, RDFFormat.JSONLD);
 			println '\n-----END-DEVELOPMENT-DEBUG-DATA-----';
+		}
+	}
+	
+	// -----------------------------------------------------------------------
+	//    UPDATE
+	// -----------------------------------------------------------------------
+	@Override
+	public String update(String apiKey, File annotationFile) {
+		log.info '[' + apiKey + '] Updating from file: ' + annotationFile.getName();
+		update(apiKey, annotationFile, null);
+	}
+
+	@Override
+	public String update(String apiKey, File annotationFile, String baseUri) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public String update(String apiKey, String content) {
+		log.info '[' + apiKey + '] Updating from content: ' + content;
+		// store(apiKey, content, null);
+	}
+
+	@Override
+	public String update(String apiKey, String content, String baseUri) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	// -----------------------------------------------------------------------
+	//    RETRIEVE
+	// -----------------------------------------------------------------------
+	@Override
+	public Dataset retrieveGraph(String apiKey, String graphUri) {
+		log.info '[' + apiKey + '] Retrieving graph: ' + graphUri;
+		
+		VirtGraph set = new VirtGraph (graphUri,
+			grailsApplication.config.annotopia.storage.triplestore.host,
+			grailsApplication.config.annotopia.storage.triplestore.user,
+			grailsApplication.config.annotopia.storage.triplestore.pass);
+		
+		String queryString = "CONSTRUCT { ?s ?p ?o . } FROM <" + graphUri + ">" + 
+			" WHERE { ?s ?p ?o . }";
+		log.trace '[' + apiKey + '] ' + queryString
+		
+		try {
+			//Model model = ModelFactory.createMemModelMaker().createModel(graphUri);
+			VirtuosoQueryExecution vqe = VirtuosoQueryExecutionFactory.create (QueryFactory.create(queryString), set);	
+			Model model = vqe.execConstruct();
+			
+			Dataset dataset = DatasetFactory.createMem();
+			dataset.addNamedModel(graphUri, model);
+			return dataset;
+		} catch (Exception e) {
+			log.error(e.getMessage());
+			return null;
+		}
+	}
+	
+	@Override
+	public boolean doesGraphExists(String apiKey, String graphUri) {
+		log.info '[' + apiKey + '] Checking graph existance: ' + graphUri;
+
+		// The ASK method seems not working so I am using a more elaborate
+		// methodology
+		
+		/*
+		VirtGraph set = new VirtGraph (
+			grailsApplication.config.annotopia.storage.triplestore.host,
+			grailsApplication.config.annotopia.storage.triplestore.user,
+			grailsApplication.config.annotopia.storage.triplestore.pass);
+		
+		String query = "ASK { GRAPH <" + graphUri + "> { ?s ?p ?o . } }";
+		log.info 'Query: ' + query;
+		
+		Query sparql = QueryFactory.create(query);
+		VirtuosoQueryExecution vqe = VirtuosoQueryExecutionFactory.create (sparql, set);
+		boolean result =  vqe.execAsk();
+		log.info 'Result: ' + result;
+		return	result
+		*/
+		
+		Dataset dataset = retrieveGraph(apiKey, graphUri);
+		boolean existenceFlag = false;
+		Iterator<String> graphNames = dataset.listNames()
+		while(graphNames.hasNext()) {
+			String graphName = graphNames.next();
+			if(dataset.getNamedModel(graphName).size()>0)
+				existenceFlag = true;
+		}
+		return existenceFlag;
+	}
+	
+	// -----------------------------------------------------------------------
+	//    DROP/CLEAR
+	// -----------------------------------------------------------------------
+	@Override
+	public boolean dropGraph(String apiKey, String graphUri) {
+		log.info '[' + apiKey + '] Removing graph: ' + graphUri;
+		
+		try {
+			VirtGraph graph = new VirtGraph (
+				grailsApplication.config.annotopia.storage.triplestore.host,
+				grailsApplication.config.annotopia.storage.triplestore.user,
+				grailsApplication.config.annotopia.storage.triplestore.pass);
+			String str = "DROP SILENT GRAPH <" + graphUri + ">";
+			VirtuosoUpdateRequest vur = VirtuosoUpdateFactory.create(str, graph);
+			vur.exec();
+		} catch (Exception e) {
+			println e.getMessage();
+		}
+	}
+	
+	@Override
+	public boolean clearGraph(String apiKey, String graphUri) {
+		log.info '[' + apiKey + '] Clearing graph: ' + graphUri;
+		
+		try {
+			VirtGraph graph = new VirtGraph (
+				grailsApplication.config.annotopia.storage.triplestore.host,
+				grailsApplication.config.annotopia.storage.triplestore.user,
+				grailsApplication.config.annotopia.storage.triplestore.pass);
+			String str = "CLEAR GRAPH <" + graphUri + ">";
+			VirtuosoUpdateRequest vur = VirtuosoUpdateFactory.create(str, graph);
+			vur.exec();
+		} catch (Exception e) {
+			println e.getMessage();
 		}
 	}
 }

@@ -21,9 +21,9 @@
 package org.annotopia.grails.services.storage.jena.openannotation
 
 import org.apache.jena.riot.RDFDataMgr
+import org.apache.jena.riot.RDFLanguages
 import org.codehaus.groovy.grails.web.json.JSONObject
 
-import com.github.jsonldjava.jena.JenaJSONLD
 import com.github.jsonldjava.utils.JSONUtils
 import com.hp.hpl.jena.query.Dataset
 import com.hp.hpl.jena.query.DatasetFactory
@@ -81,7 +81,7 @@ class OpenAnnotationValidationService {
 					
 					try {
 						// Using the RIOT reader
-						RDFDataMgr.read(dataset, inputStream, "http://localhost/jsonld/", JenaJSONLD.JSONLD);
+						RDFDataMgr.read(dataset, inputStream, "http://localhost/jsonld/", RDFLanguages.JSONLD);
 					} catch (Exception ex) {
 						HashMap<String,Object> errorResult = new HashMap<String, Object>();
 						errorResult.put("exception", createException("Content parsing failed", "Failure while: loading of the content to validate " + ex.toString()));

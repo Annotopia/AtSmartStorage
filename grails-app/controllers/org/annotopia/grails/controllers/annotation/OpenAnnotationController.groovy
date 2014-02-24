@@ -28,9 +28,11 @@ import javax.servlet.http.HttpServletRequest
 
 import org.annotopia.groovy.service.store.StoreServiceException
 import org.apache.jena.riot.RDFDataMgr
+import org.apache.jena.riot.RDFLanguages
 
-import com.github.jsonldjava.core.JSONLDProcessor
-import com.github.jsonldjava.jena.JenaJSONLD
+import com.github.jsonldjava.core.JsonLdOptions
+import com.github.jsonldjava.core.JsonLdProcessor
+import com.github.jsonldjava.utils.JSONUtils
 import com.hp.hpl.jena.query.Dataset
 import com.hp.hpl.jena.query.DatasetFactory
 
@@ -42,7 +44,9 @@ import com.hp.hpl.jena.query.DatasetFactory
  */
 class OpenAnnotationController {
 
+	def openAnnotationVirtuosoService;
 	def annotationJenaStorageService;
+	def openAnnotationStorageService
 	def apiKeyAuthenticationService;
 	def virtuosoJenaStoreService;
 	
@@ -87,7 +91,7 @@ class OpenAnnotationController {
 				((tgtIds!=null) ? (" tgtIds:" + tgtIds):"") +
 				((flavor!=null) ? (" flavor:" + flavor):""));
 			
-			int annotationsTotal = annotationJenaStorageService.countAnnotationGraphs(apiKey, tgtUrl, tgtFgt);
+			int annotationsTotal = openAnnotationVirtuosoService.countAnnotationGraphs(apiKey, tgtUrl, tgtFgt);
 			int annotationsPages = (annotationsTotal/Integer.parseInt(max));
 			
 			if(annotationsTotal>0 && Integer.parseInt(offset)>0 && Integer.parseInt(offset)>=annotationsPages) {
@@ -98,20 +102,30 @@ class OpenAnnotationController {
 				return;
 			}
 			
-			Set<Dataset> annotationGraphs = annotationJenaStorageService.listAnnotation(apiKey, max, offset, tgtUrl, tgtFgt, tgtExt, tgtIds);
+			Set<Dataset> annotationGraphs = openAnnotationStorageService.listAnnotation(apiKey, max, offset, tgtUrl, tgtFgt, tgtExt, tgtIds);
 			def summaryPrefix = '"total":"' + annotationsTotal + '", ' +
 					'"pages":"' + annotationsPages + '", ' +
 					'"duration": "' + (System.currentTimeMillis()-startTime) + 'ms", ' +
 					'"offset": "' + offset + '", ' +
 					'"max": "' + max + '", ' +
 					'"items":[';
+					
+//     	 	This serializes with and accorting to the context
+//			InputStream contextStream = new URL("https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/OAContext.json").openStream();
+//			Object contextJson = JSONUtils.fromInputStream(contextStream);
+
 			response.contentType = "text/json;charset=UTF-8"
 			if(annotationGraphs!=null) {
 				response.outputStream << '{"status":"results", "result": {' + summaryPrefix	
 				boolean firstStreamed = false // To add the commas between items
 				annotationGraphs.each { annotationGraph ->
 					if(firstStreamed) response.outputStream << ','
-					RDFDataMgr.write(response.outputStream, annotationGraph, JenaJSONLD.JSONLD);
+// This serializes with and accorting to the context
+//					ByteArrayOutputStream baos = new ByteArrayOutputStream();
+//					RDFDataMgr.write(baos, annotationGraph, RDFLanguages.JSONLD);
+//					Object compact = JsonLdProcessor.compact(JSONUtils.fromString(baos.toString()), contextJson,  new JsonLdOptions());
+//					response.outputStream << JSONUtils.toPrettyString(compact)
+					RDFDataMgr.write(response.outputStream, annotationGraph, RDFLanguages.JSONLD);
 					firstStreamed = true;
 				}
 			} else {
@@ -128,11 +142,11 @@ class OpenAnnotationController {
 		// If the annotation is related to multiple graphs, all of the graphs will
 		// be returned.
 		else {
-			Dataset graphs =  annotationJenaStorageService.retrieveAnnotation(apiKey, getCurrentUrl(request));
+			Dataset graphs =  openAnnotationVirtuosoService.retrieveAnnotation(apiKey, getCurrentUrl(request));
 			
 			if(graphs.listNames().hasNext()) {
 				response.contentType = "text/json;charset=UTF-8"
-				RDFDataMgr.write(response.outputStream, graphs, JenaJSONLD.JSONLD);
+				RDFDataMgr.write(response.outputStream, graphs, RDFLanguages.JSONLD);
 				response.outputStream.flush()
 			} else {
 				// Annotation Set not found
@@ -172,8 +186,9 @@ class OpenAnnotationController {
 			
 			Dataset inMemoryDataset = DatasetFactory.createMem();
 			try {
-				RDFDataMgr.read(inMemoryDataset, new ByteArrayInputStream(item.toString().getBytes("UTF-8")), JenaJSONLD.JSONLD);
+				RDFDataMgr.read(inMemoryDataset, new ByteArrayInputStream(item.toString().getBytes("UTF-8")), RDFLanguages.JSONLD);
 			} catch (Exception ex) {
+				log.error(ex.getMessage());
 				def message = "Annotation cannot be read";
 				render(status: 500, text: returnMessage(apiKey, "invalidcontent", message, startTime), contentType: "text/json", encoding: "UTF-8");
 				return;
@@ -181,9 +196,10 @@ class OpenAnnotationController {
 			
 			Dataset savedAnnotation;
 			try {
-				savedAnnotation = annotationJenaStorageService.saveAnnotationDataset(apiKey, startTime, inMemoryDataset);
+				savedAnnotation = openAnnotationStorageService.saveAnnotationDataset(apiKey, startTime, inMemoryDataset);
 			} catch(StoreServiceException exception) {
 				render(status: exception.status, text: exception.text, contentType: exception.contentType, encoding: exception.encoding);
+				return;
 			}
 			
 			if(savedAnnotation!=null) { 
@@ -192,7 +208,7 @@ class OpenAnnotationController {
 					'"duration": "' + (System.currentTimeMillis()-startTime) + 'ms", ' +
 					'"item":['
 						
-				RDFDataMgr.write(response.outputStream, savedAnnotation, JenaJSONLD.JSONLD);
+				RDFDataMgr.write(response.outputStream, savedAnnotation, RDFLanguages.JSONLD);
 				
 				response.outputStream <<  ']}}';
 				response.outputStream.flush()
@@ -236,7 +252,7 @@ class OpenAnnotationController {
 			
 			Dataset inMemoryDataset = DatasetFactory.createMem();
 			try {
-				RDFDataMgr.read(inMemoryDataset, new ByteArrayInputStream(item.toString().getBytes("UTF-8")), JenaJSONLD.JSONLD);
+				RDFDataMgr.read(inMemoryDataset, new ByteArrayInputStream(item.toString().getBytes("UTF-8")), RDFLanguages.JSONLD);
 			} catch (Exception ex) {
 				def message = "Annotation cannot be read";
 				render(status: 500, text: returnMessage(apiKey, "invalidcontent", message, startTime), contentType: "text/json", encoding: "UTF-8");
@@ -245,9 +261,10 @@ class OpenAnnotationController {
 			
 			Dataset updatedAnnotation;
 			try {
-				updatedAnnotation = annotationJenaStorageService.updateAnnotationDataset(apiKey, startTime, inMemoryDataset);
+				updatedAnnotation = openAnnotationStorageService.updateAnnotationDataset(apiKey, startTime, inMemoryDataset);
 			} catch(StoreServiceException exception) {
 				render(status: exception.status, text: exception.text, contentType: exception.contentType, encoding: exception.encoding);
+				return;
 			}
 			
 			if(updatedAnnotation!=null) {
@@ -256,7 +273,7 @@ class OpenAnnotationController {
 					'"duration": "' + (System.currentTimeMillis()-startTime) + 'ms", ' +
 					'"item":['
 						
-				RDFDataMgr.write(response.outputStream, updatedAnnotation, JenaJSONLD.JSONLD);
+				RDFDataMgr.write(response.outputStream, updatedAnnotation, RDFLanguages.JSONLD);
 				
 				response.outputStream <<  ']}}';
 				response.outputStream.flush()

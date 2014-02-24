@@ -22,6 +22,7 @@ package org.annotopia.grails.services.storage.jena.validation.oa;
 
 import static org.junit.Assert.*
 import grails.test.mixin.TestFor
+import groovy.util.GroovyTestCase;
 
 import org.codehaus.groovy.grails.web.json.JSONObject
 import org.junit.After
@@ -33,10 +34,9 @@ import org.junit.Before
  *
  * @author Paolo Ciccarese <paolo.ciccarese@gmail.com>
  */
-@TestFor(org.annotopia.grails.services.storage.jena.openannotation.OpenAnnotationValidationService)
-class OpenAnnotationValidationServiceTests {
+class OpenAnnotationValidationServiceTests extends GroovyTestCase {
 
-	def virtuosoJenaStoreService;
+	def jenaVirtuosoStoreService;
 	def openAnnotationValidationService;
 	
 	@Before
