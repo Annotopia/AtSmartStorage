@@ -194,6 +194,16 @@ class JenaVirtuosoStoreService implements ITripleStore {
 		// TODO Auto-generated method stub
 		return null;
 	}
+	
+	public updateDataset(String apiKey, Dataset dataset) {
+		Iterator<String> names = dataset.listNames()
+		while(names.hasNext()) {
+			String name = names.next();
+			log.debug '[' + apiKey + '] Updating graph: ' + name
+			clearGraph(apiKey, name);
+		}
+		storeDataset(apiKey, dataset);
+	}
 
 	// -----------------------------------------------------------------------
 	//    RETRIEVE
