@@ -97,8 +97,7 @@ class OpenAnnotationStorageService {
 		
 		// Detection of default graph
 		int annotationsInDefaultGraphsCounter = openAnnotationUtilsService.detectAnnotationsInDefaultGraph(apiKey, dataset, annotationUris, addCreationDetails)
-		boolean defaultGraphDetected = (annotationsInDefaultGraphsCounter>0);
-			
+		boolean defaultGraphDetected = (annotationsInDefaultGraphsCounter>0);			
 		
 		// Detect all named graphs
 		Set<Resource> graphsUris = jenaUtilsService.detectNamedGraphs(apiKey, dataset);
@@ -177,6 +176,8 @@ class OpenAnnotationStorageService {
 		} else {
 			Dataset workingDataset = DatasetFactory.createMem();
 			RDFDataMgr.read(workingDataset, new ByteArrayInputStream(content.toString().getBytes("UTF-8")), RDFLanguages.JSONLD);
+			
+			jenaVirtuosoStoreService.storeDataset(apiKey, workingDataset);
 			
 			return workingDataset;
 		}
@@ -279,7 +280,7 @@ class OpenAnnotationStorageService {
 			}
 		} else {
 			Dataset workingDataset = DatasetFactory.createMem();
-			RDFDataMgr.read(workingDataset, new ByteArrayInputStream(content.toString().getBytes("UTF-8")), RDFFormat.JSONLD);
+			RDFDataMgr.read(workingDataset, new ByteArrayInputStream(content.toString().getBytes("UTF-8")), RDFLanguages.JSONLD);
 			
 			jenaVirtuosoStoreService.updateDataset(apiKey, workingDataset);
 			
@@ -287,7 +288,7 @@ class OpenAnnotationStorageService {
 		}
 	}
 	
-	private String getGraphUri() {
+	public String getGraphUri() {
 		return 'http://' + grailsApplication.config.grails.server.host + ':' +
 			grailsApplication.config.grails.server.port.http + '/s/graph/' +
 			org.annotopia.grails.services.storage.utils.UUID.uuid();
