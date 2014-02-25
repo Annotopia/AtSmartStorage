@@ -113,22 +113,23 @@ class OpenAnnotationController {
 					'"max": "' + max + '", ' +
 					'"items":[';
 					
-//     	 	This serializes with and accorting to the context
-//			InputStream contextStream = new URL("https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/OAContext.json").openStream();
-//			Object contextJson = JSONUtils.fromInputStream(contextStream);
-
+			Object contextJson = null;
 			response.contentType = "text/json;charset=UTF-8"
 			if(annotationGraphs!=null) {
 				response.outputStream << '{"status":"results", "result": {' + summaryPrefix	
 				boolean firstStreamed = false // To add the commas between items
 				annotationGraphs.each { annotationGraph ->
 					if(firstStreamed) response.outputStream << ','
-// This serializes with and accorting to the context
-//					ByteArrayOutputStream baos = new ByteArrayOutputStream();
-//					RDFDataMgr.write(baos, annotationGraph, RDFLanguages.JSONLD);
-//					Object compact = JsonLdProcessor.compact(JSONUtils.fromString(baos.toString()), contextJson,  new JsonLdOptions());
-//					response.outputStream << JSONUtils.toPrettyString(compact)
-					RDFDataMgr.write(response.outputStream, annotationGraph, RDFLanguages.JSONLD);
+					if(incCtx=='false') {
+						RDFDataMgr.write(response.outputStream, annotationGraph, RDFLanguages.JSONLD);
+					} else {
+						// This serializes with and according to the context
+						if(contextJson==null) contextJson = JSONUtils.fromInputStream(new URL("https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/OAContext.json").openStream());
+						ByteArrayOutputStream baos = new ByteArrayOutputStream();
+						RDFDataMgr.write(baos, annotationGraph, RDFLanguages.JSONLD);
+						Object compact = JsonLdProcessor.compact(JSONUtils.fromString(baos.toString()), contextJson,  new JsonLdOptions());
+						response.outputStream << JSONUtils.toPrettyString(compact)
+					}
 					firstStreamed = true;
 				}
 			} else {
@@ -149,9 +150,7 @@ class OpenAnnotationController {
 			
 			Object contextJson = null;
 			if(graphs!=null && graphs.listNames().hasNext()) {
-				
-				response.contentType = "text/json;charset=UTF-8"
-				
+				response.contentType = "text/json;charset=UTF-8"			
 				if(incCtx=='false') { 
 					RDFDataMgr.write(response.outputStream, graphs, RDFLanguages.JSONLD);
 				} else {
@@ -160,8 +159,7 @@ class OpenAnnotationController {
 					RDFDataMgr.write(baos, graphs, RDFLanguages.JSONLD);
 					Object compact = JsonLdProcessor.compact(JSONUtils.fromString(baos.toString()), contextJson,  new JsonLdOptions());
 					response.outputStream << JSONUtils.toPrettyString(compact)
-				} 
-				
+				} 			
 				response.outputStream.flush()
 			} else {
 				// Annotation Set not found
