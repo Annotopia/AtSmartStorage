@@ -23,10 +23,10 @@ package org.annotopia.grails.services.storage.jena.openannotation
 import grails.converters.JSON
 
 import java.text.SimpleDateFormat
+import java.util.regex.Pattern
 
 import org.annotopia.groovy.service.store.StoreServiceException
 import org.apache.jena.riot.RDFDataMgr
-import org.apache.jena.riot.RDFFormat
 import org.apache.jena.riot.RDFLanguages
 
 import com.hp.hpl.jena.query.Dataset
@@ -43,7 +43,7 @@ import com.hp.hpl.jena.rdf.model.StmtIterator
  */
 class OpenAnnotationStorageService {
 
-	SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssz")
+	SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSz")
 	
 	def grailsApplication
 	def jenaUtilsService
@@ -292,6 +292,25 @@ class OpenAnnotationStorageService {
 		return 'http://' + grailsApplication.config.grails.server.host + ':' +
 			grailsApplication.config.grails.server.port.http + '/s/graph/' +
 			org.annotopia.grails.services.storage.utils.UUID.uuid();
+	}
+	
+	private String identifiableURIs(String apiKey, String content, Set<Resource> uris, String uriType) {
+		String toReturn = content;
+		uris.each { uri ->
+			def uuid = org.annotopia.grails.services.storage.utils.UUID.uuid();
+			def nUri = 'http://' + grailsApplication.config.grails.server.host + ':' +
+							grailsApplication.config.grails.server.port.http + '/s/' + uriType + '/' + uuid;
+
+			log.info("[" + apiKey + "] Minting URIs " + uriType + " " + uri.toString() + " -> " + nUri);
+			if(uri.isAnon()) {
+				println 'blank ' + uri.getId();
+				toReturn = content.replaceAll(Pattern.quote("\"@id\" : \"" + uri + "\""),
+					"\"@id\" : \"" + nUri + "\"" + ",\"http://purl.org/pav/previousVersion\" : \"blank\"");
+			} else
+			toReturn = content.replaceAll(Pattern.quote("\"@id\" : \"" + uri + "\""),
+				"\"@id\" : \"" + nUri + "\"" + ",\"http://purl.org/pav/previousVersion\" : \"" + uri.toString() + "\"");
+		}
+		return toReturn;
 	}
 	
 	private void identifiableURIs(String apiKey, Model model, Property property, Resource resource, String uriType) {
