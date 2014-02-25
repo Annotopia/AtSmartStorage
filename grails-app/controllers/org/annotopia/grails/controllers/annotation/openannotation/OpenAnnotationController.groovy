@@ -71,11 +71,13 @@ class OpenAnnotationController {
 			invalidApiKey(request.getRemoteAddr()); return;
 		}
 		
+		def incCtx = (request.JSON.incCtx!=null)?request.JSON.incCtx:"false";
+		
 		// GET of a list of annotations
 		if(params.id==null) {
 			// Pagination
 			def max = (request.JSON.max!=null)?request.JSON.max:"10";
-			def offset = (request.JSON.offset!=null)?request.JSON.offset:"0";
+			def offset = (request.JSON.offset!=null)?request.JSON.offset:"0";	
 			
 			// Target filters
 			def tgtUrl = request.JSON.tgtUrl
@@ -89,7 +91,8 @@ class OpenAnnotationController {
 				((tgtFgt!=null) ? (" tgtFgt:" + tgtFgt):"") +
 				((tgtExt!=null) ? (" tgtExt:" + tgtExt):"") +
 				((tgtIds!=null) ? (" tgtIds:" + tgtIds):"") +
-				((flavor!=null) ? (" flavor:" + flavor):""));
+				((flavor!=null) ? (" flavor:" + flavor):"") +
+				((incCtx!=null) ? (" incCtx:" + incCtx):""));
 			
 			int annotationsTotal = openAnnotationVirtuosoService.countAnnotationGraphs(apiKey, tgtUrl, tgtFgt);
 			int annotationsPages = (annotationsTotal/Integer.parseInt(max));
@@ -144,9 +147,21 @@ class OpenAnnotationController {
 		else {
 			Dataset graphs =  openAnnotationVirtuosoService.retrieveAnnotation(apiKey, getCurrentUrl(request));
 			
+			Object contextJson = null;
 			if(graphs!=null && graphs.listNames().hasNext()) {
+				
 				response.contentType = "text/json;charset=UTF-8"
-				RDFDataMgr.write(response.outputStream, graphs, RDFLanguages.JSONLD);
+				
+				if(incCtx=='false') { 
+					RDFDataMgr.write(response.outputStream, graphs, RDFLanguages.JSONLD);
+				} else {
+					if(contextJson==null) contextJson = JSONUtils.fromInputStream(new URL("https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/OAContext.json").openStream());
+					ByteArrayOutputStream baos = new ByteArrayOutputStream();
+					RDFDataMgr.write(baos, graphs, RDFLanguages.JSONLD);
+					Object compact = JsonLdProcessor.compact(JSONUtils.fromString(baos.toString()), contextJson,  new JsonLdOptions());
+					response.outputStream << JSONUtils.toPrettyString(compact)
+				} 
+				
 				response.outputStream.flush()
 			} else {
 				// Annotation Set not found
