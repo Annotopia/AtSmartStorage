@@ -144,7 +144,7 @@ class OpenAnnotationController {
 		else {
 			Dataset graphs =  openAnnotationVirtuosoService.retrieveAnnotation(apiKey, getCurrentUrl(request));
 			
-			if(graphs.listNames().hasNext()) {
+			if(graphs!=null && graphs.listNames().hasNext()) {
 				response.contentType = "text/json;charset=UTF-8"
 				RDFDataMgr.write(response.outputStream, graphs, RDFLanguages.JSONLD);
 				response.outputStream.flush()
