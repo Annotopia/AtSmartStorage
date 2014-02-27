@@ -75,6 +75,14 @@ class OpenAnnotationController {
 		def outCmd = (request.JSON.outCmd!=null)?request.JSON.outCmd:"none";
 		def incGph = (request.JSON.incGph!=null)?request.JSON.incGph:"true";
 		
+		if(outCmd=='frame' && incGph=='true') {
+			log.warn("[" + apiKey + "] Invalid options, framing does not currently support Named Graphs");
+			def message = 'Invalid options, framing does not currently support Named Graphs';
+			render(status: 401, text: returnMessage(apiKey, "rejected", message, startTime),
+				contentType: "text/json", encoding: "UTF-8");
+			return;
+		}
+		
 		// GET of a list of annotations
 		if(params.id==null) {
 			// Pagination
@@ -97,13 +105,6 @@ class OpenAnnotationController {
 				((outCmd!=null) ? (" outCmd:" + outCmd):"") +
 				((incGph!=null) ? (" incGph:" + incGph):""));
 			
-			if(outCmd=='frame' && incGph=='true') {
-				log.warn("[" + apiKey + "] Invalid options, framing does not currently support Named Graphs");
-				def message = 'Invalid options, framing does not currently support Named Graphs';
-				render(status: 401, text: returnMessage(apiKey, "rejected", message, startTime),
-					contentType: "text/json", encoding: "UTF-8");
-				return;
-			}
 			
 			int annotationsTotal = openAnnotationVirtuosoService.countAnnotationGraphs(apiKey, tgtUrl, tgtFgt);
 			int annotationsPages = (annotationsTotal/Integer.parseInt(max));
