@@ -32,11 +32,13 @@ import org.apache.jena.riot.RDFLanguages
 import com.hp.hpl.jena.query.Dataset
 import com.hp.hpl.jena.query.DatasetFactory
 import com.hp.hpl.jena.rdf.model.Model
+import com.hp.hpl.jena.rdf.model.ModelFactory
 import com.hp.hpl.jena.rdf.model.Property
 import com.hp.hpl.jena.rdf.model.Resource
 import com.hp.hpl.jena.rdf.model.ResourceFactory
 import com.hp.hpl.jena.rdf.model.Statement
 import com.hp.hpl.jena.rdf.model.StmtIterator
+
 
 /**
  * @author Paolo Ciccarese <paolo.ciccarese@gmail.com>
@@ -48,6 +50,7 @@ class OpenAnnotationStorageService {
 	def grailsApplication
 	def jenaUtilsService
 	def jenaVirtuosoStoreService
+	def graphMetadataService
 	def openAnnotationUtilsService
 	def openAnnotationVirtuosoService
 	
@@ -96,7 +99,7 @@ class OpenAnnotationStorageService {
 		}
 		
 		// Detection of default graph
-		int annotationsInDefaultGraphsCounter = openAnnotationUtilsService.detectAnnotationsInDefaultGraph(apiKey, dataset, annotationUris, addCreationDetails)
+		int annotationsInDefaultGraphsCounter = openAnnotationUtilsService.detectAnnotationsInDefaultGraph(apiKey, dataset, annotationUris, null)
 		boolean defaultGraphDetected = (annotationsInDefaultGraphsCounter>0);			
 		
 		// Detect all named graphs
@@ -153,8 +156,7 @@ class OpenAnnotationStorageService {
 		
 		if(defaultGraphDetected) {
 			Dataset workingDataset = dataset;
-			//RDFDataMgr.read(workingDataset, new ByteArrayInputStream(content.toString().getBytes("UTF-8")), RDFLanguages.JSONLD);
-			
+
 			identifiableURIs(apiKey, workingDataset.getDefaultModel(),
 				ResourceFactory.createProperty("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"),
 				ResourceFactory.createResource("http://www.w3.org/ns/oa#Annotation"), "annotation");
@@ -167,8 +169,15 @@ class OpenAnnotationStorageService {
 				ResourceFactory.createProperty("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"),
 				ResourceFactory.createResource("http://www.w3.org/2011/content#ContentAsText"), "content");
 			
+			def graphUri = getGraphUri();
 			Dataset dataset3 = DatasetFactory.createMem();
-			dataset3.addNamedModel(getGraphUri(), workingDataset.getDefaultModel());
+			dataset3.addNamedModel(graphUri, workingDataset.getDefaultModel());
+			
+			graphMetadataService.getGraphCreationMetadata(dataset3, graphUri);
+			
+//			Model permissionModel = ModelFactory.createDefaultModel();
+//			metaModel.add(graphRes, ResourceFactory.createProperty("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"), ResourceFactory.createResource("http://purl.org/annotopia#PermissionsGraph"));
+//			dataset3.addNamedModel("annotopia:graphs:permissions", metaModel);
 			
 			jenaVirtuosoStoreService.storeDataset(apiKey, dataset3);
 			

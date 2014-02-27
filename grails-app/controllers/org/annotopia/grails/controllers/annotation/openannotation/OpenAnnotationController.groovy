@@ -35,6 +35,7 @@ import com.github.jsonldjava.core.JsonLdProcessor
 import com.github.jsonldjava.utils.JSONUtils
 import com.hp.hpl.jena.query.Dataset
 import com.hp.hpl.jena.query.DatasetFactory
+import com.hp.hpl.jena.rdf.model.Model
 
 /**
  * This is the REST API for managing Open Annotation content.
@@ -71,7 +72,8 @@ class OpenAnnotationController {
 			invalidApiKey(request.getRemoteAddr()); return;
 		}
 		
-		def incCtx = (request.JSON.incCtx!=null)?request.JSON.incCtx:"false";
+		def outCmd = (request.JSON.outCmd!=null)?request.JSON.outCmd:"none";
+		def incGph = (request.JSON.incGph!=null)?request.JSON.incGph:"true";
 		
 		// GET of a list of annotations
 		if(params.id==null) {
@@ -92,7 +94,16 @@ class OpenAnnotationController {
 				((tgtExt!=null) ? (" tgtExt:" + tgtExt):"") +
 				((tgtIds!=null) ? (" tgtIds:" + tgtIds):"") +
 				((flavor!=null) ? (" flavor:" + flavor):"") +
-				((incCtx!=null) ? (" incCtx:" + incCtx):""));
+				((outCmd!=null) ? (" outCmd:" + outCmd):"") +
+				((incGph!=null) ? (" incGph:" + incGph):""));
+			
+			if(outCmd=='frame' && incGph=='true') {
+				log.warn("[" + apiKey + "] Invalid options, framing does not currently support Named Graphs");
+				def message = 'Invalid options, framing does not currently support Named Graphs';
+				render(status: 401, text: returnMessage(apiKey, "rejected", message, startTime),
+					contentType: "text/json", encoding: "UTF-8");
+				return;
+			}
 			
 			int annotationsTotal = openAnnotationVirtuosoService.countAnnotationGraphs(apiKey, tgtUrl, tgtFgt);
 			int annotationsPages = (annotationsTotal/Integer.parseInt(max));
@@ -120,15 +131,42 @@ class OpenAnnotationController {
 				boolean firstStreamed = false // To add the commas between items
 				annotationGraphs.each { annotationGraph ->
 					if(firstStreamed) response.outputStream << ','
-					if(incCtx=='false') {
-						RDFDataMgr.write(response.outputStream, annotationGraph, RDFLanguages.JSONLD);
+					if(outCmd=='none') {
+						if(incGph=='false') {
+							if(annotationGraph.listNames().hasNext()) {
+								Model m = annotationGraph.getNamedModel(annotationGraph.listNames().next());
+								RDFDataMgr.write(response.outputStream, m.getGraph(), RDFLanguages.JSONLD);
+							}
+						} else {
+							RDFDataMgr.write(response.outputStream, annotationGraph, RDFLanguages.JSONLD);
+						}
 					} else {
 						// This serializes with and according to the context
-						if(contextJson==null) contextJson = JSONUtils.fromInputStream(new URL("https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/OAContext.json").openStream());
+						if(contextJson==null) {
+							if(outCmd=='context') {
+								contextJson = JSONUtils.fromInputStream(new URL("https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/OAContext.json").openStream());
+							} else if(outCmd=='frame') {
+								contextJson = JSONUtils.fromInputStream(new URL("https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/OAFrame.json").openStream());						
+							}
+						}
+
 						ByteArrayOutputStream baos = new ByteArrayOutputStream();
-						RDFDataMgr.write(baos, annotationGraph, RDFLanguages.JSONLD);
-						Object compact = JsonLdProcessor.compact(JSONUtils.fromString(baos.toString()), contextJson,  new JsonLdOptions());
-						response.outputStream << JSONUtils.toPrettyString(compact)
+						if(incGph=='false') {
+							if(annotationGraph.listNames().hasNext()) {
+								Model m = annotationGraph.getNamedModel(annotationGraph.listNames().next());
+								RDFDataMgr.write(baos, m.getGraph(), RDFLanguages.JSONLD);
+							}
+						} else {
+							RDFDataMgr.write(baos, annotationGraph, RDFLanguages.JSONLD);
+						}
+						
+						if(outCmd=='context') {
+							Object compact = JsonLdProcessor.compact(JSONUtils.fromString(baos.toString()), contextJson,  new JsonLdOptions());
+							response.outputStream << JSONUtils.toPrettyString(compact)
+						}  else if(outCmd=='frame') {
+							Object framed =  JsonLdProcessor.frame(JSONUtils.fromString(baos.toString()),contextJson, new JsonLdOptions());
+							response.outputStream << JSONUtils.toPrettyString(framed)
+						}
 					}
 					firstStreamed = true;
 				}
@@ -151,14 +189,38 @@ class OpenAnnotationController {
 			Object contextJson = null;
 			if(graphs!=null && graphs.listNames().hasNext()) {
 				response.contentType = "text/json;charset=UTF-8"			
-				if(incCtx=='false') { 
+				if(outCmd=='none') { 
+					if(incGph=='false') {
+						Model m = graphs.getNamedModel(graphs.listNames().next());
+						println "*** " + m;
+						RDFDataMgr.write(response.outputStream, m, RDFLanguages.JSONLD);		
+					} else {
 					RDFDataMgr.write(response.outputStream, graphs, RDFLanguages.JSONLD);
+					}
 				} else {
-					if(contextJson==null) contextJson = JSONUtils.fromInputStream(new URL("https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/OAContext.json").openStream());
+					if(contextJson==null) {
+						if(outCmd=='context') {
+							contextJson = JSONUtils.fromInputStream(new URL("https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/OAContext.json").openStream());
+						} else if(outCmd=='frame') {
+							contextJson = JSONUtils.fromInputStream(new URL("https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/OAFrame.json").openStream());						
+						}
+					}
+				
 					ByteArrayOutputStream baos = new ByteArrayOutputStream();
-					RDFDataMgr.write(baos, graphs, RDFLanguages.JSONLD);
-					Object compact = JsonLdProcessor.compact(JSONUtils.fromString(baos.toString()), contextJson,  new JsonLdOptions());
-					response.outputStream << JSONUtils.toPrettyString(compact)
+					if(incGph=='false') {			
+						Model m = graphs.getNamedModel(graphs.listNames().next());
+						RDFDataMgr.write(baos, m.getGraph(), RDFLanguages.JSONLD);			
+					} else {
+						RDFDataMgr.write(baos, graphs, RDFLanguages.JSONLD);
+					}
+					
+					if(outCmd=='context') {
+						Object compact = JsonLdProcessor.compact(JSONUtils.fromString(baos.toString()), contextJson,  new JsonLdOptions());
+						response.outputStream << JSONUtils.toPrettyString(compact)
+					}  else if(outCmd=='frame') {
+						Object framed =  JsonLdProcessor.frame(JSONUtils.fromString(baos.toString()),contextJson, new JsonLdOptions());
+						response.outputStream << JSONUtils.toPrettyString(framed)
+					}
 				} 			
 				response.outputStream.flush()
 			} else {

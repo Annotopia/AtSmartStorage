@@ -61,7 +61,7 @@ class OpenAnnotationUtilsService {
 			annotationUris.add(annUri);
 			
 			// Alters the triples with the Annotation as subject
-			closure(dataset.getDefaultModel(), annUri);
+			if(closure!=null)  closure(dataset.getDefaultModel(), annUri);
 		}
 		
 		if(annotationsInDefaultGraphsCounter>0) log.info("[" + apiKey + "] Annotation in Default Graph detected");
@@ -100,7 +100,7 @@ class OpenAnnotationUtilsService {
 			annotationUris.add(annUri);
 			
 			// Add saving data
-			closure(dataset.getNamedModel(graphUri.toString()), annUri);
+			if(closure!=null)   closure(dataset.getNamedModel(graphUri.toString()), annUri);
 
 			annotationGraphsCounter++;
 		}

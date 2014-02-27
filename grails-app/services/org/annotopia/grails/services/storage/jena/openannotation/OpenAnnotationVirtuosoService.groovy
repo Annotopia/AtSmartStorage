@@ -186,6 +186,10 @@ class OpenAnnotationVirtuosoService {
 					ds.listNames().each { name ->
 						graphs.addNamedModel(name, ds.getNamedModel(name));
 					}
+					if(ds.getDefaultModel()!=null) {
+						println 'def model'
+						graphs.setDefaultModel(ds.getDefaultModel()); 
+					}
 				}
 			}
 			return graphs;

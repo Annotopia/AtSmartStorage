@@ -38,15 +38,11 @@ class OpenAnnotationStorageServiceTests extends GroovyTestCase {
 	
 	def grailsApplication = new org.codehaus.groovy.grails.commons.DefaultGrailsApplication()
 	
-	def jenaUtilsService
 	def jenaVirtuosoStoreService;
 	def openAnnotationStorageService;
 
 	@Before
 	public void setUp() throws Exception {
-		openAnnotationStorageService.grailsApplication = grailsApplication
-		openAnnotationStorageService.jenaVirtuosoStoreService = jenaVirtuosoStoreService;
-		openAnnotationStorageService.jenaUtilsService = jenaUtilsService
 	}
 	
 	/**
@@ -63,6 +59,38 @@ class OpenAnnotationStorageServiceTests extends GroovyTestCase {
 		Set<String> graphs = new HashSet<String>();
 		Dataset savedDataset = openAnnotationStorageService.saveAnnotationDataset(grailsApplication.config.annotopia.storage.testing.apiKey, System.currentTimeMillis(), workingDataset);
 		savedDataset.listNames().each() { graphs.add(it); }
+		
+		graphs.each { graph ->
+			// Check if graph exists in the repository
+			assert "Graph creation", jenaVirtuosoStoreService.doesGraphExists(grailsApplication.config.annotopia.storage.testing.apiKey, graph);
+			// Drop the graph
+			jenaVirtuosoStoreService.dropGraph(grailsApplication.config.annotopia.storage.testing.apiKey, graph)
+			// Check if the graph has been deleted
+			assertFalse "Graph deletion", jenaVirtuosoStoreService.doesGraphExists(grailsApplication.config.annotopia.storage.testing.apiKey, graph);
+		}
+	}
+	
+	/**
+	 * Loads an Open Annotation graph from a JSON-LD String,
+	 * saves the data, verifies and removes.
+	 */
+	public void testUpdateAnnotationDataset() {
+		String currentDir = new File(".").getCanonicalPath()
+		String fileContent = new File(currentDir + '/tests/oa-test-example-no-graph.json').text
+		
+		Dataset workingDataset = DatasetFactory.createMem();
+		RDFDataMgr.read(workingDataset, new ByteArrayInputStream(fileContent.toString().getBytes("UTF-8")), RDFLanguages.JSONLD);
+		
+		Set<String> graphs = new HashSet<String>();
+		Dataset savedDataset = openAnnotationStorageService.saveAnnotationDataset(grailsApplication.config.annotopia.storage.testing.apiKey, System.currentTimeMillis(), workingDataset);
+		savedDataset.listNames().each() { graphs.add(it); }
+		
+		graphs.each { graph ->
+			// Check if graph exists in the repository
+			assert "Graph creation", jenaVirtuosoStoreService.doesGraphExists(grailsApplication.config.annotopia.storage.testing.apiKey, graph);
+		}
+			
+		openAnnotationStorageService.updateAnnotationDataset(grailsApplication.config.annotopia.storage.testing.apiKey, System.currentTimeMillis(), savedDataset);
 		
 		graphs.each { graph ->
 			// Check if graph exists in the repository
