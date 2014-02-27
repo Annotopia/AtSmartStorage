@@ -48,6 +48,7 @@
 	    "styleClass" :   "oa:styleClass"
 
   },
+  "@graph" : [ {
   "@type": "oa:Annotation",
   "hasBody": {
     "@type": "cnt:ContentAsText"
@@ -56,4 +57,5 @@
   },
   "annotatedBy" : { 
   }
+  }]
 }
