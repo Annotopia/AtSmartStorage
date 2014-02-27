@@ -1,6 +1,6 @@
 {
-    "@context": {
-	    "oa": "http://www.w3.org/ns/oa#",
+  "@context": {
+ "oa": "http://www.w3.org/ns/oa#",
 	    "lit" :    "http://www.example.org/lit-annotation-ns#",
 	    "cnt" :    "http://www.w3.org/2011/content#",
 	    "dc" :     "http://purl.org/dc/elements/1.1/",
@@ -46,5 +46,14 @@
 	    "name" :         "foaf:name",
 	    "mbox" :         "foaf:mbox",
 	    "styleClass" :   "oa:styleClass"
-    }
+
+  },
+  "@type": "oa:Annotation",
+  "hasBody": {
+    "@type": "cnt:ContentAsText"
+  },
+  "hasTarget": {
+  },
+  "annotatedBy" : { 
+  }
 }
