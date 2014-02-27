@@ -130,7 +130,7 @@ class OpenAnnotationUtilsService {
 			specificResourcesUris.add(querySolution.get("s"));
 			specificResourcesGraphsCounter++;
 		}
-		log.info("[" + apiKey + "] Identifiable Specific Resources " + specificResourcesGraphsCounter);
+		log.info("[" + apiKey + "] Identifiable Specific Resources as Named Graphs " + specificResourcesGraphsCounter);
 		specificResourcesGraphsCounter
 	}
 	
@@ -156,5 +156,22 @@ class OpenAnnotationUtilsService {
 		}
 		log.info("[" + apiKey + "] Identifiable Content as Text " + embeddedTextualBodiesCounter);
 		embeddedTextualBodiesCounter
+	}
+	
+	public int detectBodiesAsNamedGraphs(apiKey, Dataset dataset, Set<Resource> bodiesGraphsUris) {
+		log.info("[" + apiKey + "] Bodies in Named Graphs detection...");
+		String QUERY = "PREFIX oa: <http://www.w3.org/ns/oa#> SELECT DISTINCT ?s ?graph WHERE " +
+			"{GRAPH ?g { ?s oa:hasBody ?graph .} GRAPH ?graph {?a ?b ?c .}}"
+		
+		int bodiesGraphsCounter = 0;
+		QueryExecution gBodiesAsGraphs  = QueryExecutionFactory.create (QueryFactory.create(QUERY), dataset);
+		ResultSet rBodiesAsGraphs = gBodiesAsGraphs.execSelect();
+		while (rBodiesAsGraphs.hasNext()) {
+			QuerySolution querySolution = rBodiesAsGraphs.nextSolution();
+			bodiesGraphsUris.add(querySolution.get("graph"));
+			bodiesGraphsCounter++;
+		}
+		log.info("[" + apiKey + "] Identifiable Bodies as Named Graphs " + bodiesGraphsCounter);
+		bodiesGraphsCounter
 	}
 }

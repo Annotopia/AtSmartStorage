@@ -36,7 +36,7 @@ class GraphMetadataService {
 	
 	SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSz")
 
-	public getGraphCreationMetadata(Dataset dataset, def graphUri) {
+	public Model getAnnotationGraphCreationMetadata(Dataset dataset, def graphUri) {
 		def metaGraphUri = getGraphUri();
 		def graphRes = ResourceFactory.createResource(graphUri);
 		Model metaModel = ModelFactory.createDefaultModel();
@@ -45,6 +45,19 @@ class GraphMetadataService {
 		metaModel.add(graphRes, ResourceFactory.createProperty("http://purl.org/pav/lastUpdatedOn"), ResourceFactory.createPlainLiteral(dateFormat.format(new Date())));
 		metaModel.add(graphRes, ResourceFactory.createProperty("http://purl.org/pav/createdWith"), ResourceFactory.createResource("annotopia:test:001"));
 		dataset.addNamedModel("annotopia:graphs:provenance", metaModel);
+		metaModel
+	}
+	
+	public Model getBodyGraphCreationMetadata(Dataset dataset, def graphUri) {
+		def metaGraphUri = getGraphUri();
+		def graphRes = ResourceFactory.createResource(graphUri);
+		Model metaModel = ModelFactory.createDefaultModel();
+		metaModel.add(graphRes, ResourceFactory.createProperty("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"), ResourceFactory.createResource("http://purl.org/annotopia#BodyGraph"));
+		metaModel.add(graphRes, ResourceFactory.createProperty("http://purl.org/pav/createdAt"), ResourceFactory.createPlainLiteral(dateFormat.format(new Date())));
+		metaModel.add(graphRes, ResourceFactory.createProperty("http://purl.org/pav/lastUpdatedOn"), ResourceFactory.createPlainLiteral(dateFormat.format(new Date())));
+		metaModel.add(graphRes, ResourceFactory.createProperty("http://purl.org/pav/createdWith"), ResourceFactory.createResource("annotopia:test:001"));
+		dataset.addNamedModel("annotopia:graphs:provenance", metaModel);
+		metaModel
 	}
 	
 	private String getGraphUri() {
