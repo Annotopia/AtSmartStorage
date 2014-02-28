@@ -21,6 +21,7 @@
 package org.annotopia.groovy.service.store
 
 import com.hp.hpl.jena.query.Dataset
+import com.hp.hpl.jena.rdf.model.Model
 
 /**
  * This is the interface that lists all the methods available for
@@ -106,6 +107,14 @@ interface ITripleStore {
 	 * @param graphUri	The URI identifying the graph to retrieve
 	 */
 	public Dataset retrieveGraph(String apiKey, String graphUri);
+	
+	/**
+	 * Retrieves the metadata about the graph identified by the given URI
+	 * @param apiKey	The API key of the system requesting the transaction
+	 * @param graphUri	The URI identifying the graph to retrieve the metadata about
+	 * @param metadataGraphUri	The URI identifying the graph containing all graphs metadata
+	 */
+	public Model retrieveGraphMetadata(String apiKey, String graphUri, String metadataGraphUri);
 	
 	/**
 	 * Verifies existence of the graph identified by the given URI
