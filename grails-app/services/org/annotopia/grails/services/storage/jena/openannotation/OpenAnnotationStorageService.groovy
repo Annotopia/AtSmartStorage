@@ -32,7 +32,6 @@ import org.apache.jena.riot.RDFLanguages
 import com.hp.hpl.jena.query.Dataset
 import com.hp.hpl.jena.query.DatasetFactory
 import com.hp.hpl.jena.rdf.model.Model
-import com.hp.hpl.jena.rdf.model.ModelFactory
 import com.hp.hpl.jena.rdf.model.Property
 import com.hp.hpl.jena.rdf.model.Resource
 import com.hp.hpl.jena.rdf.model.ResourceFactory
@@ -65,16 +64,17 @@ class OpenAnnotationStorageService {
 	 * @param tgtIds
 	 * @return
 	 */
-	public listAnnotation(apiKey, max, offset, tgtUrl, tgtFgt, tgtExt, tgtIds) {
+	public listAnnotation(apiKey, max, offset, tgtUrl, tgtFgt, tgtExt, tgtIds, incGph) {
 		log.info '[' + apiKey + '] List annotations' +
 			' max:' + max +
 			' offset:' + offset +
+			' incGph:' + incGph +
 			' tgtUrl:' + tgtUrl +
 			' tgtFgt:' + tgtFgt;
-		retrieveAnnotationGraphs(apiKey, max, offset, tgtUrl, tgtFgt);
+		retrieveAnnotationGraphs(apiKey, max, offset, tgtUrl, tgtFgt, incGph);
 	}
 	
-	public Set<Dataset> retrieveAnnotationGraphs(apiKey, max, offset, tgtUrl, tgtFgt) {
+	public Set<Dataset> retrieveAnnotationGraphs(apiKey, max, offset, tgtUrl, tgtFgt, incGph) {
 		log.info '[' + apiKey + '] Retrieving annotation graphs';
 	
 		Set<Dataset> datasets = new HashSet<Dataset>();
@@ -82,8 +82,11 @@ class OpenAnnotationStorageService {
 		if(graphNames!=null) {
 			graphNames.each { graphName ->
 				Dataset ds = jenaVirtuosoStoreService.retrieveGraph(apiKey, graphName);
-				if(ds!=null)
-				datasets.add(ds);
+				if(incGph=='true') {
+					Model m = jenaVirtuosoStoreService.retrieveGraphMetadata(apiKey, graphName, "annotopia:graphs:provenance");
+					if(m!=null) ds.setDefaultModel(m);
+				}
+				if(ds!=null) datasets.add(ds);
 			}
 		}
 		return datasets;
@@ -166,7 +169,8 @@ class OpenAnnotationStorageService {
 				// Swap annotation graph id and create metadata
 				def newAnnotationGraphUri = getGraphUri();
 				creationDataset.addNamedModel(newAnnotationGraphUri, workingDataset.getNamedModel(annotationGraphUri.toString()));
-				Model newAnnotationGraphMetadataModel = graphMetadataService.getAnnotationGraphCreationMetadata(apiKey, creationDataset, newAnnotationGraphUri);
+				Model newAnnotationGraphMetadataModel = 
+					graphMetadataService.getAnnotationGraphCreationMetadata(apiKey, creationDataset, newAnnotationGraphUri);
 				newAnnotationGraphMetadataModel.add(
 					ResourceFactory.createResource(newAnnotationGraphUri), 
 					ResourceFactory.createProperty("http://purl.org/pav/previousVersion"), 
@@ -178,7 +182,8 @@ class OpenAnnotationStorageService {
 					Resource bodyGraphUri = bodiesGraphsUrisIterator.next();
 					def newBodyGraphUri = getGraphUri();
 					creationDataset.addNamedModel(newBodyGraphUri, workingDataset.getNamedModel(bodyGraphUri.toString()));
-					Model newBodyGraphMetadataModel = graphMetadataService.getBodyGraphCreationMetadata(apiKey, creationDataset, newBodyGraphUri);
+					Model newBodyGraphMetadataModel = 
+						graphMetadataService.getBodyGraphCreationMetadata(apiKey, creationDataset, newBodyGraphUri);
 					newBodyGraphMetadataModel.add(
 						ResourceFactory.createResource(newBodyGraphUri),
 						ResourceFactory.createProperty("http://purl.org/pav/previousVersion"),
@@ -194,9 +199,13 @@ class OpenAnnotationStorageService {
 						annotationModel.add(annotation, ResourceFactory.createProperty("http://www.w3.org/ns/oa#hasBody"), 
 							ResourceFactory.createResource(newBodyGraphUri));
 					}
+					// Update the main annotation Graph
+					newAnnotationGraphMetadataModel.add(
+						ResourceFactory.createResource(newAnnotationGraphUri), 
+						ResourceFactory.createProperty("http://purl.org/annotopia#body"),
+						ResourceFactory.createResource(newBodyGraphUri));
 				}
-			}
-			
+			}			
 			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 			RDFDataMgr.write(outputStream, creationDataset, RDFLanguages.JSONLD);
 			println outputStream.toString();
@@ -236,26 +245,24 @@ class OpenAnnotationStorageService {
 	
 	public Dataset updateAnnotationDataset(apiKey, startTime, Dataset dataset) {
 		
-		Set<Resource> annotationUris = new HashSet<Resource>();
+//		def addUpdateDetails = { model, resource ->
+//			model.add(resource, ResourceFactory.createProperty("http://purl.org/pav/lastUpdatedOn"),
+//				ResourceFactory.createPlainLiteral(dateFormat.format(new Date())));
+//		}
 		
-		def addUpdateDetails = { model, resource ->
-			model.add(resource, ResourceFactory.createProperty("http://purl.org/pav/lastUpdatedOn"),
-				ResourceFactory.createPlainLiteral(dateFormat.format(new Date())));
-		}
-		
-		// Detection of default graph
-		int annotationsInDefaultGraphsCounter = openAnnotationUtilsService.detectAnnotationsInDefaultGraph(apiKey, dataset, annotationUris,addUpdateDetails )
-		boolean defaultGraphDetected = (annotationsInDefaultGraphsCounter>0);
-			
 		// Detect all named graphs
 		Set<Resource> graphsUris = jenaUtilsService.detectNamedGraphs(apiKey, dataset);
 
+		// Detection of default graph
+		Set<Resource> annotationUris = new HashSet<Resource>();
+		int annotationsInDefaultGraphsCounter = openAnnotationUtilsService.detectAnnotationsInDefaultGraph(apiKey, dataset, annotationUris, null)
+		boolean defaultGraphDetected = (annotationsInDefaultGraphsCounter>0);
+		
 		// Query for graphs containing annotation
 		// See: https://www.mail-archive.com/wikidata-l@lists.wikimedia.org/msg00370.html
 		Set<Resource> annotationsGraphsUris = new HashSet<Resource>();
-		
 		int detectedAnnotationGraphsCounter = openAnnotationUtilsService.detectAnnotationsInNamedGraph(
-			apiKey, dataset, graphsUris, annotationsGraphsUris, annotationUris, addUpdateDetails)
+			apiKey, dataset, graphsUris, annotationsGraphsUris, annotationUris, null)
 
 		if(defaultGraphDetected && detectedAnnotationGraphsCounter>0) {
 			log.info("[" + apiKey + "] Mixed Annotation content detected... request rejected.");
@@ -281,40 +288,77 @@ class OpenAnnotationStorageService {
 			Set<Resource> embeddedTextualBodiesUris = new HashSet<Resource>();
 			int totalEmbeddedTextualBodies = openAnnotationUtilsService
 				.detectContextAsTextInNamedGraphs(apiKey, dataset, embeddedTextualBodiesUris);
+				
+			
 			
 			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 			RDFDataMgr.write(outputStream, dataset, RDFLanguages.JSONLD);
 			content = outputStream.toString();
+			
+			Dataset workingDataset = DatasetFactory.createMem();
+			RDFDataMgr.read(workingDataset, new ByteArrayInputStream(content.toString().getBytes("UTF-8")), RDFLanguages.JSONLD);
+			
+			jenaVirtuosoStoreService.updateDataset(apiKey, workingDataset);
+			
+			return workingDataset;
 		} else if(defaultGraphDetected) {
-			// Do nothing
-		} else {
-			// Annotation Set not found
-			log.info("[" + apiKey + "] Annotation to be updated not found " + content);
-			def json = JSON.parse('{"status":"nocontent" ,"message":"The requested Annotation cannot be updated as it has not been found"' +
-				',"duration": "' + (System.currentTimeMillis()-startTime) + 'ms", ' + '}');
-			throw new StoreServiceException(200, json, "text/json", "UTF-8");
-		}
-		
-		if(defaultGraphDetected) {
 			String annotationUri;
-			annotationUris.each{
-				annotationUri = it
-			}
+			annotationUris.each{ annotationUri = it }
 			
 			if(annotationUri!=null) {
 				String graphName;
 				Set<String> names = openAnnotationVirtuosoService.retrieveAnnotationGraphNames(apiKey, annotationUri)
-				names.each {
-					graphName = it
-				}
-
+				names.each { graphName = it }
 				if(graphName!=null) {
-					Dataset dataset3 = DatasetFactory.createMem();
-					dataset3.addNamedModel(graphName, dataset.getDefaultModel());
+					Dataset storedAnnotationDataset = openAnnotationVirtuosoService.retrieveAnnotation(apiKey, annotationUri);
 					
-					jenaVirtuosoStoreService.updateDataset(apiKey, dataset3);
+					// TODO Bodies management has to be perfected to make sure the URIs of modified entities
+					// are mantained with a precise criteria. For now, when updating the URIs are kept while 
+					// URNs and blanks are replaced.
 					
-					return dataset3;
+					ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+					RDFDataMgr.write(outputStream, dataset, RDFLanguages.JSONLD);
+					println outputStream.toString();
+					
+					// Find body URI
+					// Query Content As Text
+					Set<Resource> embeddedTextualBodiesUris = new HashSet<Resource>();
+					int totalEmbeddedTextualBodies = openAnnotationUtilsService
+						.detectContextAsTextInDefaultGraph(apiKey, dataset, embeddedTextualBodiesUris);
+						
+					Set<Resource> storedEmbeddedTextualBodiesUris = new HashSet<Resource>();
+					int totalStoredEmbeddedTextualBodies = openAnnotationUtilsService
+						.detectContextAsTextInNamedGraphs(apiKey, storedAnnotationDataset, storedEmbeddedTextualBodiesUris);
+					
+					if(embeddedTextualBodiesUris.equals(storedEmbeddedTextualBodiesUris)) {
+						println 'same bodies yay'
+					} else {
+						println 'different bodies'
+						println 'update: ' + embeddedTextualBodiesUris
+						println 'stored: ' + storedEmbeddedTextualBodiesUris
+					}					
+					
+					Model newDefaultModel = dataset.getDefaultModel();
+					Dataset updateDataset = DatasetFactory.createMem();
+					updateDataset.addNamedModel(graphName, newDefaultModel);
+
+					// Find metadata graph			
+					def annotationGraphUri;
+					storedAnnotationDataset.listNames().each { annotationGraphUri = it }
+					
+					Model metaModel = jenaVirtuosoStoreService.retrieveGraphMetadata(apiKey, annotationGraphUri, "annotopia:graphs:provenance");
+					graphMetadataService.getAnnotationGraphUpdateMetadata(apiKey, metaModel, annotationGraphUri);					
+					updateDataset.addNamedModel("annotopia:graphs:provenance", metaModel);
+					
+					ByteArrayOutputStream outputStream3 = new ByteArrayOutputStream();
+					RDFDataMgr.write(outputStream3, updateDataset, RDFLanguages.JSONLD);
+					println outputStream3.toString();
+					
+					jenaVirtuosoStoreService.updateGraphMetadata(apiKey, metaModel, annotationGraphUri, "annotopia:graphs:provenance")
+					
+					jenaVirtuosoStoreService.updateDataset(apiKey, updateDataset);
+					
+					return updateDataset;
 				} else {
 					// Annotation not found
 					log.info("[" + apiKey + "] Annotation not found " + content);
@@ -330,12 +374,11 @@ class OpenAnnotationStorageService {
 				throw new StoreServiceException(200, json, "text/json", "UTF-8");
 			}
 		} else {
-			Dataset workingDataset = DatasetFactory.createMem();
-			RDFDataMgr.read(workingDataset, new ByteArrayInputStream(content.toString().getBytes("UTF-8")), RDFLanguages.JSONLD);
-			
-			jenaVirtuosoStoreService.updateDataset(apiKey, workingDataset);
-			
-			return workingDataset;
+			// Annotation Set not found
+			log.info("[" + apiKey + "] Annotation to be updated not found " + content);
+			def json = JSON.parse('{"status":"nocontent" ,"message":"The requested Annotation cannot be updated as it has not been found"' +
+				',"duration": "' + (System.currentTimeMillis()-startTime) + 'ms", ' + '}');
+			throw new StoreServiceException(200, json, "text/json", "UTF-8");
 		}
 	}
 	

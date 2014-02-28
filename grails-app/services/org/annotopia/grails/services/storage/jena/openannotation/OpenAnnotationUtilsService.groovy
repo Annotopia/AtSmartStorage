@@ -134,6 +134,23 @@ class OpenAnnotationUtilsService {
 		specificResourcesGraphsCounter
 	}
 	
+	public int detectContextAsTextInDefaultGraph(apiKey, Dataset dataset, Set<Resource> embeddedTextualBodiesUris) {
+		log.info("[" + apiKey + "] Identifiable Content as Text detection in default graph...");
+		String QUERY = "PREFIX cnt:<http://www.w3.org/2011/content#> SELECT DISTINCT ?s WHERE " +
+			"{{  { ?s a cnt:ContentAsText . }} }"
+		
+		int embeddedTextualBodiesCounter = 0;
+		QueryExecution qEmbeddedTextualBodies  = QueryExecutionFactory.create (QueryFactory.create(QUERY), dataset);
+		ResultSet rEmbeddedTextualBodies = qEmbeddedTextualBodies.execSelect();
+		while (rEmbeddedTextualBodies.hasNext()) {
+			QuerySolution querySolution = rEmbeddedTextualBodies.nextSolution();
+			embeddedTextualBodiesUris.add(querySolution.get("s"));
+			embeddedTextualBodiesCounter++;
+		}
+		log.info("[" + apiKey + "] Identifiable Content as Text " + embeddedTextualBodiesCounter);
+		embeddedTextualBodiesCounter
+	}
+	
 	/**
 	 * Detects all the Content As Text instances defined in Named Graphs
 	 * @param apiKey					The API key of the client that issued the request

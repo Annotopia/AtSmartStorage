@@ -204,6 +204,10 @@ class JenaVirtuosoStoreService implements ITripleStore {
 		}
 		storeDataset(apiKey, dataset);
 	}
+	
+	public updateGraphMetadata(String apiKey, Model graphMetadata, String graphUri, String metadataGraph) {
+		removeAllTriples(apiKey, metadataGraph, graphUri);
+	}
 
 	// -----------------------------------------------------------------------
 	//    RETRIEVE
@@ -221,9 +225,9 @@ class JenaVirtuosoStoreService implements ITripleStore {
 			" WHERE { ?s ?p ?o . }";
 		log.trace '[' + apiKey + '] ' + queryString
 		
-		String queryString2 = "CONSTRUCT { <"+graphUri+"> ?p ?o . } FROM <annotopia:graphs:provenance>" + 
-			" WHERE { <"+graphUri+"> ?p ?o .}";
-		log.trace '[' + apiKey + '] ' + queryString2
+//		String queryString2 = "CONSTRUCT { <"+graphUri+"> ?p ?o . } FROM <annotopia:graphs:provenance>" + 
+//			" WHERE { <"+graphUri+"> ?p ?o .}";
+//		log.trace '[' + apiKey + '] ' + queryString2
 		
 		try {
 			//Model model = ModelFactory.createMemModelMaker().createModel(graphUri);
@@ -233,10 +237,33 @@ class JenaVirtuosoStoreService implements ITripleStore {
 			Dataset dataset = DatasetFactory.createMem();
 			dataset.addNamedModel(graphUri, model);
 			
-			VirtuosoQueryExecution vqe2 = VirtuosoQueryExecutionFactory.create (QueryFactory.create(queryString2), set);
-			Model model2 = vqe2.execConstruct();
-			dataset.setDefaultModel(model2);
+//			VirtuosoQueryExecution vqe2 = VirtuosoQueryExecutionFactory.create (QueryFactory.create(queryString2), set);
+//			Model model2 = vqe2.execConstruct();
+//			dataset.setDefaultModel(model2);
 			return dataset;
+		} catch (Exception e) {
+			log.error(e.getMessage());
+			return null;
+		}
+	}
+	
+	@Override
+	public Model retrieveGraphMetadata(String apiKey, String graphUri, String metadataGraphUri) {
+		log.info '[' + apiKey + '] Retrieving graph metadata: ' + graphUri;
+		
+		VirtGraph set = new VirtGraph (graphUri,
+			grailsApplication.config.annotopia.storage.triplestore.host,
+			grailsApplication.config.annotopia.storage.triplestore.user,
+			grailsApplication.config.annotopia.storage.triplestore.pass);
+		
+		String queryString = "CONSTRUCT { <"+graphUri+"> ?p ?o . } FROM <" + metadataGraphUri + ">" +
+			" WHERE { <"+graphUri+"> ?p ?o .}";
+		log.trace '[' + apiKey + '] ' + queryString
+		
+		try {			
+			VirtuosoQueryExecution vqe = VirtuosoQueryExecutionFactory.create (QueryFactory.create(queryString), set);
+			Model model = vqe.execConstruct();
+			return model;
 		} catch (Exception e) {
 			log.error(e.getMessage());
 			return null;
@@ -280,6 +307,22 @@ class JenaVirtuosoStoreService implements ITripleStore {
 	// -----------------------------------------------------------------------
 	//    DROP/CLEAR
 	// -----------------------------------------------------------------------
+	
+	public void removeAllTriples(String apiKey, String graphUri, String subjectUri) {
+		log.info '[' + apiKey + '] Removing all triples with subject: ' + subjectUri + ' from: ' + graphUri;
+		
+		try {
+			String queryString = "DELETE DATA FROM <" + graphUri + ">" +
+				" WHERE { <"+subjectUri+"> ?p ?o .}";
+			log.trace '[' + apiKey + '] ' + queryString
+			
+			VirtuosoUpdateRequest vur = VirtuosoUpdateFactory.create(str, graph);
+			vur.exec();
+		} catch (Exception e) {
+			println e.getMessage();
+		}
+	}
+	
 	@Override
 	public boolean dropGraph(String apiKey, String graphUri) {
 		log.info '[' + apiKey + '] Removing graph: ' + graphUri;

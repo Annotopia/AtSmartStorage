@@ -107,8 +107,7 @@ class OpenAnnotationController {
 			
 			
 			int annotationsTotal = openAnnotationVirtuosoService.countAnnotationGraphs(apiKey, tgtUrl, tgtFgt);
-			int annotationsPages = (annotationsTotal/Integer.parseInt(max));
-			
+			int annotationsPages = (annotationsTotal/Integer.parseInt(max));		
 			if(annotationsTotal>0 && Integer.parseInt(offset)>0 && Integer.parseInt(offset)>=annotationsPages) {
 				def message = 'The requested page ' + offset + 
 					' does not exist, the page index limit is ' + (annotationsPages==0?"0":(annotationsPages-1));
@@ -117,7 +116,7 @@ class OpenAnnotationController {
 				return;
 			}
 			
-			Set<Dataset> annotationGraphs = openAnnotationStorageService.listAnnotation(apiKey, max, offset, tgtUrl, tgtFgt, tgtExt, tgtIds);
+			Set<Dataset> annotationGraphs = openAnnotationStorageService.listAnnotation(apiKey, max, offset, tgtUrl, tgtFgt, tgtExt, tgtIds, incGph);
 			def summaryPrefix = '"total":"' + annotationsTotal + '", ' +
 					'"pages":"' + annotationsPages + '", ' +
 					'"duration": "' + (System.currentTimeMillis()-startTime) + 'ms", ' +

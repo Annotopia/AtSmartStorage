@@ -50,7 +50,9 @@ class GraphMetadataService {
 		metaModel.add(graphRes, ResourceFactory.createProperty("http://purl.org/pav/createdBy"), ResourceFactory.createResource("annotopia:client:" + apiKey));
 		metaModel.add(graphRes, ResourceFactory.createProperty("http://purl.org/pav/createdAt"), ResourceFactory.createPlainLiteral(dateFormat.format(new Date())));
 		metaModel.add(graphRes, ResourceFactory.createProperty("http://purl.org/pav/lastUpdatedOn"), ResourceFactory.createPlainLiteral(dateFormat.format(new Date())));
+		metaModel.add(graphRes, ResourceFactory.createProperty("http://purl.org/pav/lastUpdatedBy"), ResourceFactory.createResource("annotopia:client:" + apiKey));
 		metaModel.add(graphRes, ResourceFactory.createProperty("http://purl.org/pav/createdWith"), ResourceFactory.createResource("annotopia:test:001"));
+		metaModel.add(graphRes, ResourceFactory.createProperty("http://purl.org/annotopia#status"), ResourceFactory.createPlainLiteral("current"));
 		dataset.addNamedModel("annotopia:graphs:provenance", metaModel);
 		metaModel
 	}
@@ -70,6 +72,18 @@ class GraphMetadataService {
 		metaModel.add(graphRes, ResourceFactory.createProperty("http://purl.org/pav/createdAt"), ResourceFactory.createPlainLiteral(dateFormat.format(new Date())));
 		metaModel.add(graphRes, ResourceFactory.createProperty("http://purl.org/pav/lastUpdatedOn"), ResourceFactory.createPlainLiteral(dateFormat.format(new Date())));
 		metaModel.add(graphRes, ResourceFactory.createProperty("http://purl.org/pav/createdWith"), ResourceFactory.createResource("annotopia:test:001"));
+		metaModel.add(graphRes, ResourceFactory.createProperty("http://purl.org/annotopia#status"), ResourceFactory.createPlainLiteral("current"));
+		metaModel
+	}
+	
+	public Model getAnnotationGraphUpdateMetadata(String apiKey, Model metaModel, def graphUri) {
+		def graphRes = ResourceFactory.createResource(graphUri);
+		metaModel.removeAll(graphRes, ResourceFactory.createProperty("http://purl.org/pav/lastUpdatedOn"), null);
+		metaModel.add(graphRes, ResourceFactory.createProperty("http://purl.org/pav/lastUpdatedOn"), ResourceFactory.createPlainLiteral(dateFormat.format(new Date())));
+		metaModel.removeAll(graphRes, ResourceFactory.createProperty("http://purl.org/pav/lastUpdatedBy"), null);
+		metaModel.add(graphRes, ResourceFactory.createProperty("http://purl.org/pav/lastUpdatedBy"), ResourceFactory.createResource("annotopia:client:" + apiKey));
+		metaModel.removeAll(graphRes, ResourceFactory.createProperty("http://purl.org/annotopia#current"), null);
+		metaModel.add(graphRes, ResourceFactory.createProperty("http://purl.org/annotopia#status"), ResourceFactory.createPlainLiteral("current"));
 		metaModel
 	}
 	
