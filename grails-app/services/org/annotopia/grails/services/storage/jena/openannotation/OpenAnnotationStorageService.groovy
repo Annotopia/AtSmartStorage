@@ -166,7 +166,7 @@ class OpenAnnotationStorageService {
 				// Swap annotation graph id and create metadata
 				def newAnnotationGraphUri = getGraphUri();
 				creationDataset.addNamedModel(newAnnotationGraphUri, workingDataset.getNamedModel(annotationGraphUri.toString()));
-				Model newAnnotationGraphMetadataModel = graphMetadataService.getAnnotationGraphCreationMetadata(creationDataset, newAnnotationGraphUri);
+				Model newAnnotationGraphMetadataModel = graphMetadataService.getAnnotationGraphCreationMetadata(apiKey, creationDataset, newAnnotationGraphUri);
 				newAnnotationGraphMetadataModel.add(
 					ResourceFactory.createResource(newAnnotationGraphUri), 
 					ResourceFactory.createProperty("http://purl.org/pav/previousVersion"), 
@@ -178,7 +178,7 @@ class OpenAnnotationStorageService {
 				Resource bodyGraphUri = bodiesGraphsUrisIterator.next();
 				def newBodyGraphUri = getGraphUri();
 				creationDataset.addNamedModel(newBodyGraphUri, workingDataset.getNamedModel(bodyGraphUri.toString()));
-				Model newBodyGraphMetadataModel = graphMetadataService.getBodyGraphCreationMetadata(creationDataset, newBodyGraphUri);
+				Model newBodyGraphMetadataModel = graphMetadataService.getBodyGraphCreationMetadata(apiKey, creationDataset, newBodyGraphUri);
 				newBodyGraphMetadataModel.add(
 					ResourceFactory.createResource(newBodyGraphUri), 
 					ResourceFactory.createProperty("http://purl.org/pav/previousVersion"), 
@@ -209,12 +209,12 @@ class OpenAnnotationStorageService {
 				ResourceFactory.createResource("http://www.w3.org/2011/content#ContentAsText"), "content");
 			
 			def graphUri = getGraphUri();
-			Dataset dataset3 = DatasetFactory.createMem();
-			dataset3.addNamedModel(graphUri, workingDataset.getDefaultModel());
+			Dataset creationDataset = DatasetFactory.createMem();
+			creationDataset.addNamedModel(graphUri, workingDataset.getDefaultModel());
 			
-			graphMetadataService.getAnnotationGraphCreationMetadata(dataset3, graphUri);			
-			jenaVirtuosoStoreService.storeDataset(apiKey, dataset3);
-			return dataset3;
+			graphMetadataService.getAnnotationGraphCreationMetadata(apiKey, creationDataset, graphUri);			
+			jenaVirtuosoStoreService.storeDataset(apiKey, creationDataset);
+			return creationDataset;
 		} else {
 			// Annotation Set not found
 			log.info("[" + apiKey + "] Annotation not found " + content);
