@@ -151,7 +151,7 @@ class OpenAnnotationStorageService {
 			Iterator<Resource> annotationsGraphsUrisIterator = annotationsGraphsUris.iterator();
 			if(annotationsGraphsUrisIterator.hasNext()) {
 				Resource annotationGraphUri = annotationsGraphsUrisIterator.next();
-				identifiableURIs(apiKey, workingDataset.getNamedModel(annotationGraphUri.toString()),
+				Resource annotation = identifiableURIs(apiKey, workingDataset.getNamedModel(annotationGraphUri.toString()),
 					ResourceFactory.createProperty("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"),
 					ResourceFactory.createResource("http://www.w3.org/ns/oa#Annotation"), "annotation");
 				
@@ -171,21 +171,31 @@ class OpenAnnotationStorageService {
 					ResourceFactory.createResource(newAnnotationGraphUri), 
 					ResourceFactory.createProperty("http://purl.org/pav/previousVersion"), 
 					ResourceFactory.createResource(annotationGraphUri.toString()));
+				
+				// Swap body graph id and create metadata
+				Iterator<Resource> bodiesGraphsUrisIterator = bodiesGraphsUris.iterator();
+				if(bodiesGraphsUrisIterator.hasNext()) {
+					Resource bodyGraphUri = bodiesGraphsUrisIterator.next();
+					def newBodyGraphUri = getGraphUri();
+					creationDataset.addNamedModel(newBodyGraphUri, workingDataset.getNamedModel(bodyGraphUri.toString()));
+					Model newBodyGraphMetadataModel = graphMetadataService.getBodyGraphCreationMetadata(apiKey, creationDataset, newBodyGraphUri);
+					newBodyGraphMetadataModel.add(
+						ResourceFactory.createResource(newBodyGraphUri),
+						ResourceFactory.createProperty("http://purl.org/pav/previousVersion"),
+						ResourceFactory.createResource(bodyGraphUri.toString()));
+					
+					Model annotationModel = workingDataset.getNamedModel(annotationGraphUri.toString());
+					StmtIterator statements = annotationModel.listStatements(annotation, 
+						ResourceFactory.createProperty("http://www.w3.org/ns/oa#hasBody"), null);
+					List<Statement> statementsToRemove = new ArrayList<Statement>();
+					statementsToRemove.addAll(statements);
+					statementsToRemove.each { statement ->
+						annotationModel.remove(statement);
+						annotationModel.add(annotation, ResourceFactory.createProperty("http://www.w3.org/ns/oa#hasBody"), 
+							ResourceFactory.createResource(newBodyGraphUri));
+					}
+				}
 			}
-			
-			Iterator<Resource> bodiesGraphsUrisIterator = bodiesGraphsUris.iterator();
-			if(bodiesGraphsUrisIterator.hasNext()) {
-				Resource bodyGraphUri = bodiesGraphsUrisIterator.next();
-				def newBodyGraphUri = getGraphUri();
-				creationDataset.addNamedModel(newBodyGraphUri, workingDataset.getNamedModel(bodyGraphUri.toString()));
-				Model newBodyGraphMetadataModel = graphMetadataService.getBodyGraphCreationMetadata(apiKey, creationDataset, newBodyGraphUri);
-				newBodyGraphMetadataModel.add(
-					ResourceFactory.createResource(newBodyGraphUri), 
-					ResourceFactory.createProperty("http://purl.org/pav/previousVersion"), 
-					ResourceFactory.createResource(bodyGraphUri.toString()));
-			}
-
-			// Swap body graph id and create metadata
 			
 			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 			RDFDataMgr.write(outputStream, creationDataset, RDFLanguages.JSONLD);
@@ -354,7 +364,7 @@ class OpenAnnotationStorageService {
 		return toReturn;
 	}
 	
-	private void identifiableURIs(String apiKey, Model model, Property property, Resource resource, String uriType) {
+	private Resource identifiableURIs(String apiKey, Model model, Property property, Resource resource, String uriType) {
 		
 		log.info("[" + apiKey + "] Minting URIs (2) " + uriType + " " + resource.toString());
 		
@@ -397,5 +407,7 @@ class OpenAnnotationStorageService {
 				ResourceFactory.createProperty("http://purl.org/pav/previousVersion"),
 				ResourceFactory.createPlainLiteral("blank")
 				));
+			
+		rUri;
 	}
 }
