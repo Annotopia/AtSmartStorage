@@ -39,7 +39,13 @@ class GraphMetadataService {
 	public Model getAnnotationGraphCreationMetadata(Dataset dataset, def graphUri) {
 		def metaGraphUri = getGraphUri();
 		def graphRes = ResourceFactory.createResource(graphUri);
-		Model metaModel = ModelFactory.createDefaultModel();
+		Model metaModel 
+		if(dataset.getNamedModel("annotopia:graphs:provenance")!=null) {
+			 metaModel = dataset.getNamedModel("annotopia:graphs:provenance");
+		} else {
+		 	 metaModel = ModelFactory.createDefaultModel();
+			 dataset.addNamedModel("annotopia:graphs:provenance", metaModel);
+		}
 		metaModel.add(graphRes, ResourceFactory.createProperty("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"), ResourceFactory.createResource("http://purl.org/annotopia#AnnotationGraph"));
 		metaModel.add(graphRes, ResourceFactory.createProperty("http://purl.org/pav/createdAt"), ResourceFactory.createPlainLiteral(dateFormat.format(new Date())));
 		metaModel.add(graphRes, ResourceFactory.createProperty("http://purl.org/pav/lastUpdatedOn"), ResourceFactory.createPlainLiteral(dateFormat.format(new Date())));
@@ -51,12 +57,17 @@ class GraphMetadataService {
 	public Model getBodyGraphCreationMetadata(Dataset dataset, def graphUri) {
 		def metaGraphUri = getGraphUri();
 		def graphRes = ResourceFactory.createResource(graphUri);
-		Model metaModel = ModelFactory.createDefaultModel();
+		Model metaModel 
+		if(dataset.getNamedModel("annotopia:graphs:provenance")!=null) {
+			 metaModel = dataset.getNamedModel("annotopia:graphs:provenance");
+		} else {
+		 	 metaModel = ModelFactory.createDefaultModel();
+			 dataset.addNamedModel("annotopia:graphs:provenance", metaModel);
+		}
 		metaModel.add(graphRes, ResourceFactory.createProperty("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"), ResourceFactory.createResource("http://purl.org/annotopia#BodyGraph"));
 		metaModel.add(graphRes, ResourceFactory.createProperty("http://purl.org/pav/createdAt"), ResourceFactory.createPlainLiteral(dateFormat.format(new Date())));
 		metaModel.add(graphRes, ResourceFactory.createProperty("http://purl.org/pav/lastUpdatedOn"), ResourceFactory.createPlainLiteral(dateFormat.format(new Date())));
 		metaModel.add(graphRes, ResourceFactory.createProperty("http://purl.org/pav/createdWith"), ResourceFactory.createResource("annotopia:test:001"));
-		dataset.addNamedModel("annotopia:graphs:provenance", metaModel);
 		metaModel
 	}
 	
