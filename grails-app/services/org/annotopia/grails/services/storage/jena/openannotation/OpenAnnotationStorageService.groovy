@@ -101,7 +101,7 @@ class OpenAnnotationStorageService {
 	 * @param dataset		The Dataset with the annotation content
 	 * @return The Dataset with the saved (persisted) content. 
 	 */
-	public Dataset saveAnnotationDataset(apiKey, startTime, Dataset dataset) {
+	public Dataset saveAnnotationDataset(String apiKey, Long startTime, Dataset dataset) {
 		
 //		def addCreationDetails = { model, resource ->
 //			model.add(resource, ResourceFactory.createProperty("http://purl.org/pav/createdAt"), ResourceFactory.createPlainLiteral(dateFormat.format(new Date())));
@@ -139,8 +139,37 @@ class OpenAnnotationStorageService {
 			throw new StoreServiceException(200, json, "text/json", "UTF-8");
 		}
 		
-		String content;
-		if(detectedAnnotationGraphsCounter>0) {
+		String content; 
+		if(defaultGraphDetected) {
+			// If the content is expressed in the default graph, it is necessary 
+			// to swap blank nodes and temporary URIs with persistent URIs
+			
+			// Annotation identifier
+			identifiableURIs(apiKey, dataset.getDefaultModel(),
+				ResourceFactory.createProperty("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"),
+				ResourceFactory.createResource("http://www.w3.org/ns/oa#Annotation"), "annotation");
+			
+			// Specific Resource identifier
+			identifiableURIs(apiKey, dataset.getDefaultModel(),
+				ResourceFactory.createProperty("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"),
+				ResourceFactory.createResource("http://www.w3.org/ns/oa#SpecificResource"), "resource");
+
+			// Embedded content (as RDF) identifier
+			identifiableURIs(apiKey, dataset.getDefaultModel(),
+				ResourceFactory.createProperty("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"),
+				ResourceFactory.createResource("http://www.w3.org/2011/content#ContentAsText"), "content");
+			
+			// Minting of the URI for the Named Graph that will wrap the
+			// default graph
+			def graphUri = getGraphUri();
+			Dataset creationDataset = DatasetFactory.createMem();
+			creationDataset.addNamedModel(graphUri, dataset.getDefaultModel());
+			// Creation of the metadata for the Graph wrapper
+			graphMetadataService.getAnnotationGraphCreationMetadata(apiKey, creationDataset, graphUri);
+			
+			jenaVirtuosoStoreService.storeDataset(apiKey, creationDataset);
+			return creationDataset;
+		} else if(detectedAnnotationGraphsCounter>0) {
 			// Query Specific Resources
 			Set<Resource> specificResourcesUris = new HashSet<Resource>();
 			int totalDetectedSpecificResources = openAnnotationUtilsService
@@ -221,28 +250,6 @@ class OpenAnnotationStorageService {
 			RDFDataMgr.write(outputStream, creationDataset, RDFLanguages.JSONLD);
 			println outputStream.toString();
 			
-			jenaVirtuosoStoreService.storeDataset(apiKey, creationDataset);
-			return creationDataset;
-		} else if(defaultGraphDetected) {
-			Dataset workingDataset = dataset;
-
-			identifiableURIs(apiKey, workingDataset.getDefaultModel(),
-				ResourceFactory.createProperty("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"),
-				ResourceFactory.createResource("http://www.w3.org/ns/oa#Annotation"), "annotation");
-			
-			identifiableURIs(apiKey, workingDataset.getDefaultModel(),
-				ResourceFactory.createProperty("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"),
-				ResourceFactory.createResource("http://www.w3.org/ns/oa#SpecificResource"), "resource");
-
-			identifiableURIs(apiKey, workingDataset.getDefaultModel(),
-				ResourceFactory.createProperty("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"),
-				ResourceFactory.createResource("http://www.w3.org/2011/content#ContentAsText"), "content");
-			
-			def graphUri = getGraphUri();
-			Dataset creationDataset = DatasetFactory.createMem();
-			creationDataset.addNamedModel(graphUri, workingDataset.getDefaultModel());
-			
-			graphMetadataService.getAnnotationGraphCreationMetadata(apiKey, creationDataset, graphUri);			
 			jenaVirtuosoStoreService.storeDataset(apiKey, creationDataset);
 			return creationDataset;
 		} else {
