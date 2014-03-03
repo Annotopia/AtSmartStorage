@@ -92,6 +92,15 @@ class OpenAnnotationStorageService {
 		return datasets;
 	}
 	
+	/**
+	 * Saves the annotation Dataset. The service now accept one single item
+	 * for each given request. However, the request can include multiple 
+	 * graphs. The method uses Dataset for supporting multiple graphs. 
+	 * @param apiKey		The API key of the client issuing the request
+	 * @param startTime		The start time used for calculating the total elapsed time
+	 * @param dataset		The Dataset with the annotation content
+	 * @return The Dataset with the saved (persisted) content. 
+	 */
 	public Dataset saveAnnotationDataset(apiKey, startTime, Dataset dataset) {
 		
 //		def addCreationDetails = { model, resource ->
@@ -99,13 +108,14 @@ class OpenAnnotationStorageService {
 //			model.add(resource, ResourceFactory.createProperty("http://purl.org/pav/lastUpdatedOn"), ResourceFactory.createPlainLiteral(dateFormat.format(new Date())));
 //		}
 		
-				
+		// Registry of the URIs of the annotations.
+		// Note: The method currently supports the saving of one annotation at a time
+		Set<Resource> annotationUris = new HashSet<Resource>();
 		
-		// Detect all named graphs
+		// Registry of all named graphs in the transaction
 		Set<Resource> graphsUris = jenaUtilsService.detectNamedGraphs(apiKey, dataset);
 
 		// Detection of default graph
-		Set<Resource> annotationUris = new HashSet<Resource>();
 		int annotationsInDefaultGraphsCounter = openAnnotationUtilsService.detectAnnotationsInDefaultGraph(apiKey, dataset, annotationUris, null)
 		boolean defaultGraphDetected = (annotationsInDefaultGraphsCounter>0);
 		
@@ -115,6 +125,7 @@ class OpenAnnotationStorageService {
 		int detectedAnnotationGraphsCounter = openAnnotationUtilsService.detectAnnotationsInNamedGraph(
 			apiKey, dataset, graphsUris, annotationsGraphsUris, annotationUris, null)
 		
+		// Enforcing the limit to one annotation per transaction
 		if(defaultGraphDetected && detectedAnnotationGraphsCounter>0) {
 			log.info("[" + apiKey + "] Mixed Annotation content detected... request rejected.");
 			def json = JSON.parse('{"status":"nocontent" ,"message":"The request carries a mix of Annotations and Annotation Graphs"' +

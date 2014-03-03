@@ -246,19 +246,21 @@ class OpenAnnotationController {
 	def save = {
 		long startTime = System.currentTimeMillis();
 		
+		// Verifying the API key
 		def apiKey = request.JSON.apiKey;
 		if(!apiKeyAuthenticationService.isApiKeyValid(request.getRemoteAddr(), apiKey)) {
 			invalidApiKey(request.getRemoteAddr()); return;
 		}
 		
+		// Parsing the incoming parameters
 		def item = request.JSON.item
 		def flavor = (request.JSON.flavor!=null)?request.JSON.flavor:"OA";
 		def validate = (request.JSON.validate!=null)?request.JSON.validate:"OFF";
 				
 		if(item!=null) {
 			log.warn("[" + apiKey + "] TODO: Validation of the Annotation content requested but not implemented yest!");
-			
-			
+						
+			// Reads the inputs in a dataset
 			Dataset inMemoryDataset = DatasetFactory.createMem();
 			try {
 				RDFDataMgr.read(inMemoryDataset, new ByteArrayInputStream(item.toString().getBytes("UTF-8")), RDFLanguages.JSONLD);
@@ -269,6 +271,7 @@ class OpenAnnotationController {
 				return;
 			}
 			
+			// Saves the annotation through services
 			Dataset savedAnnotation;
 			try {
 				savedAnnotation = openAnnotationStorageService.saveAnnotationDataset(apiKey, startTime, inMemoryDataset);
@@ -278,6 +281,7 @@ class OpenAnnotationController {
 			}
 			
 			if(savedAnnotation!=null) { 
+				// Streams back the saved annotation with the proper provenance
 				response.contentType = "text/json;charset=UTF-8"
 				response.outputStream << '{"status":"saved", "result": {' +
 					'"duration": "' + (System.currentTimeMillis()-startTime) + 'ms", ' +
@@ -293,7 +297,7 @@ class OpenAnnotationController {
 				render(status: 500, text: returnMessage(apiKey, "exception", message, startTime), contentType: "text/json", encoding: "UTF-8");
 			}
 		} else {
-			// Annotation Set not found
+			// Annotation not found
 			def message = "No annotation found in the request";
 			render(status: 200, text: returnMessage(apiKey, "nocontent", message, startTime), contentType: "text/json", encoding: "UTF-8");
 		}
