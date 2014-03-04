@@ -229,19 +229,14 @@ class OpenAnnotationStorageService {
 					ResourceFactory.createResource(annotationGraphUri.toString()));
 				
 				if(bodiesGraphsUris.size()>0) {
-					println 'graphs bodies'
-					
 					HashMap<String, String> oldNewBodyUriMapping = new HashMap<String, String>();
 					Iterator<Resource> bodiesGraphsUrisIterator = bodiesGraphsUris.iterator();
-					while(bodiesGraphsUrisIterator.hasNext()) {
-						
+					while(bodiesGraphsUrisIterator.hasNext()) {						
 						// Bodies graphs identifiers
 						Resource bodyGraphUri = bodiesGraphsUrisIterator.next();
 						def newBodyGraphUri = getGraphUri();
-						println 'yolo ' + newBodyGraphUri + " - " + bodyGraphUri.toString()
 						creationDataset.addNamedModel(newBodyGraphUri, workingDataset.getNamedModel(bodyGraphUri.toString()));
 						oldNewBodyUriMapping.put(bodyGraphUri.toString(), newBodyGraphUri);
-						println 'yu ' + oldNewBodyUriMapping.size();
 						
 						// Bodies graphs metadata
 						Model newBodyGraphMetadataModel = 
@@ -271,12 +266,12 @@ class OpenAnnotationStorageService {
 							ResourceFactory.createResource(oldNewBodyUriMapping.get(oldUri)));
 					}
 				} else {
-					log.info("[" + apiKey + "] Detecting anonymous body graphs");
-					
-					log.info("[" + apiKey + "] Anonymous body Graph detected... request rejected.");
-					def json = JSON.parse('{"status":"nocontent" ,"message":"The request carries anonymous body Graphs"' +
-						',"duration": "' + (System.currentTimeMillis()-startTime) + 'ms", ' + '}');
-					throw new StoreServiceException(501, json, "text/json", "UTF-8");
+					if(graphsUris.size()>0) {
+						log.info("[" + apiKey + "] Anonymous body Graph detected... request rejected.");
+						def json = JSON.parse('{"status":"nocontent" ,"message":"The request carries anonymous body Graphs"' +
+							',"duration": "' + (System.currentTimeMillis()-startTime) + 'ms", ' + '}');
+						throw new StoreServiceException(501, json, "text/json", "UTF-8");
+					}
 				}
 			}			
 //			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
