@@ -31,7 +31,7 @@ class OpenAnnotationControllerPostTests extends GroovyTestCase {
 
 	def grailsApplication = new org.codehaus.groovy.grails.commons.DefaultGrailsApplication()
 	
-	void testEmbeddedCommentOnFullResourceNoGraph() {
+	void testPublicEmbeddedCommentOnFullResourceNoGraph() {
 		
 		/*	 
 		 	curl -i -X POST http://localhost:8080/s/annotation  \
@@ -45,9 +45,18 @@ class OpenAnnotationControllerPostTests extends GroovyTestCase {
 				'"@id" : "urn:temp:001",' +
 				'"@type" : "http://www.w3.org/ns/oa#Annotation",' +
 				'"motivatedBy":"oa:commenting",' +
-				'"annotatedBy":{"@id":"http://orcid.org/0000-0002-5156-2703","@type":"foaf:Person","foaf:name":"Paolo Ciccarese"},' + 
-				'"annotatedAt":"2014-02-17T09:46:11EST","serializedBy":"urn:application:domeo","serializedAt":"2014-02-17T09:46:51EST", ' + 
-				'"hasBody" : {"@type" : ["cnt:ContentAsText", "dctypes:Text"],"cnt:chars": "This is Paolo Ciccareses CV","dc:format": "text/plain"},' + 
+				'"annotatedBy":{' +
+				 	'"@id":"http://orcid.org/0000-0002-5156-2703",' +
+					'"@type":"foaf:Person","foaf:name":"Paolo Ciccarese"' + 
+				'},' +
+				'"annotatedAt":"2014-02-17T09:46:11EST",' +
+				'"serializedBy":"urn:application:domeo",' +
+				'"serializedAt":"2014-02-17T09:46:51EST",' + 
+				'"hasBody" : {' +
+					'"@type" : ["cnt:ContentAsText", "dctypes:Text"],' +
+					'"cnt:chars": "This is Paolo Ciccarese CV",' + 
+					'"dc:format": "text/plain"' +
+				'},' + 
 				'"hasTarget" : "http://paolociccarese.info"}' + 
 			'}';
 		
@@ -83,7 +92,7 @@ class OpenAnnotationControllerPostTests extends GroovyTestCase {
 		assertTrue foundProvenanceGraph;
 	}
 	
-	void testEmbeddedCommentOnTextualFragmentOfResourceNoGraph() {
+	void testPublicEmbeddedCommentOnTextualFragmentOfResourceNoGraph() {
 		
 		/*
 		 	curl -i -X POST http://localhost:8080/s/annotation \
@@ -97,12 +106,26 @@ class OpenAnnotationControllerPostTests extends GroovyTestCase {
 				'"@id": "urn:temp:7",' + 
 				'"@type": "oa:Annotation",' + 
 				'"motivatedBy": "oa:commenting",' + 
-				'"annotatedBy":{"@id":"http://orcid.org/0000-0002-5156-2703","@type":"foaf:Person","foaf:name":"Paolo Ciccarese"},' +
-				'"annotatedAt":"2014-02-17T09:46:11EST","serializedBy":"urn:application:domeo","serializedAt":"2014-02-17T09:46:51EST",' +
+				'"annotatedBy":{' +
+				 	'"@id":"http://orcid.org/0000-0002-5156-2703",' +
+					'"@type":"foaf:Person","foaf:name":"Paolo Ciccarese"' + 
+				'},' +
+				'"annotatedAt":"2014-02-17T09:46:11EST",' +
+				'"serializedBy":"urn:application:domeo",' +
+				'"serializedAt":"2014-02-17T09:46:51EST",' +
 				'"hasBody" : {"@type" : ["cnt:ContentAsText", "dctypes:Text"],"cnt:chars": "This is Paolo Ciccarese CV","dc:format": "text/plain"},' +
 				'"hasTarget": {"@id": "urn:temp:8","@type": "oa:SpecificResource",' + 
-					'"hasSelector": {"@type": "oa:TextQuoteSelector","exact": "senior scientist and software engineer", "prefix": "I am a","suffix": ", working in the bio-medical informatics field since the year 2000"},' +
-				'"hasSource": {"@id": "http://paolociccarese.info","@type": "dctypes:Text"}}' +
+					'"hasSelector": {' +
+						'"@type": "oa:TextQuoteSelector",' +
+						'"exact": "senior scientist and software engineer", ' +
+						'"prefix": "I am a",' +
+						'"suffix": ", working in the bio-medical informatics field since the year 2000"' +
+					'},' +
+					'"hasSource": {' +
+						'"@id": "http://paolociccarese.info",' +
+						'"@type": "dctypes:Text"' +
+					'}' +
+				'}' +
 			'}'
 				
 		def c = new OpenAnnotationController()
@@ -143,5 +166,78 @@ class OpenAnnotationControllerPostTests extends GroovyTestCase {
 			}
 		}
 		assertTrue foundProvenanceGraph;
+	}
+	
+	void testPublicHighlightOnTextualFragmentOfResourceNoGraph() {
+		
+		/*
+			curl -i -X POST http://localhost:8080/s/annotation \
+			-H "Content-Type: application/json" \
+			-d '{"apiKey": "testkey","item": {"@context": "https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/OAContext.json","@id": "urn:temp:7","@type": "oa:Annotation","motivatedBy": "oa:highlighting","annotatedBy":{"@id":"http://orcid.org/0000-0002-5156-2703","@type":"foaf:Person","foaf:name":"Paolo Ciccarese"},"annotatedAt":"2014-02-17T09:46:11EST","serializedBy":"urn:application:domeo","serializedAt":"2014-02-17T09:46:51EST","hasTarget": {"@id": "urn:temp:8","@type": "oa:SpecificResource","hasSelector": {"@type": "oa:TextQuoteSelector","exact": "senior scientist and software engineer", "prefix": "I am a","suffix": ", working in the bio-medical informatics field since the year 2000"},"hasSource": {"@id": "http://paolociccarese.info","@type": "dctypes:Text"}}}}'
+		 */
+		
+		String content = 
+			'{' +
+				'"@context": "https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/OAContext.json",' +
+				'"@id": "urn:temp:7",' + 
+				'"@type": "oa:Annotation",' +
+				'"motivatedBy": "oa:highlighting",' +
+				'"annotatedBy":{' +
+				 	'"@id":"http://orcid.org/0000-0002-5156-2703",' +
+					'"@type":"foaf:Person","foaf:name":"Paolo Ciccarese"' + 
+				'},' +
+				'"annotatedAt":"2014-02-17T09:46:11EST",' +
+				'"serializedBy":"urn:application:domeo",' +
+				'"serializedAt":"2014-02-17T09:46:51EST",' +
+				'"hasTarget": {"@id": "urn:temp:8","@type": "oa:SpecificResource",' + 
+					'"hasSelector": {' +
+						'"@type": "oa:TextQuoteSelector",' +
+						'"exact": "senior scientist and software engineer", ' +
+						'"prefix": "I am a",' +
+						'"suffix": ", working in the bio-medical informatics field since the year 2000"' +
+					'},' +
+					'"hasSource": {' +
+						'"@id": "http://paolociccarese.info",' +
+						'"@type": "dctypes:Text"' +
+					'}' +
+				'}' +
+			'}'
+
+		def c = new OpenAnnotationController()
+		c.request.method = "POST"
+		c.request.JSON = '{"apiKey":"' + grailsApplication.config.annotopia.storage.testing.apiKey + '","item":' + content+ '}'
+		c.save();
+		
+		assertEquals 200, response.status
+		
+		def json = JSON.parse(response.contentAsString);
+		assertEquals 'saved', json.status
+		
+		boolean foundBody = false;
+		boolean foundProvenanceGraph = false;
+		json.result.item[0]['@graph'].each { graph ->
+			if(graph['@id']==grailsApplication.config.annotopia.storage.uri.graph.provenance) foundProvenanceGraph = true;
+			graph['@graph'].each { subgraph ->
+				if(subgraph['@type']=='http://www.w3.org/ns/oa#Annotation') {
+					assertEquals 'urn:temp:7', subgraph['http://purl.org/pav/previousVersion']
+					assertEquals 'http://www.w3.org/ns/oa#highlighting', subgraph['http://www.w3.org/ns/oa#motivatedBy']['@id']
+					assertEquals 'urn:application:domeo', subgraph['http://www.w3.org/ns/oa#serializedBy']['@id']
+				} else if(subgraph['@type'].contains('http://www.w3.org/2011/content#ContentAsText')) {
+					foundBody = true;
+				} else if(subgraph['@type'].contains('http://purl.org/annotopia#AnnotationGraph')) {
+					assertNotNull subgraph['http://purl.org/pav/lastUpdatedOn']
+				}  else if(subgraph['@type'].contains('http://www.w3.org/ns/oa#TextQuoteSelector')) {
+					assertNotNull subgraph['http://www.w3.org/ns/oa#exact']
+					assertNotNull subgraph['http://www.w3.org/ns/oa#prefix']
+					assertNotNull subgraph['http://www.w3.org/ns/oa#suffix']
+				}  else if(subgraph['@type'].contains('http://www.w3.org/ns/oa#SpecificResource')) {
+					assertEquals 'urn:temp:8', subgraph['http://purl.org/pav/previousVersion']
+					assertNotNull subgraph['http://www.w3.org/ns/oa#hasSelector']
+					assertNotNull subgraph['http://www.w3.org/ns/oa#hasSource']
+				}
+			}
+		}
+		assertTrue foundProvenanceGraph;
+		assertFalse foundBody;
 	}
 }
