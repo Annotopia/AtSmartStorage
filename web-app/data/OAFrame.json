@@ -48,7 +48,6 @@
 	    "styleClass" :   "oa:styleClass"
 
   },
-  "@graph" : [ {
   "@type": "oa:Annotation",
   "hasBody": {
     "@type": "cnt:ContentAsText"
@@ -56,6 +55,7 @@
   "hasTarget": {
   },
   "annotatedBy" : { 
+    "@type": ["foaf:Person","foaf:Software"]
   }
-  }]
+
 }
