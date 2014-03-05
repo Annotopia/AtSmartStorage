@@ -440,7 +440,7 @@ class OpenAnnotationControllerPostTests extends GroovyTestCase {
 		/*
 		 	curl -i -X POST http://localhost:8080/s/annotation \
 			-H "Content-Type: application/json" \
-			-d '{"apiKey":"testkey", "item":{"@context": "https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/OAContext.json","@graph": [{"@id": "urn:temp:1","@type": "rdf:Graph","@graph": {"@id": "http://www.example.org/artifact1","label": "yolo body 1"}},{"@id": "urn:temp:2","@type": "rdf:Graph","@graph": {"@id": "http://www.example.org/artifact2","label": "yolo body 2"}},{"@id": "urn:temp:3","@type": "rdf:Graph","@graph": {"@id": "urn:temp:7","@type": "oa:Annotation","hasBody": ["urn:temp:1","urn:temp:2"],"hasTarget": "http://paolociccarese.info"}}]}}'
+			-d '{"apiKey":"testkey", "item":{"@context": "https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/OAContext.json","@graph": [{"@id": "urn:temp:1","@type": "rdf:Graph","@graph": {"@id": "http://www.example.org/artifact1","label": "yolo body 1"}},{"@id": "urn:temp:2","@type": "rdf:Graph","@graph": {"@id": "http://www.example.org/artifact2","label": "yolo body 2"}},{"@id": "urn:temp:3","@type": "rdf:Graph","@graph": {"@id": "urn:temp:7","@type": "oa:Annotation","motivatedBy":"oa:describing","hasBody": ["urn:temp:1","urn:temp:2"],"hasTarget": "http://paolociccarese.info"}}]}}'
 		 */	
 		
 		String content =
@@ -469,6 +469,7 @@ class OpenAnnotationControllerPostTests extends GroovyTestCase {
 						'"@graph": {' +
 							'"@id": "urn:temp:7",' +
 							'"@type": "oa:Annotation",' + 
+							'"motivatedBy":"oa:describing",' +
 							'"hasBody": ["urn:temp:1","urn:temp:2"],' + 
 							'"hasTarget": "http://paolociccarese.info"' +
 						'}' +
@@ -485,5 +486,31 @@ class OpenAnnotationControllerPostTests extends GroovyTestCase {
 		
 		def json = JSON.parse(response.contentAsString);
 		assertEquals 'saved', json.status
+		
+		int graphsCounter = 0;
+		int bodyGraphCounter = 0;
+		int bodyCounter = 0;
+		boolean foundProvenanceGraph = false;
+		json.result.item[0]['@graph'].each { graph ->
+			graphsCounter++;
+			if(graph['@id']==grailsApplication.config.annotopia.storage.uri.graph.provenance) foundProvenanceGraph = true;
+			graph['@graph'].each { subgraph ->
+				if(subgraph['@type']=='http://www.w3.org/ns/oa#Annotation') {
+					assertEquals 'urn:temp:7', subgraph['http://purl.org/pav/previousVersion']
+					assertEquals 'http://www.w3.org/ns/oa#describing', subgraph['http://www.w3.org/ns/oa#motivatedBy']['@id']
+					//assertEquals 'urn:application:domeo', subgraph['http://www.w3.org/ns/oa#serializedBy']['@id']
+				} else if(subgraph['@type']==null) {
+					bodyCounter++ ;
+				} else if(subgraph['@type'].contains('http://purl.org/annotopia#AnnotationGraph')) {
+					assertNotNull subgraph['http://purl.org/pav/lastUpdatedOn']
+				} else if(subgraph['@type'].contains('http://purl.org/annotopia#BodyGraph')) {
+					bodyGraphCounter++
+				}
+			}
+		}
+		assertEquals 4, graphsCounter;
+		assertTrue foundProvenanceGraph;
+		assertEquals 2, bodyCounter;
+		assertEquals 2, bodyGraphCounter
 	}
 }
