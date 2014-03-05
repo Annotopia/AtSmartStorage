@@ -45,4 +45,26 @@ class OpenAnnotationControllerTests extends GroovyTestCase {
 		
 		assertEquals 200, response.status
 	}
+	
+	void testValidationInvalidApiKey() {
+		def c = new OpenAnnotationController()
+		c.validate()
+		
+		assertEquals 401, response.status
+	}
+	
+	void testValidationValidApiKey() {
+		
+		/*
+		 	curl -i -X POST http://localhost:8080/oa/validate \
+		 	-H "Content-Type: application/json" \
+		 	-d '{"apiKey":"testkey"}'	
+		 */
+		
+		def c = new OpenAnnotationController()
+		c.request.JSON = '{"apiKey":"' + grailsApplication.config.annotopia.storage.testing.apiKey + '"}'
+		c.validate()
+		
+		assertEquals 200, response.status
+	}
 }

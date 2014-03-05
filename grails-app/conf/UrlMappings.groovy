@@ -9,6 +9,10 @@ class UrlMappings {
 			controller = "openAnnotation"
 			action = [GET:"show", POST:"save", PUT:"update"]
 		}
+		"/oa/validate"{
+			controller = "openAnnotation"
+			action = "validate"
+		}
 		
 		"/$controller/$action?/$id?"{
 			constraints {

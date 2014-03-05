@@ -29,6 +29,8 @@ import javax.servlet.http.HttpServletRequest
 import org.annotopia.groovy.service.store.StoreServiceException
 import org.apache.jena.riot.RDFDataMgr
 import org.apache.jena.riot.RDFLanguages
+import org.codehaus.groovy.grails.web.json.JSONArray
+import org.codehaus.groovy.grails.web.json.JSONObject
 
 import com.github.jsonldjava.core.JsonLdOptions
 import com.github.jsonldjava.core.JsonLdProcessor
@@ -48,6 +50,7 @@ class OpenAnnotationController {
 	def openAnnotationVirtuosoService;
 	def annotationJenaStorageService;
 	def openAnnotationStorageService
+	def openAnnotationValidationService;
 	def apiKeyAuthenticationService;
 	def virtuosoJenaStoreService;
 	
@@ -195,7 +198,7 @@ class OpenAnnotationController {
 						println "*** " + m;
 						RDFDataMgr.write(response.outputStream, m, RDFLanguages.JSONLD);		
 					} else {
-					RDFDataMgr.write(response.outputStream, graphs, RDFLanguages.JSONLD);
+						RDFDataMgr.write(response.outputStream, graphs, RDFLanguages.JSONLD);
 					}
 				} else {
 					if(contextJson==null) {
@@ -250,6 +253,17 @@ class OpenAnnotationController {
 		def apiKey = request.JSON.apiKey;
 		if(!apiKeyAuthenticationService.isApiKeyValid(request.getRemoteAddr(), apiKey)) {
 			invalidApiKey(request.getRemoteAddr()); return;
+		}
+		
+		def outCmd = (request.JSON.outCmd!=null)?request.JSON.outCmd:"none";
+		def incGph = (request.JSON.incGph!=null)?request.JSON.incGph:"true";
+		
+		if(outCmd=='frame' && incGph=='true') {
+			log.warn("[" + apiKey + "] Invalid options, framing does not currently support Named Graphs");
+			def message = 'Invalid options, framing does not currently support Named Graphs';
+			render(status: 401, text: returnMessage(apiKey, "rejected", message, startTime),
+				contentType: "text/json", encoding: "UTF-8");
+			return;
 		}
 		
 		// Parsing the incoming parameters
@@ -362,6 +376,98 @@ class OpenAnnotationController {
 				render(status: 500, text: returnMessage(apiKey, "exception", message, startTime), contentType: "text/json", encoding: "UTF-8");
 			}
 		} else {
+			// Annotation Set not found
+			def message = "No annotation found in the request";
+			render(status: 200, text: returnMessage(apiKey, "nocontent", message, startTime), contentType: "text/json", encoding: "UTF-8");
+		}
+	}
+	
+	def validate = {
+		long startTime = System.currentTimeMillis();
+		
+		log.info 'validating....'
+		
+		def apiKey = request.JSON.apiKey;
+		if(!apiKeyAuthenticationService.isApiKeyValid(request.getRemoteAddr(), apiKey)) {
+			invalidApiKey(request.getRemoteAddr()); return;
+		}
+		
+		def item = request.JSON.item
+		def flavor = (request.JSON.flavor!=null)?request.JSON.flavor:"OA";
+
+		if(item!=null) {
+			List<HashMap<String,Object>> results = openAnnotationValidationService.validate(new ByteArrayInputStream(item.toString().getBytes("UTF-8")), "application/json");
+			
+			JSONObject jsonFinalSummary = new JSONObject();
+			JSONObject annotationSummary = new JSONObject();
+			
+			JSONArray finalResult = new JSONArray();
+			for(resultExternal in results) {
+				//HashMap<String,Object> resultExternal = results.get(0);
+				if(resultExternal.containsKey("result") && resultExternal.get("result")!=null) {
+					
+					JSONObject jsonSummary = new JSONObject();
+					//jsonSummary.put("content", item);
+					jsonSummary.put("total", resultExternal.get("total"));
+					jsonSummary.put("model", resultExternal.get("model"));
+					jsonSummary.put("warn", resultExternal.get("warn"));
+					jsonSummary.put("error", resultExternal.get("error"));
+					jsonSummary.put("skip", resultExternal.get("skip"));
+					jsonSummary.put("pass", resultExternal.get("pass"));
+					
+					JSONObject jsonGraph = new JSONObject();
+					jsonGraph.put("summary", jsonSummary);
+					
+					JSONArray jsonResults = new JSONArray();
+					Object resultInternal = resultExternal.get("result");
+					for(Object result: resultInternal) {
+						JSONObject jsonResult = new JSONObject();
+		
+						jsonResult.put("section", result.getAt("section"));
+						jsonResult.put("warn", result.getAt("warn"));
+						jsonResult.put("error", result.getAt("error"));
+						jsonResult.put("skip", result.getAt("skip"));
+						jsonResult.put("pass", result.getAt("pass"));
+						jsonResult.put("total", result.getAt("total"));
+						
+						JSONArray jsonConstraints = new JSONArray();
+						ArrayList constraints = result.getAt("constraints");
+						for(Object constraint: constraints) {
+							JSONObject jsonConstraint = new JSONObject();
+							jsonConstraint.put("ref", constraint.getAt("ref"));
+							jsonConstraint.put("url", constraint.getAt("url"));
+							jsonConstraint.put("severity", constraint.getAt("severity"));
+							jsonConstraint.put("status", constraint.getAt("status"));
+							jsonConstraint.put("result", constraint.getAt("result"));
+							jsonConstraint.put("description", constraint.get("description"));
+							jsonConstraints.add(jsonConstraint);
+							jsonResult.put("constraints", jsonConstraints);
+						}
+						jsonResults.add(jsonResult);
+					}
+					jsonGraph.put("details", jsonResults);
+					finalResult.add(jsonGraph);
+				} else if(resultExternal.containsKey("totalGraphs") && resultExternal.get("totalGraphs")!=null) {
+					jsonFinalSummary.put("graphs", resultExternal.get("totalGraphs"));
+				} else if(resultExternal.containsKey("annotationGraphs") && resultExternal.get("annotationGraphs")!=null) {
+					annotationSummary.put("graphs", resultExternal.get("annotationGraphs"));
+				} else if(resultExternal.get("exception")!=null) {
+					Object exc =  resultExternal.get("exception");
+					
+					JSONObject jsonException = new JSONObject();
+					jsonException.put("step", "validation");
+					jsonException.put("label", exc.get("label"));
+					jsonException.put("description", exc.get("message"));
+					
+					finalResult.put("exception", jsonException);
+				}
+			}
+			
+			//jsonFinalSummary.put("totalGraphs", results.size());
+			annotationSummary.put("validation", finalResult)
+			jsonFinalSummary.put("annotation", annotationSummary);
+			render jsonFinalSummary as JSON;
+		}  else {
 			// Annotation Set not found
 			def message = "No annotation found in the request";
 			render(status: 200, text: returnMessage(apiKey, "nocontent", message, startTime), contentType: "text/json", encoding: "UTF-8");
