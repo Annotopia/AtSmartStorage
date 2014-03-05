@@ -371,25 +371,119 @@ class OpenAnnotationControllerPostTests extends GroovyTestCase {
 		}
 		assertEquals 2, graphsCounter;
 		assertTrue foundProvenanceGraph;
-		assertFalse foundBody;
+		assertFalse foundBody;		
+	}
+	
+	void testPublicTwoEmbeddedCommentsOnFullResourceWithNamedGraph() {
+		/*
+			 curl -i -X POST http://localhost:8080/s/annotation \
+			-H "Content-Type: application/json" \
+			-d '{"apiKey":"testkey", "validate":"ON", "flavor":"OA", "item":{"@context":"https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/OAContext.json" , "@graph": [{"@id" : "urn:temp:001","@type" : "http://www.w3.org/ns/oa#Annotation","motivatedBy":"oa:commenting","annotatedBy":{"@id":"http://orcid.org/0000-0002-5156-2703","@type":"foaf:Person","foaf:name":"Paolo Ciccarese"},"annotatedAt":"2014-02-17T09:46:11EST","serializedBy":"urn:application:domeo","serializedAt":"2014-02-17T09:46:51EST", "hasBody":[{"@type" : ["cnt:ContentAsText", "dctypes:Text"],"cnt:chars": "This is Paolo Ciccarese CV","dc:format": "text/plain"},{"@type" : ["cnt:ContentAsText", "dctypes:Text"],"cnt:chars": "Paolo Ciccarese - Homepage","dc:format": "text/plain"}],"hasTarget" : "http://paolociccarese.info"}],"@id" : "urn:temp:003"}}}'
+		 */
 		
+		String content =
+			'{' +
+				'"@context":"https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/OAContext.json",'+
+				'"@graph": [' +
+					'{' +
+						'"@id" : "urn:temp:001",' +
+						'"@type" : "http://www.w3.org/ns/oa#Annotation",' +
+						'"motivatedBy":"oa:commenting",' +
+						'"annotatedBy":{"@id":"http://orcid.org/0000-0002-5156-2703","@type":"foaf:Person","foaf:name":"Paolo Ciccarese"},' +
+						'"annotatedAt":"2014-02-17T09:46:11EST",' +
+						'"serializedBy":"urn:application:domeo",' +
+						'"serializedAt":"2014-02-17T09:46:51EST",' +
+						'"hasBody" : [' +
+							'{"@type" : ["cnt:ContentAsText", "dctypes:Text"],"cnt:chars": "This is Paolo Ciccarese CV","dc:format": "text/plain"},' +
+							'{"@type" : ["cnt:ContentAsText", "dctypes:Text"],"cnt:chars": "Paolo Ciccarese - Homepage","dc:format": "text/plain"}' +
+						'],' +
+						'"hasTarget" : "http://paolociccarese.info"' +
+					'}' +
+				'],"@id" : "urn:temp:003"' +
+			'}'
+	
+		def c = new OpenAnnotationController()
+		c.request.method = "POST"
+		c.request.JSON = '{"apiKey":"' + grailsApplication.config.annotopia.storage.testing.apiKey + '","item":' + content+ '}'
+		c.save();
 		
+		assertEquals 200, response.status
 		
+		def json = JSON.parse(response.contentAsString);
+		assertEquals 'saved', json.status
+						
+		int graphsCounter = 0;
+		int bodyCounter = 0;
+		boolean foundProvenanceGraph = false;
+		json.result.item[0]['@graph'].each { graph ->
+			graphsCounter++;
+			if(graph['@id']==grailsApplication.config.annotopia.storage.uri.graph.provenance) foundProvenanceGraph = true;
+			graph['@graph'].each { subgraph ->
+				if(subgraph['@type']=='http://www.w3.org/ns/oa#Annotation') {
+					assertEquals 'urn:temp:001', subgraph['http://purl.org/pav/previousVersion']
+					assertEquals 'http://www.w3.org/ns/oa#commenting', subgraph['http://www.w3.org/ns/oa#motivatedBy']['@id']
+					assertEquals 'urn:application:domeo', subgraph['http://www.w3.org/ns/oa#serializedBy']['@id']
+				} else if(subgraph['@type'].contains('http://www.w3.org/2011/content#ContentAsText')) {
+					bodyCounter++ ;
+					assertEquals 'blank', subgraph['http://purl.org/pav/previousVersion']
+				} else if(subgraph['@type'].contains('http://purl.org/annotopia#AnnotationGraph')) {
+					assertNotNull subgraph['http://purl.org/pav/lastUpdatedOn']
+				}
+			}
+		}
+		assertEquals 2, graphsCounter;
+		assertTrue foundProvenanceGraph;
+		assertEquals 2, bodyCounter;				
+	}	
+	
+	void testPublicTwoBodiesAsNamedGraphsOnFullResourceWithNamedGraph() {
+		/*
+		 	curl -i -X POST http://localhost:8080/s/annotation \
+			-H "Content-Type: application/json" \
+			-d '{"apiKey":"testkey", "item":{"@context": "https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/OAContext.json","@graph": [{"@id": "urn:temp:1","@type": "rdf:Graph","@graph": {"@id": "http://www.example.org/artifact1","label": "yolo body 1"}},{"@id": "urn:temp:2","@type": "rdf:Graph","@graph": {"@id": "http://www.example.org/artifact2","label": "yolo body 2"}},{"@id": "urn:temp:3","@type": "rdf:Graph","@graph": {"@id": "urn:temp:7","@type": "oa:Annotation","hasBody": ["urn:temp:1","urn:temp:2"],"hasTarget": "http://paolociccarese.info"}}]}}'
+		 */	
 		
+		String content =
+			'{' +
+				'"@context":"https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/OAContext.json",'+
+				'"@graph": [' +
+					'{' +
+						'"@id": "urn:temp:1",' +
+						'"@type": "rdf:Graph",' +
+						'"@graph": {' +
+							'"@id": "http://www.example.org/artifact1",' +
+							'"label": "yolo body 1"' +
+						'}' +
+					'},' +
+					'{' +
+						'"@id": "urn:temp:2",' +
+						'"@type": "rdf:Graph",' +
+						'"@graph": {' + 
+							'"@id": "http://www.example.org/artifact2",' +
+							'"label": "yolo body 2"' +
+						'}' +
+					'},' +
+					'{' +
+						'"@id": "urn:temp:3",' + 
+						'"@type": "rdf:Graph",' + 
+						'"@graph": {' +
+							'"@id": "urn:temp:7",' +
+							'"@type": "oa:Annotation",' + 
+							'"hasBody": ["urn:temp:1","urn:temp:2"],' + 
+							'"hasTarget": "http://paolociccarese.info"' +
+						'}' +
+					'}' + 
+				']' + 
+			'}'
+
+		def c = new OpenAnnotationController()
+		c.request.method = "POST"
+		c.request.JSON = '{"apiKey":"' + grailsApplication.config.annotopia.storage.testing.apiKey + '","item":' + content+ '}'
+		c.save();
 		
+		assertEquals 200, response.status
 		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
+		def json = JSON.parse(response.contentAsString);
+		assertEquals 'saved', json.status
 	}
 }
