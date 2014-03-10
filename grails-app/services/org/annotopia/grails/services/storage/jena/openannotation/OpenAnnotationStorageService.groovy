@@ -92,6 +92,130 @@ class OpenAnnotationStorageService {
 		return datasets;
 	}
 	
+	public Dataset saveAnnotationSet(String apiKey, Long startTime, String set) {
+		// Reads the inputs in a dataset
+		Dataset inMemoryDataset = DatasetFactory.createMem();
+		try {
+			RDFDataMgr.read(inMemoryDataset, new ByteArrayInputStream(set.getBytes("UTF-8")), RDFLanguages.JSONLD);
+		} catch (Exception ex) {
+			log.error(ex.getMessage());
+//			def message = "Annotation cannot be read";
+//			render(status: 500, text: returnMessage(apiKey, "invalidcontent", message, startTime), contentType: "text/json", encoding: "UTF-8");
+			return;
+		}
+		
+		// Registry of the URIs of the annotations.
+		// Note: The method currently supports the saving of one annotation at a time
+		Set<Resource> annotationUris = new HashSet<Resource>();
+		
+		// Registry of all named graphs in the transaction
+		Set<Resource> graphsUris = jenaUtilsService.detectNamedGraphs(apiKey, inMemoryDataset);
+
+		// Detection of default graph
+		int annotationsInDefaultGraphsCounter = openAnnotationUtilsService.detectAnnotationsInDefaultGraph(apiKey, inMemoryDataset, annotationUris, null)
+		boolean defaultGraphDetected = (annotationsInDefaultGraphsCounter>0);
+		
+		// Query for graphs containing annotation
+		// See: https://www.mail-archive.com/wikidata-l@lists.wikimedia.org/msg00370.html
+		Set<Resource> annotationsGraphsUris = new HashSet<Resource>();
+		int detectedAnnotationGraphsCounter = openAnnotationUtilsService.detectAnnotationsInNamedGraph(
+			apiKey, inMemoryDataset, graphsUris, annotationsGraphsUris, annotationUris, null)
+		
+		// Enforcing the limit to one annotation per transaction
+		if(defaultGraphDetected && detectedAnnotationGraphsCounter>0) {
+			log.info("[" + apiKey + "] Mixed Annotation content detected... request rejected.");
+			def json = JSON.parse('{"status":"nocontent" ,"message":"The request carries a mix of Annotations and Annotation Graphs"' +
+				',"duration": "' + (System.currentTimeMillis()-startTime) + 'ms", ' + '}');
+			throw new StoreServiceException(200, json, "text/json", "UTF-8");
+		} else if(detectedAnnotationGraphsCounter>1 || graphsUris.size()>2) {
+			// Annotation Set not found
+			log.info("[" + apiKey + "] Multiple Annotation graphs detected... request rejected.");
+			def json = JSON.parse('{"status":"nocontent" ,"message":"The request carries multiple Annotations or Annotation Graphs"' +
+				',"duration": "' + (System.currentTimeMillis()-startTime) + 'ms", ' + '}');
+			throw new StoreServiceException(200, json, "text/json", "UTF-8");
+		}
+		
+		println 'graphsUris ' + graphsUris.size();
+		println 'annotationsInDefaultGraphsCounter ' + annotationsInDefaultGraphsCounter;
+		println 'annotationUris ' + annotationUris;
+		println 'detectedAnnotationGraphsCounter ' + detectedAnnotationGraphsCounter;
+		println 'annotationsInDefaultGraphs ' + annotationsGraphsUris;
+		println 'annotationsGraphsUris ' + annotationsGraphsUris.size();
+		
+		if(defaultGraphDetected) {
+			// Annotation Set
+			identifiableURI(apiKey, inMemoryDataset.getDefaultModel(),
+				ResourceFactory.createProperty("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"),
+				ResourceFactory.createResource("http://purl.org/annotopia#AnnotationSet"), "set");
+			
+			// Specific Resource identifier
+			identifiableURIs(apiKey, inMemoryDataset.getDefaultModel(),
+				ResourceFactory.createProperty("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"),
+				ResourceFactory.createResource("http://www.w3.org/ns/oa#SpecificResource"), "resource");
+
+			// Embedded content (as RDF) identifier
+			identifiableURIs(apiKey, inMemoryDataset.getDefaultModel(),
+				ResourceFactory.createProperty("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"),
+				ResourceFactory.createResource("http://www.w3.org/2011/content#ContentAsText"), "content");
+			
+			HashMap<Resource, String> oldNewAnnotationUriMapping = new HashMap<Resource, String>();
+			Iterator<Resource> annotationUrisIterator = annotationUris.iterator();
+			while(annotationUrisIterator.hasNext()) {
+				// Bodies graphs identifiers
+				Resource annotation = annotationUrisIterator.next();
+				String newAnnotationUri = getAnnotationUri();
+				oldNewAnnotationUriMapping.put(annotation, newAnnotationUri);
+			}
+			
+			// Update Bodies graphs URIs
+			Model annotationModel = inMemoryDataset.getDefaultModel();
+			oldNewAnnotationUriMapping.keySet().each { oldAnnotation ->				
+				StmtIterator statements = annotationModel.listStatements(oldAnnotation, null, null);
+				List<Statement> statementsToRemove = new ArrayList<Statement>();
+				statements.each { statementsToRemove.add(it)}
+				statementsToRemove.each { statement ->
+					annotationModel.remove(statement);
+					annotationModel.add(ResourceFactory.createResource(oldNewAnnotationUriMapping.get(oldAnnotation)), 
+						statement.getPredicate(), statement.getObject());
+				}
+				
+				annotationModel.add(
+					ResourceFactory.createResource(oldNewAnnotationUriMapping.get(oldAnnotation)),
+					ResourceFactory.createProperty("http://purl.org/pav/previousVersion"),
+					ResourceFactory.createPlainLiteral(oldAnnotation.toString()));
+			}
+			
+			// TODO make sure there is only one set
+			List<Statement> statementsToRemove = new ArrayList<Statement>();
+			StmtIterator statements = annotationModel.listStatements(null, 
+				ResourceFactory.createProperty("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"),
+				ResourceFactory.createResource("http://purl.org/annotopia#AnnotationSet"));
+			if(statements.hasNext()) {
+				Statement annotationSetStatement = statements.nextStatement();
+				Resource annotationSet = annotationSetStatement.getSubject();
+				StmtIterator stats = annotationModel.listStatements(annotationSet,
+					ResourceFactory.createProperty("http://purl.org/annotopia#items"),
+					null);
+				while(stats.hasNext()) {
+					Statement s = stats.nextStatement();
+					statementsToRemove.add(s);
+					
+					println s.getObject();
+				}
+			}
+			
+			statementsToRemove.each { s ->
+				annotationModel.remove(s);
+				annotationModel.add(s.getSubject(), ResourceFactory.createProperty("http://purl.org/annotopia#items"),
+					ResourceFactory.createProperty(oldNewAnnotationUriMapping.get(s.getObject())));
+			}
+				
+			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+			RDFDataMgr.write(outputStream, inMemoryDataset.getDefaultModel(), RDFLanguages.JSONLD);
+			println outputStream.toString();
+		}
+	}
+	
 	/**
 	 * Saves the annotation Dataset. The service now accept one single item
 	 * for each given request. However, the request can include multiple 
@@ -247,7 +371,7 @@ class OpenAnnotationStorageService {
 							ResourceFactory.createResource(bodyGraphUri.toString()));
 					}
 						
-						// Update Bodies graphs URIs
+					// Update Bodies graphs URIs
 					oldNewBodyUriMapping.keySet().each { oldUri ->
 						Model annotationModel = workingDataset.getNamedModel(annotationGraphUri.toString());
 						StmtIterator statements = annotationModel.listStatements(annotation, 
@@ -278,7 +402,7 @@ class OpenAnnotationStorageService {
 //			RDFDataMgr.write(outputStream, creationDataset, RDFLanguages.JSONLD);
 //			println outputStream.toString();
 			
-			//jenaVirtuosoStoreService.storeDataset(apiKey, creationDataset);
+			jenaVirtuosoStoreService.storeDataset(apiKey, creationDataset);
 			return creationDataset;
 		} else {
 			// Annotation Set not found
@@ -433,6 +557,12 @@ class OpenAnnotationStorageService {
 	public String getGraphUri() {
 		return 'http://' + grailsApplication.config.grails.server.host + ':' +
 			grailsApplication.config.grails.server.port.http + '/s/graph/' +
+			org.annotopia.grails.services.storage.utils.UUID.uuid();
+	}
+	
+	public String getAnnotationUri() {
+		return 'http://' + grailsApplication.config.grails.server.host + ':' +
+			grailsApplication.config.grails.server.port.http + '/s/annotation/' +
 			org.annotopia.grails.services.storage.utils.UUID.uuid();
 	}
 	
