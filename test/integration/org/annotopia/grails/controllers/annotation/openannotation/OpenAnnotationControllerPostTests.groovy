@@ -498,7 +498,6 @@ class OpenAnnotationControllerPostTests extends GroovyTestCase {
 				if(subgraph['@type']=='http://www.w3.org/ns/oa#Annotation') {
 					assertEquals 'urn:temp:7', subgraph['http://purl.org/pav/previousVersion']
 					assertEquals 'http://www.w3.org/ns/oa#describing', subgraph['http://www.w3.org/ns/oa#motivatedBy']['@id']
-					//assertEquals 'urn:application:domeo', subgraph['http://www.w3.org/ns/oa#serializedBy']['@id']
 				} else if(subgraph['@type']==null) {
 					bodyCounter++ ;
 				} else if(subgraph['@type'].contains('http://purl.org/annotopia#AnnotationGraph')) {
