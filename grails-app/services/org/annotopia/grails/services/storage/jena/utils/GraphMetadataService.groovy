@@ -36,8 +36,29 @@ class GraphMetadataService {
 	
 	SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSz")
 
+	public Model getAnnotationSetGraphCreationMetadata(String apiKey, Dataset dataset, def graphUri) {
+		//def metaGraphUri = getGraphUri();
+		def graphRes = ResourceFactory.createResource(graphUri);
+		Model metaModel
+		if(dataset.getNamedModel("annotopia:graphs:provenance")!=null) {
+			 metaModel = dataset.getNamedModel("annotopia:graphs:provenance");
+		} else {
+			  metaModel = ModelFactory.createDefaultModel();
+			 dataset.addNamedModel("annotopia:graphs:provenance", metaModel);
+		}
+		metaModel.add(graphRes, ResourceFactory.createProperty("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"), ResourceFactory.createResource("http://purl.org/annotopia#AnnotationSetGraph"));
+		metaModel.add(graphRes, ResourceFactory.createProperty("http://purl.org/pav/createdBy"), ResourceFactory.createResource("annotopia:client:" + apiKey));
+		metaModel.add(graphRes, ResourceFactory.createProperty("http://purl.org/pav/createdAt"), ResourceFactory.createPlainLiteral(dateFormat.format(new Date())));
+		metaModel.add(graphRes, ResourceFactory.createProperty("http://purl.org/pav/lastUpdatedOn"), ResourceFactory.createPlainLiteral(dateFormat.format(new Date())));
+		metaModel.add(graphRes, ResourceFactory.createProperty("http://purl.org/pav/lastUpdatedBy"), ResourceFactory.createResource("annotopia:client:" + apiKey));
+		metaModel.add(graphRes, ResourceFactory.createProperty("http://purl.org/pav/createdWith"), ResourceFactory.createResource("annotopia:test:001"));
+		metaModel.add(graphRes, ResourceFactory.createProperty("http://purl.org/annotopia#status"), ResourceFactory.createPlainLiteral("current"));
+		dataset.addNamedModel("annotopia:graphs:provenance", metaModel);
+		metaModel
+	}
+	
 	public Model getAnnotationGraphCreationMetadata(String apiKey, Dataset dataset, def graphUri) {
-		def metaGraphUri = getGraphUri();
+		//def metaGraphUri = getGraphUri();
 		def graphRes = ResourceFactory.createResource(graphUri);
 		Model metaModel 
 		if(dataset.getNamedModel("annotopia:graphs:provenance")!=null) {
@@ -58,7 +79,7 @@ class GraphMetadataService {
 	}
 	
 	public Model getBodyGraphCreationMetadata(String apiKey, Dataset dataset, def graphUri) {
-		def metaGraphUri = getGraphUri();
+		//xwdef metaGraphUri = getGraphUri();
 		def graphRes = ResourceFactory.createResource(graphUri);
 		Model metaModel 
 		if(dataset.getNamedModel("annotopia:graphs:provenance")!=null) {

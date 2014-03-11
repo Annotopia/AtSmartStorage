@@ -92,6 +92,34 @@ class OpenAnnotationStorageService {
 		return datasets;
 	}
 	
+	public listAnnotationSets(apiKey, max, offset, tgtUrl, tgtFgt, tgtExt, tgtIds, incGph) {
+		log.info '[' + apiKey + '] List annotation sets' +
+			' max:' + max +
+			' offset:' + offset +
+			' incGph:' + incGph +
+			' tgtUrl:' + tgtUrl +
+			' tgtFgt:' + tgtFgt;
+		retrieveAnnotationSets(apiKey, max, offset, tgtUrl, tgtFgt, incGph);
+	}
+	
+	public Set<Dataset> retrieveAnnotationSets(apiKey, max, offset, tgtUrl, tgtFgt, incGph) {
+		log.info '[' + apiKey + '] Retrieving annotation sets';
+	
+		Set<Dataset> datasets = new HashSet<Dataset>();
+		List<String> graphNames = openAnnotationVirtuosoService.retrieveAnnotationSetsGraphsNames(apiKey, max, offset, tgtUrl, tgtFgt);
+		if(graphNames!=null) {
+			graphNames.each { graphName ->
+				Dataset ds = jenaVirtuosoStoreService.retrieveGraph(apiKey, graphName);
+				if(incGph=='true') {
+					Model m = jenaVirtuosoStoreService.retrieveGraphMetadata(apiKey, graphName, "annotopia:graphs:provenance");
+					if(m!=null) ds.setDefaultModel(m);
+				}
+				if(ds!=null) datasets.add(ds);
+			}
+		}
+		return datasets;
+	}
+	
 	public Dataset saveAnnotationSet(String apiKey, Long startTime, String set) {
 		// Reads the inputs in a dataset
 		Dataset inMemoryDataset = DatasetFactory.createMem();
@@ -143,10 +171,11 @@ class OpenAnnotationStorageService {
 		println 'annotationsGraphsUris ' + annotationsGraphsUris.size();
 		
 		if(defaultGraphDetected) {
+			log.trace("[" + apiKey + "] Default graph detected.");
 			// Annotation Set
 			identifiableURI(apiKey, inMemoryDataset.getDefaultModel(),
 				ResourceFactory.createProperty("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"),
-				ResourceFactory.createResource("http://purl.org/annotopia#AnnotationSet"), "set");
+				ResourceFactory.createResource("http://purl.org/annotopia#AnnotationSet"), "annotationset");
 			
 			// Specific Resource identifier
 			identifiableURIs(apiKey, inMemoryDataset.getDefaultModel(),
@@ -194,25 +223,40 @@ class OpenAnnotationStorageService {
 				Statement annotationSetStatement = statements.nextStatement();
 				Resource annotationSet = annotationSetStatement.getSubject();
 				StmtIterator stats = annotationModel.listStatements(annotationSet,
-					ResourceFactory.createProperty("http://purl.org/annotopia#items"),
+					ResourceFactory.createProperty("http://purl.org/annotopia#annotations"),
 					null);
 				while(stats.hasNext()) {
 					Statement s = stats.nextStatement();
 					statementsToRemove.add(s);
-					
-					println s.getObject();
 				}
 			}
 			
 			statementsToRemove.each { s ->
 				annotationModel.remove(s);
-				annotationModel.add(s.getSubject(), ResourceFactory.createProperty("http://purl.org/annotopia#items"),
+				annotationModel.add(s.getSubject(), ResourceFactory.createProperty("http://purl.org/annotopia#annotations"),
 					ResourceFactory.createProperty(oldNewAnnotationUriMapping.get(s.getObject())));
+			}
+			
+			// Minting of the URI for the Named Graph that will wrap the
+			// default graph
+			def graphUri = getGraphUri();
+			Dataset creationDataset = DatasetFactory.createMem();
+			creationDataset.addNamedModel(graphUri, inMemoryDataset.getDefaultModel());
+			// Creation of the metadata for the Graph wrapper
+			def graphResource = ResourceFactory.createResource(graphUri);
+			Model metaModel = graphMetadataService.getAnnotationSetGraphCreationMetadata(apiKey, creationDataset, graphUri);
+			oldNewAnnotationUriMapping.values().each { annotationUri ->
+				metaModel.add(graphResource, ResourceFactory.createProperty("http://purl.org/annotopia#annotation"), ResourceFactory.createPlainLiteral(annotationUri));
+			}
+			if(oldNewAnnotationUriMapping.values().size()>0) {
+				metaModel.add(graphResource, ResourceFactory.createProperty("http://purl.org/annotopia#annotationcount"), ResourceFactory.createPlainLiteral(""+oldNewAnnotationUriMapping.values().size()));
 			}
 				
 			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-			RDFDataMgr.write(outputStream, inMemoryDataset.getDefaultModel(), RDFLanguages.JSONLD);
+			RDFDataMgr.write(outputStream, creationDataset, RDFLanguages.JSONLD);
 			println outputStream.toString();
+			
+			jenaVirtuosoStoreService.storeDataset(apiKey, creationDataset);
 		}
 	}
 	
@@ -270,17 +314,17 @@ class OpenAnnotationStorageService {
 			// NOTE: This is supporting right now a single body
 			
 			// Annotation identifier
-			identifiableURI(apiKey, dataset.getDefaultModel(),
+			Resource annotation = identifiableURI(apiKey, dataset.getDefaultModel(),
 				ResourceFactory.createProperty("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"),
 				ResourceFactory.createResource("http://www.w3.org/ns/oa#Annotation"), "annotation");
 			
 			// Specific Resource identifier
-			identifiableURI(apiKey, dataset.getDefaultModel(),
+			identifiableURIs(apiKey, dataset.getDefaultModel(),
 				ResourceFactory.createProperty("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"),
 				ResourceFactory.createResource("http://www.w3.org/ns/oa#SpecificResource"), "resource");
 
 			// Embedded content (as RDF) identifier
-			identifiableURI(apiKey, dataset.getDefaultModel(),
+			identifiableURIs(apiKey, dataset.getDefaultModel(),
 				ResourceFactory.createProperty("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"),
 				ResourceFactory.createResource("http://www.w3.org/2011/content#ContentAsText"), "content");
 			
@@ -292,8 +336,12 @@ class OpenAnnotationStorageService {
 			def graphUri = getGraphUri();
 			Dataset creationDataset = DatasetFactory.createMem();
 			creationDataset.addNamedModel(graphUri, dataset.getDefaultModel());
+			
 			// Creation of the metadata for the Graph wrapper
-			graphMetadataService.getAnnotationGraphCreationMetadata(apiKey, creationDataset, graphUri);
+			def graphResource = ResourceFactory.createResource(graphUri);
+			Model metaModel = graphMetadataService.getAnnotationGraphCreationMetadata(apiKey, creationDataset, graphUri);
+			metaModel.add(graphResource, ResourceFactory.createProperty("http://purl.org/annotopia#annotation"), ResourceFactory.createPlainLiteral(annotation.toString()));
+			metaModel.add(graphResource, ResourceFactory.createProperty("http://purl.org/annotopia#annotationcount"), ResourceFactory.createPlainLiteral("1"));
 			
 			jenaVirtuosoStoreService.storeDataset(apiKey, creationDataset);
 			return creationDataset;
@@ -382,13 +430,22 @@ class OpenAnnotationStorageService {
 							annotationModel.remove(statement);
 							annotationModel.add(annotation, ResourceFactory.createProperty("http://www.w3.org/ns/oa#hasBody"), 
 								ResourceFactory.createResource(oldNewBodyUriMapping.get(oldUri)));
+							// Adding trig:Graph type
+							annotationModel.add(ResourceFactory.createResource(oldNewBodyUriMapping.get(oldUri)), 
+								ResourceFactory.createProperty("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"),
+								ResourceFactory.createResource("http://www.w3.org/2004/03/trix/rdfg-1/Graph"));
 						}
 						// Graphs metadata linkage (Annotation Graph to Bodies Graphs)
 						newAnnotationGraphMetadataModel.add(
 							ResourceFactory.createResource(newAnnotationGraphUri), 
-							ResourceFactory.createProperty("http://purl.org/annotopia#body"),
+							ResourceFactory.createProperty("http://purl.org/annotopia#graphbody"),
 							ResourceFactory.createResource(oldNewBodyUriMapping.get(oldUri)));
 					}
+					if(oldNewBodyUriMapping.values().size()>0) {
+						newAnnotationGraphMetadataModel.add(ResourceFactory.createResource(newAnnotationGraphUri),
+							ResourceFactory.createProperty("http://purl.org/annotopia#graphbodycount"), ResourceFactory.createPlainLiteral(""+oldNewBodyUriMapping.values().size()));
+					}
+					
 				} else {
 					if(graphsUris.size()>0) {
 						log.info("[" + apiKey + "] Anonymous body Graph detected... request rejected.");
