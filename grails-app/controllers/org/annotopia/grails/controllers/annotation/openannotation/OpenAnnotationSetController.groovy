@@ -24,8 +24,9 @@ import grails.converters.JSON
 
 import java.text.SimpleDateFormat
 
-import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletRequest
 
+import org.annotopia.groovy.service.store.StoreServiceException
 import org.apache.jena.riot.RDFDataMgr
 import org.apache.jena.riot.RDFLanguages
 
@@ -234,7 +235,30 @@ class OpenAnnotationSetController {
 		def validate = (request.JSON.validate!=null)?request.JSON.validate:"OFF";
 				
 		if(set!=null) {	
-			Dataset savedDataset = openAnnotationStorageService.saveAnnotationSet(apiKey, startTime, set.toString()); 
+			Dataset savedAnnotationSet;
+			try {
+				savedAnnotationSet = openAnnotationStorageService.saveAnnotationSet(apiKey, startTime, set.toString()); 
+			} catch(StoreServiceException exception) {
+				render(status: exception.status, text: exception.text, contentType: exception.contentType, encoding: exception.encoding);
+				return;
+			}
+			
+			if(savedAnnotationSet!=null) {
+				// Streams back the saved annotation with the proper provenance
+				response.contentType = "text/json;charset=UTF-8"
+				response.outputStream << '{"status":"saved", "result": {' +
+					'"duration": "' + (System.currentTimeMillis()-startTime) + 'ms", ' +
+					'"item":['
+						
+				RDFDataMgr.write(response.outputStream, savedAnnotationSet, RDFLanguages.JSONLD);
+				
+				response.outputStream <<  ']}}';
+				response.outputStream.flush()
+			} else {
+				// Dataset returned null
+				def message = "Null Annotation Set Dataset. Something went terribly wrong";
+				render(status: 500, text: returnMessage(apiKey, "exception", message, startTime), contentType: "text/json", encoding: "UTF-8");
+			}
 		} else {
 			// Annotation not found
 			def message = "No annotation set found in the request";
@@ -251,6 +275,18 @@ class OpenAnnotationSetController {
 		def apiKey = request.JSON.apiKey;
 		if(!apiKeyAuthenticationService.isApiKeyValid(request.getRemoteAddr(), apiKey)) {
 			invalidApiKey(request.getRemoteAddr()); return;
+		}
+		
+		def set = request.JSON.set
+		def flavor = (request.JSON.flavor!=null)?request.JSON.flavor:"OA";
+		def validate = (request.JSON.validate!=null)?request.JSON.validate:"OFF";
+				
+		if(set!=null) {
+			//Dataset savedDataset = openAnnotationStorageService.saveAnnotationSet(apiKey, startTime, set.toString());
+		} else {
+			// Annotation Set not found
+			def message = "No annotation set found in the request";
+			render(status: 200, text: returnMessage(apiKey, "nocontent", message, startTime), contentType: "text/json", encoding: "UTF-8");
 		}
 	}
 	

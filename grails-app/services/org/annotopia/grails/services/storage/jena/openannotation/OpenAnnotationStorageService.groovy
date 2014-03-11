@@ -257,6 +257,7 @@ class OpenAnnotationStorageService {
 			println outputStream.toString();
 			
 			jenaVirtuosoStoreService.storeDataset(apiKey, creationDataset);
+			return creationDataset;
 		}
 	}
 	
