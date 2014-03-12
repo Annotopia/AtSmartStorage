@@ -32,7 +32,8 @@ import com.hp.hpl.jena.rdf.model.Resource
 import com.hp.hpl.jena.rdf.model.ResourceFactory
 
 /**
- * This service provides some utilities for analyzing Open Annotation content.
+ * This service provides some utilities for analyzing Open Annotation content
+ * when stored in memory.
  *
  * @author Paolo Ciccarese <paolo.ciccarese@gmail.com>
  */
