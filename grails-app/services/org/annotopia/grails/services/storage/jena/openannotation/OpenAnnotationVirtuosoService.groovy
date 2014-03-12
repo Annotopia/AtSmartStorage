@@ -42,11 +42,7 @@ class OpenAnnotationVirtuosoService {
 	def jenaVirtuosoStoreService
 	
 	public int countAnnotationGraphs(apiKey, tgtUrl, tgtFgt) {
-		VirtGraph graph = new VirtGraph (
-			grailsApplication.config.annotopia.storage.triplestore.host,
-			grailsApplication.config.annotopia.storage.triplestore.user,
-			grailsApplication.config.annotopia.storage.triplestore.pass);
-		
+
 		String queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> " +
 			"SELECT (COUNT(DISTINCT ?g) AS ?total) WHERE { GRAPH ?g { ?s a oa:Annotation }}";		
 		if(tgtUrl!=null && tgtFgt=="false") {
@@ -59,22 +55,41 @@ class OpenAnnotationVirtuosoService {
 		}	
 		log.trace('[' + apiKey + '] ' +  queryString);
 			
-		int totalCount = 0;
-		VirtuosoQueryExecution vqe = VirtuosoQueryExecutionFactory.create (QueryFactory.create(queryString), graph);
-		ResultSet results=vqe.execSelect();
-		if(results.hasNext()) {
-			totalCount = Integer.parseInt(results.next().get("total").getString());
-		}
+		int totalCount = jenaVirtuosoStoreService.count(apiKey, queryString);
 		log.info('[' + apiKey + '] Total accessible Annotation Graphs: ' + totalCount);
 		totalCount;
 	}
 	
+//	public int countAnnotationGraphs(apiKey, tgtUrl, tgtFgt) {
+//		VirtGraph graph = new VirtGraph (
+//			grailsApplication.config.annotopia.storage.triplestore.host,
+//			grailsApplication.config.annotopia.storage.triplestore.user,
+//			grailsApplication.config.annotopia.storage.triplestore.pass);
+//		
+//		String queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> " +
+//			"SELECT (COUNT(DISTINCT ?g) AS ?total) WHERE { GRAPH ?g { ?s a oa:Annotation }}";
+//		if(tgtUrl!=null && tgtFgt=="false") {
+//			queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> " +
+//				"SELECT (COUNT(DISTINCT ?g) AS ?total) WHERE { GRAPH ?g { ?s a oa:Annotation . ?s oa:hasTarget <" + tgtUrl + "> }}";
+//		} else if(tgtUrl!=null && tgtFgt=="true") {
+//			queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> " +
+//				"SELECT (COUNT(DISTINCT ?g) AS ?total) WHERE { GRAPH ?g { ?s a oa:Annotation .  {?s oa:hasTarget <" + tgtUrl +
+//				"> } UNION {?s oa:hasTarget ?t. ?t a oa:SpecificResource. ?t oa:hasSource <" + tgtUrl + ">}}}";
+//		}
+//		log.trace('[' + apiKey + '] ' +  queryString);
+//			
+//		int totalCount = 0;
+//		VirtuosoQueryExecution vqe = VirtuosoQueryExecutionFactory.create (QueryFactory.create(queryString), graph);
+//		ResultSet results=vqe.execSelect();
+//		if(results.hasNext()) {
+//			totalCount = Integer.parseInt(results.next().get("total").getString());
+//		}
+//		log.info('[' + apiKey + '] Total accessible Annotation Graphs: ' + totalCount);
+//		totalCount;
+//	}
+	
 	public int countAnnotationSetGraphs(apiKey, tgtUrl, tgtFgt) {
-		VirtGraph graph = new VirtGraph (
-			grailsApplication.config.annotopia.storage.triplestore.host,
-			grailsApplication.config.annotopia.storage.triplestore.user,
-			grailsApplication.config.annotopia.storage.triplestore.pass);
-		
+
 		String queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> " +
 			"SELECT (COUNT(DISTINCT ?g) AS ?total) WHERE { GRAPH ?g { ?s a <http://purl.org/annotopia#AnnotationSet> }}";
 		if(tgtUrl!=null && tgtFgt=="false") {
@@ -87,36 +102,70 @@ class OpenAnnotationVirtuosoService {
 		}
 		log.trace('[' + apiKey + '] ' +  queryString);
 			
-		int totalCount = 0;
-		VirtuosoQueryExecution vqe = VirtuosoQueryExecutionFactory.create (QueryFactory.create(queryString), graph);
-		ResultSet results=vqe.execSelect();
-		if(results.hasNext()) {
-			totalCount = Integer.parseInt(results.next().get("total").getString());
-		}
+		int totalCount = jenaVirtuosoStoreService.count(apiKey, queryString);
 		log.info('[' + apiKey + '] Total accessible Annotation Set Graphs: ' + totalCount);
 		totalCount;
 	}
 	
+//	public int countAnnotationSetGraphs(apiKey, tgtUrl, tgtFgt) {
+//		VirtGraph graph = new VirtGraph (
+//			grailsApplication.config.annotopia.storage.triplestore.host,
+//			grailsApplication.config.annotopia.storage.triplestore.user,
+//			grailsApplication.config.annotopia.storage.triplestore.pass);
+//		
+//		String queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> " +
+//			"SELECT (COUNT(DISTINCT ?g) AS ?total) WHERE { GRAPH ?g { ?s a <http://purl.org/annotopia#AnnotationSet> }}";
+//		if(tgtUrl!=null && tgtFgt=="false") {
+//			queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> " +
+//				"SELECT (COUNT(DISTINCT ?g) AS ?total) WHERE { GRAPH ?g { ?s a <http://purl.org/annotopia#AnnotationSet> . ?s <http://purl.org/annotopia#annotatesResource> <" + tgtUrl + "> }}";
+//		} else if(tgtUrl!=null && tgtFgt=="true") {
+//			queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> " +
+//				"SELECT (COUNT(DISTINCT ?g) AS ?total) WHERE { GRAPH ?g { ?s a <http://purl.org/annotopia#AnnotationSet> .  {?s <http://purl.org/annotopia#annotatesResource> <" + tgtUrl +
+//				"> } UNION {?s oa:hasTarget ?t. ?t a oa:SpecificResource. ?t oa:hasSource <" + tgtUrl + ">}}}";
+//		}
+//		log.trace('[' + apiKey + '] ' +  queryString);
+//			
+//		int totalCount = 0;
+//		VirtuosoQueryExecution vqe = VirtuosoQueryExecutionFactory.create (QueryFactory.create(queryString), graph);
+//		ResultSet results=vqe.execSelect();
+//		if(results.hasNext()) {
+//			totalCount = Integer.parseInt(results.next().get("total").getString());
+//		}
+//		log.info('[' + apiKey + '] Total accessible Annotation Set Graphs: ' + totalCount);
+//		totalCount;
+//	}
+	
 	public int countAnnotations(apiKey) {
-		VirtGraph graph = new VirtGraph (
-			grailsApplication.config.annotopia.storage.triplestore.host,
-			grailsApplication.config.annotopia.storage.triplestore.user,
-			grailsApplication.config.annotopia.storage.triplestore.pass);
-		
+
 		String queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> " +
 			"SELECT (COUNT(DISTINCT ?s) AS ?total) WHERE { GRAPH ?g { ?s a oa:Annotation }}";
 		log.trace('[' + apiKey + ']' +  queryString);
 			
-		int totalCount = 0;
-		VirtuosoQueryExecution vqe = VirtuosoQueryExecutionFactory.create (QueryFactory.create(queryString), graph);
-		ResultSet results=vqe.execSelect();
-		if(results.hasNext())
-		{
-			totalCount = Integer.parseInt(results.next().get("total").getString());
-		}
+		int totalCount = jenaVirtuosoStoreService.count(apiKey, queryString);
 		log.info('[' + apiKey + '] Total accessible Annotations in Named Graphs: ' + totalCount);
 		totalCount;
 	}
+	
+//	public int countAnnotations(apiKey) {
+//		VirtGraph graph = new VirtGraph (
+//			grailsApplication.config.annotopia.storage.triplestore.host,
+//			grailsApplication.config.annotopia.storage.triplestore.user,
+//			grailsApplication.config.annotopia.storage.triplestore.pass);
+//		
+//		String queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> " +
+//			"SELECT (COUNT(DISTINCT ?s) AS ?total) WHERE { GRAPH ?g { ?s a oa:Annotation }}";
+//		log.trace('[' + apiKey + ']' +  queryString);
+//			
+//		int totalCount = 0;
+//		VirtuosoQueryExecution vqe = VirtuosoQueryExecutionFactory.create (QueryFactory.create(queryString), graph);
+//		ResultSet results=vqe.execSelect();
+//		if(results.hasNext())
+//		{
+//			totalCount = Integer.parseInt(results.next().get("total").getString());
+//		}
+//		log.info('[' + apiKey + '] Total accessible Annotations in Named Graphs: ' + totalCount);
+//		totalCount;
+//	}
 	
 	public Set<String> retrieveAnnotationGraphNames(apiKey, uri) {
 		

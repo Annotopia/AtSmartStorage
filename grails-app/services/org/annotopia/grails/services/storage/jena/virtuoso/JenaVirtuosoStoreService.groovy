@@ -36,6 +36,7 @@ import virtuoso.jena.driver.VirtuosoUpdateRequest
 import com.hp.hpl.jena.query.Dataset
 import com.hp.hpl.jena.query.DatasetFactory
 import com.hp.hpl.jena.query.QueryFactory
+import com.hp.hpl.jena.query.ResultSet
 import com.hp.hpl.jena.rdf.model.Model
 
 /**
@@ -46,6 +47,26 @@ import com.hp.hpl.jena.rdf.model.Model
 class JenaVirtuosoStoreService implements ITripleStore {
 	
 	def grailsApplication
+	
+	// -----------------------------------------------------------------------
+	//    COUNT
+	// -----------------------------------------------------------------------
+	public int count(apiKey, queryString) {
+		VirtGraph graph = new VirtGraph (
+			grailsApplication.config.annotopia.storage.triplestore.host,
+			grailsApplication.config.annotopia.storage.triplestore.user,
+			grailsApplication.config.annotopia.storage.triplestore.pass);
+		log.trace('[' + apiKey + '] ' +  queryString);
+			
+		int totalCount = 0;
+		VirtuosoQueryExecution vqe = VirtuosoQueryExecutionFactory.create (QueryFactory.create(queryString), graph);
+		ResultSet results=vqe.execSelect();
+		if(results.hasNext()) {
+			totalCount = Integer.parseInt(results.next().get("total").getString());
+		}
+		log.info('[' + apiKey + '] Total: ' + totalCount);
+		totalCount;
+	}
 	
 	// -----------------------------------------------------------------------
 	//    STORE
