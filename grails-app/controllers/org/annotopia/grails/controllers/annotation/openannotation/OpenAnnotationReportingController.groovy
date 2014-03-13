@@ -24,6 +24,9 @@ import org.annotopia.groovy.service.store.BaseController;
 import org.apache.commons.collections.functors.WhileClosure;
 
 /**
+ * This controller gives some basic reports on mainly counter of
+ * the items in the storage.
+ * 
  * @author Paolo Ciccarese <paolo.ciccarese@gmail.com>
  */
 class OpenAnnotationReportingController extends BaseController {
@@ -174,7 +177,6 @@ class OpenAnnotationReportingController extends BaseController {
 			invalidApiKey(request.getRemoteAddr()); return;
 		}
 
-		response.contentType = "text/json;charset=UTF-8";
 		try {
 			Map map = openAnnotationReportingService.countAnnotationsForAllResources(apiKey);
 			serializeMapResults(startTime, map, 'target', 'annotations');
@@ -199,7 +201,6 @@ class OpenAnnotationReportingController extends BaseController {
 			invalidApiKey(request.getRemoteAddr()); return;
 		}
 
-		response.contentType = "text/json;charset=UTF-8";
 		try {
 			Map map = openAnnotationReportingService.countAnnotationsForEachUser(apiKey);
 			serializeMapResults(startTime, map, 'user', 'annotations');
