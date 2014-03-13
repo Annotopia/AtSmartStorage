@@ -18,7 +18,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.annotopia.grails.services.storage.jena.utils
+package org.annotopia.grails.services.storage.utils.jena
 
 import com.hp.hpl.jena.query.Dataset
 import com.hp.hpl.jena.query.Query
