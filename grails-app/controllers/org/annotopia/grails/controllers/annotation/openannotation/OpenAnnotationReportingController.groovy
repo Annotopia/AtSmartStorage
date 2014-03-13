@@ -177,17 +177,7 @@ class OpenAnnotationReportingController extends BaseController {
 		response.contentType = "text/json;charset=UTF-8";
 		try {
 			Map map = openAnnotationReportingService.countAnnotationsForAllResources(apiKey);
-			
-			response.outputStream << '{"status":"results", "duration":"' + (System.currentTimeMillis()-startTime) + '",';
-			response.outputStream << '"results": [';
-			Set<String> resources = map.keySet();
-			resources.eachWithIndex { resource, i ->
-				response.outputStream << '{"target":"' + resource + '",';
-				response.outputStream << '"annotations":"' + map.get(resource) + '"}';
-				if(i<map.size()-1) response.outputStream << ',';
-			}			
-			response.outputStream << ']}';
-			response.outputStream.flush();
+			serializeMapResults(startTime, map, 'target', 'annotations');
 		} catch(Exception e) {
 			log.error("[" + apiKey + "] " + e.getMessage())
 			def message = 'Counting of Annotations for each Target Resource not completed';
@@ -212,22 +202,33 @@ class OpenAnnotationReportingController extends BaseController {
 		response.contentType = "text/json;charset=UTF-8";
 		try {
 			Map map = openAnnotationReportingService.countAnnotationsForEachUser(apiKey);
-			
-			response.outputStream << '{"status":"results", "duration":"' + (System.currentTimeMillis()-startTime) + '",';
-			response.outputStream << '"results": [';
-			Set<String> resources = map.keySet();
-			resources.eachWithIndex { resource, i ->
-				response.outputStream << '{"user":"' + resource + '",';
-				response.outputStream << '"annotations":"' + map.get(resource) + '"}';
-				if(i<map.size()-1) response.outputStream << ',';
-			}
-			response.outputStream << ']}';
-			response.outputStream.flush();
+			serializeMapResults(startTime, map, 'user', 'annotations');
 		} catch(Exception e) {
 			log.error("[" + apiKey + "] " + e.getMessage())
 			def message = 'Counting of Annotations for each Target Resource not completed';
 			render(status: 500, text: returnMessage(apiKey, "failure", message, startTime),
 				contentType: "text/json", encoding: "UTF-8");
 		}
+	}
+	
+	/**
+	 * Serializes simple on item results (usually grouped counters).
+	 * @param startTime		Start time of the task
+	 * @param map			The map with the data to serialize
+	 * @param keyLabel		Label of the key value
+	 * @param valueLabel	Label of the value
+	 */
+	private void serializeMapResults(startTime, Map map, keyLabel, valueLabel) {
+		response.contentType = "text/json;charset=UTF-8";
+		response.outputStream << '{"status":"results", "duration":"' + (System.currentTimeMillis()-startTime) + '",';
+		response.outputStream << '"results": [';
+		Set<String> resources = map.keySet();
+		resources.eachWithIndex { resource, i ->
+			response.outputStream << '{"' + keyLabel + '":"' + resource + '",';
+			response.outputStream << '"' + valueLabel + '":"' + map.get(resource) + '"}';
+			if(i<map.size()-1) response.outputStream << ',';
+		}
+		response.outputStream << ']}';
+		response.outputStream.flush();
 	}
 }
