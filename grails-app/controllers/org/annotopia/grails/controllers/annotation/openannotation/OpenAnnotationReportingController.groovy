@@ -32,6 +32,9 @@ class OpenAnnotationReportingController extends BaseController {
 	def openAnnotationReportingService;
 	def jenaVirtuosoStoreService;
 	
+	/**
+	 * Returns the total of the Annotations
+	 */
 	def countAnnotations = {
 		long startTime = System.currentTimeMillis();
 		
@@ -40,10 +43,21 @@ class OpenAnnotationReportingController extends BaseController {
 		if(!apiKeyAuthenticationService.isApiKeyValid(request.getRemoteAddr(), apiKey)) {
 			invalidApiKey(request.getRemoteAddr()); return;
 		}
-		int count = openAnnotationReportingService.countAnnotations(apiKey);
-		render count;
+
+		try {
+			int counter = openAnnotationReportingService.countAnnotations(apiKey);
+			serializeSimpleResults(startTime, "numberAnnotations", counter);
+		} catch(Exception e) {
+			log.error("[" + apiKey + "] " + e.getMessage())
+			def message = 'Counting of Annotation not completed';
+			render(status: 500, text: returnMessage(apiKey, "failure", message, startTime),
+				contentType: "text/json", encoding: "UTF-8");
+		}
 	}
 	
+	/**
+	 * Returns the total of Annotation Sets
+	 */
 	def countAnnotationSets = {
 		long startTime = System.currentTimeMillis();
 		
@@ -53,22 +67,20 @@ class OpenAnnotationReportingController extends BaseController {
 			invalidApiKey(request.getRemoteAddr()); return;
 		}
 
-		response.contentType = "text/json;charset=UTF-8";
 		try {						
-			int count = openAnnotationReportingService.countAnnotationSets(apiKey);			
-			response.outputStream << '{"status":"results", "result": {"countAnnotationSets":';
-			response.outputStream << '"' + count + '"';
-			response.outputStream << '}}';
-			response.outputStream.flush();
+			int counter = openAnnotationReportingService.countAnnotationSets(apiKey);		
+			serializeSimpleResults(startTime, "numberAnnotationSets", counter);
 		} catch(Exception e) {
 			log.error("[" + apiKey + "] " + e.getMessage())
 			def message = 'Counting of Annotation Sets not completed';
 			render(status: 500, text: returnMessage(apiKey, "failure", message, startTime),
 				contentType: "text/json", encoding: "UTF-8");
-			return;
 		}
 	}
 	
+	/**
+	 * Returns the total of annotated Resources
+	 */
 	def countAnnotatedResources = {
 		long startTime = System.currentTimeMillis();
 		
@@ -78,10 +90,20 @@ class OpenAnnotationReportingController extends BaseController {
 			invalidApiKey(request.getRemoteAddr()); return;
 		}
 		
-		int count = openAnnotationReportingService.countAnnotatedResources(apiKey);
-		render count;
+		try {
+			int counter = openAnnotationReportingService.countAnnotatedResources(apiKey);
+			serializeSimpleResults(startTime, "numberAnnotatedResources", counter);
+		} catch(Exception e) {
+			log.error("[" + apiKey + "] " + e.getMessage())
+			def message = 'Counting of annotated Resources not completed';
+			render(status: 500, text: returnMessage(apiKey, "failure", message, startTime),
+				contentType: "text/json", encoding: "UTF-8");
+		}
 	}
 	
+	/**
+	 * Returns the total of annotated Resources annotated as a whole
+	 */
 	def countAnnotatedInFullResources = {
 		long startTime = System.currentTimeMillis();
 		
@@ -91,10 +113,20 @@ class OpenAnnotationReportingController extends BaseController {
 			invalidApiKey(request.getRemoteAddr()); return;
 		}
 		
-		int count = openAnnotationReportingService.countAnnotatedInFullResources(apiKey);
-		render count;
+		try {
+			int counter = openAnnotationReportingService.countAnnotatedInFullResources(apiKey);
+			serializeSimpleResults(startTime, "numberResourcesAnnotatedInFull", counter);
+		} catch(Exception e) {
+			log.error("[" + apiKey + "] " + e.getMessage())
+			def message = 'Counting of Resources annotated in full not completed';
+			render(status: 500, text: returnMessage(apiKey, "failure", message, startTime),
+				contentType: "text/json", encoding: "UTF-8");
+		}
 	}
 	
+	/**
+	 * Returns the total of annotated Resources annotated in their parts
+	 */
 	def countAnnotatedInPartResources = {
 		long startTime = System.currentTimeMillis();
 		
@@ -104,10 +136,35 @@ class OpenAnnotationReportingController extends BaseController {
 			invalidApiKey(request.getRemoteAddr()); return;
 		}
 		
-		int count = openAnnotationReportingService.countAnnotatedInPartResources(apiKey);
-		render count;
+		try {
+			int counter = openAnnotationReportingService.countAnnotatedInPartResources(apiKey);
+			serializeSimpleResults(startTime, "numberResourcesAnnotatedInPart", counter);
+		} catch(Exception e) {
+			log.error("[" + apiKey + "] " + e.getMessage())
+			def message = 'Counting of Resources annotated in part not completed';
+			render(status: 500, text: returnMessage(apiKey, "failure", message, startTime),
+				contentType: "text/json", encoding: "UTF-8");
+		}
 	}
 	
+	/**
+	 * Serializes simple on item results (usually counters).
+	 * @param startTime		Start time of the task
+	 * @param itemLabel		Label of the item
+	 * @param item			Item value
+	 */
+	private void serializeSimpleResults(startTime, itemLabel, item) {
+		response.contentType = "text/json;charset=UTF-8";
+		response.outputStream << '{"status":"results","duration":"' + (System.currentTimeMillis()-startTime) + '",';
+		response.outputStream << '"results":{"' + itemLabel + '":';
+		response.outputStream << '"' + item + '"';
+		response.outputStream << '}}';
+		response.outputStream.flush();
+	}
+	
+	/**
+	 * Returns the total of Annotations for each annotated Resource
+	 */
 	def countAnnotationsForEachResource = {
 		long startTime = System.currentTimeMillis();
 		
@@ -119,24 +176,58 @@ class OpenAnnotationReportingController extends BaseController {
 
 		response.contentType = "text/json;charset=UTF-8";
 		try {
-			int count = openAnnotationReportingService.countAnnotationSets(apiKey);
-			response.outputStream << '{"status":"results", "result": {"annotationsForEachResource":[';
-			
 			Map map = openAnnotationReportingService.countAnnotationsForAllResources(apiKey);
+			
+			response.outputStream << '{"status":"results", "duration":"' + (System.currentTimeMillis()-startTime) + '",';
+			response.outputStream << '"results": [';
 			Set<String> resources = map.keySet();
 			resources.eachWithIndex { resource, i ->
 				response.outputStream << '{"target":"' + resource + '",';
 				response.outputStream << '"annotations":"' + map.get(resource) + '"}';
 				if(i<map.size()-1) response.outputStream << ',';
 			}			
-			response.outputStream << ']}}';
+			response.outputStream << ']}';
 			response.outputStream.flush();
 		} catch(Exception e) {
 			log.error("[" + apiKey + "] " + e.getMessage())
-			def message = 'Counting of Annotations for each Resource not completed';
+			def message = 'Counting of Annotations for each Target Resource not completed';
 			render(status: 500, text: returnMessage(apiKey, "failure", message, startTime),
 				contentType: "text/json", encoding: "UTF-8");
 			return;
+		}
+	}
+	
+	/**
+	 * Return the total of annotations produced by each User
+	 */
+	def countAnnotationForEachUser = {
+		long startTime = System.currentTimeMillis();
+		
+		// Verifying the API key
+		def apiKey = request.JSON.apiKey;
+		if(!apiKeyAuthenticationService.isApiKeyValid(request.getRemoteAddr(), apiKey)) {
+			invalidApiKey(request.getRemoteAddr()); return;
+		}
+
+		response.contentType = "text/json;charset=UTF-8";
+		try {
+			Map map = openAnnotationReportingService.countAnnotationsForEachUser(apiKey);
+			
+			response.outputStream << '{"status":"results", "duration":"' + (System.currentTimeMillis()-startTime) + '",';
+			response.outputStream << '"results": [';
+			Set<String> resources = map.keySet();
+			resources.eachWithIndex { resource, i ->
+				response.outputStream << '{"user":"' + resource + '",';
+				response.outputStream << '"annotations":"' + map.get(resource) + '"}';
+				if(i<map.size()-1) response.outputStream << ',';
+			}
+			response.outputStream << ']}';
+			response.outputStream.flush();
+		} catch(Exception e) {
+			log.error("[" + apiKey + "] " + e.getMessage())
+			def message = 'Counting of Annotations for each Target Resource not completed';
+			render(status: 500, text: returnMessage(apiKey, "failure", message, startTime),
+				contentType: "text/json", encoding: "UTF-8");
 		}
 	}
 }
