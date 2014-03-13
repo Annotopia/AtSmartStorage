@@ -21,6 +21,7 @@
 package org.annotopia.grails.controllers.annotation.openannotation
 
 import org.annotopia.groovy.service.store.BaseController;
+import org.apache.commons.collections.functors.WhileClosure;
 
 /**
  * @author Paolo Ciccarese <paolo.ciccarese@gmail.com>
@@ -51,9 +52,21 @@ class OpenAnnotationReportingController extends BaseController {
 		if(!apiKeyAuthenticationService.isApiKeyValid(request.getRemoteAddr(), apiKey)) {
 			invalidApiKey(request.getRemoteAddr()); return;
 		}
-		
-		int count = openAnnotationReportingService.countAnnotationSets(apiKey);
-		render count;
+
+		response.contentType = "text/json;charset=UTF-8";
+		try {						
+			int count = openAnnotationReportingService.countAnnotationSets(apiKey);			
+			response.outputStream << '{"status":"results", "result": {"countAnnotationSets":';
+			response.outputStream << '"' + count + '"';
+			response.outputStream << '}}';
+			response.outputStream.flush();
+		} catch(Exception e) {
+			log.error("[" + apiKey + "] " + e.getMessage())
+			def message = 'Counting of Annotation Sets not completed';
+			render(status: 500, text: returnMessage(apiKey, "failure", message, startTime),
+				contentType: "text/json", encoding: "UTF-8");
+			return;
+		}
 	}
 	
 	def countAnnotatedResources = {
@@ -93,5 +106,37 @@ class OpenAnnotationReportingController extends BaseController {
 		
 		int count = openAnnotationReportingService.countAnnotatedInPartResources(apiKey);
 		render count;
+	}
+	
+	def countAnnotationsForEachResource = {
+		long startTime = System.currentTimeMillis();
+		
+		// Verifying the API key
+		def apiKey = request.JSON.apiKey;
+		if(!apiKeyAuthenticationService.isApiKeyValid(request.getRemoteAddr(), apiKey)) {
+			invalidApiKey(request.getRemoteAddr()); return;
+		}
+
+		response.contentType = "text/json;charset=UTF-8";
+		try {
+			int count = openAnnotationReportingService.countAnnotationSets(apiKey);
+			response.outputStream << '{"status":"results", "result": {"annotationsForEachResource":[';
+			
+			Map map = openAnnotationReportingService.countAnnotationsForAllResources(apiKey);
+			Set<String> resources = map.keySet();
+			resources.eachWithIndex { resource, i ->
+				response.outputStream << '{"target":"' + resource + '",';
+				response.outputStream << '"annotations":"' + map.get(resource) + '"}';
+				if(i<map.size()-1) response.outputStream << ',';
+			}			
+			response.outputStream << ']}}';
+			response.outputStream.flush();
+		} catch(Exception e) {
+			log.error("[" + apiKey + "] " + e.getMessage())
+			def message = 'Counting of Annotations for each Resource not completed';
+			render(status: 500, text: returnMessage(apiKey, "failure", message, startTime),
+				contentType: "text/json", encoding: "UTF-8");
+			return;
+		}
 	}
 }

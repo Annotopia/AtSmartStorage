@@ -20,6 +20,15 @@
  */
 package org.annotopia.grails.services.storage.jena.openannotation
 
+import virtuoso.jena.driver.VirtGraph
+import virtuoso.jena.driver.VirtuosoQueryExecution
+import virtuoso.jena.driver.VirtuosoQueryExecutionFactory
+
+import com.hp.hpl.jena.query.Query
+import com.hp.hpl.jena.query.QueryFactory
+import com.hp.hpl.jena.query.QuerySolution
+import com.hp.hpl.jena.query.ResultSet
+
 /**
  * This service provides some basic statistics on the current open annotation 
  * content in the triple store.
@@ -30,6 +39,7 @@ package org.annotopia.grails.services.storage.jena.openannotation
  */
 class OpenAnnotationReportingService {
 
+	def grailsApplication;
 	def jenaVirtuosoStoreService;
 	
 	private final PREFIX_OPEN_ANNOTATION 	= "PREFIX oa: <http://www.w3.org/ns/oa#> ";
@@ -94,5 +104,19 @@ class OpenAnnotationReportingService {
 		"SELECT (COUNT(DISTINCT ?u) AS ?total) WHERE { GRAPH ?g { ?a a oa:Annotation . { ?a oa:hasTarget ?u. FILTER NOT EXISTS { ?u  a oa:SpecificResource } } " +
 		"UNION { ?a oa:hasTarget ?t. ?t a oa:SpecificResource. ?t oa:hasSource ?u.}}}"
 		jenaVirtuosoStoreService.count(apiKey, queryString);
+	}
+
+	/**
+	 * Counts the annotations for each resource. No matter if they
+	 * have been annotated in full or not.
+	 * @param apiKey The apiKey used for the request
+	 * @return A Map with all the resources and the counters of related annotations.
+	 */
+	def countAnnotationsForAllResources(def apiKey) {
+		String queryString = PREFIX_OPEN_ANNOTATION + PREFIX_ANNOTOPIA +
+		"SELECT ?u (COUNT(DISTINCT ?annotation) AS ?total) WHERE { GRAPH ?g { ?annotation a oa:Annotation . { ?a oa:hasTarget ?u. FILTER NOT EXISTS { ?u  a oa:SpecificResource } } " +
+		"UNION { ?a oa:hasTarget ?t. ?t a oa:SpecificResource. ?t oa:hasSource ?u.}}} GROUP BY ?u";
+		
+		jenaVirtuosoStoreService.countAndGroupBy(apiKey, queryString, "total", "u");
 	}
 }

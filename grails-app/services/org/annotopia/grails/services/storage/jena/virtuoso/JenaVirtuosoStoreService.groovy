@@ -35,7 +35,9 @@ import virtuoso.jena.driver.VirtuosoUpdateRequest
 
 import com.hp.hpl.jena.query.Dataset
 import com.hp.hpl.jena.query.DatasetFactory
+import com.hp.hpl.jena.query.Query
 import com.hp.hpl.jena.query.QueryFactory
+import com.hp.hpl.jena.query.QuerySolution
 import com.hp.hpl.jena.query.ResultSet
 import com.hp.hpl.jena.rdf.model.Model
 
@@ -66,6 +68,26 @@ class JenaVirtuosoStoreService implements ITripleStore {
 		}
 		log.info('[' + apiKey + '] Total: ' + totalCount);
 		totalCount;
+	}
+	
+	// -----------------------------------------------------------------------
+	//    QUERY
+	// -----------------------------------------------------------------------
+	public Map<String, Integer> countAndGroupBy(apiKey, queryString, c, groupBy) {
+		VirtGraph graph = new VirtGraph (
+			grailsApplication.config.annotopia.storage.triplestore.host,
+			grailsApplication.config.annotopia.storage.triplestore.user,
+			grailsApplication.config.annotopia.storage.triplestore.pass);
+		
+		Map<String, Integer> map = new HashMap<String, Integer>();
+		Query  sparqlGraphs = QueryFactory.create(queryString);
+		VirtuosoQueryExecution qGraphs = VirtuosoQueryExecutionFactory.create (sparqlGraphs, graph);
+		ResultSet rGraphs = qGraphs.execSelect();
+		while (rGraphs.hasNext()) {
+			QuerySolution querySolution = rGraphs.nextSolution();
+			map.put(querySolution.get(groupBy).toString(), querySolution.get(c).asLiteral().int);
+		}
+		map
 	}
 	
 	// -----------------------------------------------------------------------
