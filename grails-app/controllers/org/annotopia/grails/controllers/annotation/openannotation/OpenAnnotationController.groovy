@@ -49,7 +49,7 @@ class OpenAnnotationController extends BaseController {
 	def openAnnotationStorageService
 	def openAnnotationValidationService;
 	def apiKeyAuthenticationService;
-	def virtuosoJenaStoreService;
+	def jenaVirtuosoStoreService;
 
 	/*
 	 * GET 
@@ -465,6 +465,31 @@ class OpenAnnotationController extends BaseController {
 			// Annotation Set not found
 			def message = "No annotation found in the request";
 			render(status: 200, text: returnMessage(apiKey, "nocontent", message, startTime), contentType: "text/json", encoding: "UTF-8");
+		}
+	}
+	
+	def delete = {
+		long startTime = System.currentTimeMillis();
+
+		def apiKey = request.JSON.apiKey;
+		if(!apiKeyAuthenticationService.isApiKeyValid(request.getRemoteAddr(), apiKey)) {
+			invalidApiKey(request.getRemoteAddr()); return;
+		}
+		
+		log.info("[" + apiKey + "] Deleting annotation " + getCurrentUrl(request));
+		Dataset graphs =  openAnnotationVirtuosoService.retrieveAnnotation(apiKey, getCurrentUrl(request));
+		if(graphs!=null) {
+			graphs.listNames().each {
+				log.trace("[" + apiKey + "] Deleting graph " + it);
+				jenaVirtuosoStoreService.dropGraph(apiKey, it);
+				jenaVirtuosoStoreService.removeAllTriples(apiKey, grailsApplication.config.annotopia.storage.uri.graph.provenance, it);
+			}
+			def message = "Annotation deleted";
+			render(status: 200, text: returnMessage(apiKey, "deleted", message, startTime), contentType: "text/json", encoding: "UTF-8");
+		}  else {
+			// Annotation Set not found
+			def message = "Annotation not found";
+			render(status: 200, text: returnMessage(apiKey, "notfound", message, startTime), contentType: "text/json", encoding: "UTF-8");
 		}
 	}
 }

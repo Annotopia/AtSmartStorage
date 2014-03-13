@@ -7,7 +7,7 @@ class UrlMappings {
 		}
 		"/s/annotation/$id?"{
 			controller = "openAnnotation"
-			action = [GET:"show", POST:"save", PUT:"update"]
+			action = [GET:"show", POST:"save", PUT:"update", DELETE:"delete"]
 		}
 		
 		"/oa/validate"{

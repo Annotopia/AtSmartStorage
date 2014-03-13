@@ -43,7 +43,7 @@ class GraphMetadataService {
 		if(dataset.getNamedModel("annotopia:graphs:provenance")!=null) {
 			 metaModel = dataset.getNamedModel("annotopia:graphs:provenance");
 		} else {
-			  metaModel = ModelFactory.createDefaultModel();
+			 metaModel = ModelFactory.createDefaultModel();
 			 dataset.addNamedModel("annotopia:graphs:provenance", metaModel);
 		}
 		metaModel.add(graphRes, ResourceFactory.createProperty("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"), ResourceFactory.createResource("http://purl.org/annotopia#AnnotationSetGraph"));

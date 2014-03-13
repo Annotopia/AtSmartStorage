@@ -355,14 +355,18 @@ class JenaVirtuosoStoreService implements ITripleStore {
 		log.info '[' + apiKey + '] Removing all triples with subject: ' + subjectUri + ' from: ' + graphUri;
 		
 		try {
-			String queryString = "DELETE DATA FROM <" + graphUri + ">" +
-				" WHERE { <"+subjectUri+"> ?p ?o .}";
+			VirtGraph graph = new VirtGraph (
+				grailsApplication.config.annotopia.storage.triplestore.host,
+				grailsApplication.config.annotopia.storage.triplestore.user,
+				grailsApplication.config.annotopia.storage.triplestore.pass);
+			String queryString = "DELETE WHERE { GRAPH <" + graphUri + ">" +
+				" { <"+subjectUri+"> ?p ?o .} }";
 			log.trace '[' + apiKey + '] ' + queryString
 			
-			VirtuosoUpdateRequest vur = VirtuosoUpdateFactory.create(str, graph);
+			VirtuosoUpdateRequest vur = VirtuosoUpdateFactory.create(queryString, graph);
 			vur.exec();
 		} catch (Exception e) {
-			println e.getMessage();
+			println "removeAllTriples: " + e.getMessage();
 		}
 	}
 	
