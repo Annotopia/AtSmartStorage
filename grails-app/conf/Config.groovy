@@ -1,4 +1,6 @@
-import grails.util.Metadata;
+import grails.util.Metadata
+
+import org.apache.log4j.RollingFileAppender
 
 grails.app.context="/"
 
@@ -12,11 +14,16 @@ def appName = Metadata.current.getApplicationName();
 grails.config.locations = ["classpath:${appName}-config.properties", "file:./${appName}-config.properties",
 						   "classpath:${appName}-debug.properties", "file:./${appName}-debug.properties"]
 
+grails.resources.adhoc.patterns = ['/data/*', "*.json"]
+
+// layout:pattern(conversionPattern: '%d{dd MMM yyyy HH:mm:ss,SSS} %5p %c{2} %m%n')
+
 environments {
 	development {
 		log4j = {
 		    appenders {
-			    console name:'stdout', threshold: org.apache.log4j.Level.TRACE, layout:pattern(conversionPattern: '%d{dd MMM yyyy HH:mm:ss,SSS} %5p %c{2} %m%n')
+			    console name:'stdout', threshold: org.apache.log4j.Level.TRACE, 
+					layout:pattern(conversionPattern: '%d{mm:ss,SSS} %5p %c{1} %m%n')
 			}
 		
 		    error  'org.codehaus.groovy.grails.web.servlet',  //  controllers
@@ -39,42 +46,38 @@ environments {
 		}
 	}
 	
-	production {
+	production {		
 		grails.logging.jul.usebridge = false
 		
 		def catalinaBase = System.properties.getProperty('catalina.base')
 		if (!catalinaBase) catalinaBase = '.'   // just in case
 		def logDirectory = "${catalinaBase}/logs"
 		
-		appenders {
-			// Set up a log file in the standard tomcat area; be sure to use .toString() with ${}
-			rollingFile name:'tomcatLog', file:"${logDirectory}/"+appName+".log".toString(), maxFileSize:'100KB'
+		log4j = {
+			appenders {
+				// Set up a log file in the standard tomcat area; be sure to use .toString() with ${}
+				rollingFile name:'tomcatLog', file:"${logDirectory}/"+appName+".log".toString(), maxFileSize:1024
+			}
 			
-			// Disabling the creation of stacktrace.log from a Grails application in production mode
-			// this can be commented out if it is proven that the deployment environment does not fail
-			// in the creation of the stacktrace.log file
-			'null' name:'stacktrace'
+			root {
+				// Change the root logger to my tomcatLog file
+				info 'tomcatLog'
+				additivity = true
+			}
+			
+			info   'grails.app'
+		
+			error  'org.codehaus.groovy.grails.web.servlet',  //  controllers
+				   'org.codehaus.groovy.grails.web.pages', //  GSP
+				   'org.codehaus.groovy.grails.web.sitemesh', //  layouts
+				   'org.codehaus.groovy.grails.web.mapping.filter', // URL mapping
+				   'org.codehaus.groovy.grails.web.mapping', // URL mapping
+				   'org.codehaus.groovy.grails.commons', // core / classloading
+				   'org.codehaus.groovy.grails.plugins', // plugins
+				   'org.codehaus.groovy.grails.orm.hibernate', // hibernate integration
+				   'org.springframework',
+				   'org.hibernate',
+				   'net.sf.ehcache.hibernate'
 		}
-		
-		root {
-			// Change the root logger to my tomcatLog file
-			info 'tomcatLog'
-			additivity = true
-		}
-		
-		info   'grails.app'
-	
-		error  'org.codehaus.groovy.grails.web.servlet',  //  controllers
-			   'org.codehaus.groovy.grails.web.pages', //  GSP
-			   'org.codehaus.groovy.grails.web.sitemesh', //  layouts
-			   'org.codehaus.groovy.grails.web.mapping.filter', // URL mapping
-			   'org.codehaus.groovy.grails.web.mapping', // URL mapping
-			   'org.codehaus.groovy.grails.commons', // core / classloading
-			   'org.codehaus.groovy.grails.plugins', // plugins
-			   'org.codehaus.groovy.grails.orm.hibernate', // hibernate integration
-			   'org.springframework',
-			   'org.hibernate',
-			   'net.sf.ehcache.hibernate'
-		
 	}
 }
