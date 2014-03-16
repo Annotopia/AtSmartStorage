@@ -475,9 +475,10 @@ class OpenAnnotationController extends BaseController {
 		if(!apiKeyAuthenticationService.isApiKeyValid(request.getRemoteAddr(), apiKey)) {
 			invalidApiKey(request.getRemoteAddr()); return;
 		}
-		
-		log.info("[" + apiKey + "] Deleting annotation " + getCurrentUrl(request));
-		Dataset graphs =  openAnnotationVirtuosoService.retrieveAnnotation(apiKey, getCurrentUrl(request));
+
+		def uri = (request.JSON.uri!=null)?request.JSON.uri:getCurrentUrl(request);
+		log.info("[" + apiKey + "] Deleting annotation " + uri);
+		Dataset graphs =  openAnnotationVirtuosoService.retrieveAnnotation(apiKey, uri);
 		if(graphs!=null) {
 			graphs.listNames().each {
 				log.trace("[" + apiKey + "] Deleting graph " + it);
