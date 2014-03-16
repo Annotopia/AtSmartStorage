@@ -20,18 +20,16 @@
  */
 package org.annotopia.grails.services.storage.openannotation.jena
 
-import java.util.List;
-
 import virtuoso.jena.driver.VirtGraph
 import virtuoso.jena.driver.VirtuosoQueryExecution
 import virtuoso.jena.driver.VirtuosoQueryExecutionFactory
 
-import com.hp.hpl.jena.query.Dataset;
-import com.hp.hpl.jena.query.Query
+import com.hp.hpl.jena.query.Dataset
 import com.hp.hpl.jena.query.QueryFactory
 import com.hp.hpl.jena.query.QuerySolution
 import com.hp.hpl.jena.query.ResultSet
 import com.hp.hpl.jena.rdf.model.RDFNode
+
 
 /**
  * @author Paolo Ciccarese <paolo.ciccarese@gmail.com>
@@ -60,34 +58,6 @@ class OpenAnnotationVirtuosoService {
 		totalCount;
 	}
 	
-//	public int countAnnotationGraphs(apiKey, tgtUrl, tgtFgt) {
-//		VirtGraph graph = new VirtGraph (
-//			grailsApplication.config.annotopia.storage.triplestore.host,
-//			grailsApplication.config.annotopia.storage.triplestore.user,
-//			grailsApplication.config.annotopia.storage.triplestore.pass);
-//		
-//		String queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> " +
-//			"SELECT (COUNT(DISTINCT ?g) AS ?total) WHERE { GRAPH ?g { ?s a oa:Annotation }}";
-//		if(tgtUrl!=null && tgtFgt=="false") {
-//			queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> " +
-//				"SELECT (COUNT(DISTINCT ?g) AS ?total) WHERE { GRAPH ?g { ?s a oa:Annotation . ?s oa:hasTarget <" + tgtUrl + "> }}";
-//		} else if(tgtUrl!=null && tgtFgt=="true") {
-//			queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> " +
-//				"SELECT (COUNT(DISTINCT ?g) AS ?total) WHERE { GRAPH ?g { ?s a oa:Annotation .  {?s oa:hasTarget <" + tgtUrl +
-//				"> } UNION {?s oa:hasTarget ?t. ?t a oa:SpecificResource. ?t oa:hasSource <" + tgtUrl + ">}}}";
-//		}
-//		log.trace('[' + apiKey + '] ' +  queryString);
-//			
-//		int totalCount = 0;
-//		VirtuosoQueryExecution vqe = VirtuosoQueryExecutionFactory.create (QueryFactory.create(queryString), graph);
-//		ResultSet results=vqe.execSelect();
-//		if(results.hasNext()) {
-//			totalCount = Integer.parseInt(results.next().get("total").getString());
-//		}
-//		log.info('[' + apiKey + '] Total accessible Annotation Graphs: ' + totalCount);
-//		totalCount;
-//	}
-	
 	public int countAnnotationSetGraphs(apiKey, tgtUrl, tgtFgt) {
 
 		String queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> " +
@@ -106,35 +76,7 @@ class OpenAnnotationVirtuosoService {
 		log.info('[' + apiKey + '] Total accessible Annotation Set Graphs: ' + totalCount);
 		totalCount;
 	}
-	
-//	public int countAnnotationSetGraphs(apiKey, tgtUrl, tgtFgt) {
-//		VirtGraph graph = new VirtGraph (
-//			grailsApplication.config.annotopia.storage.triplestore.host,
-//			grailsApplication.config.annotopia.storage.triplestore.user,
-//			grailsApplication.config.annotopia.storage.triplestore.pass);
-//		
-//		String queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> " +
-//			"SELECT (COUNT(DISTINCT ?g) AS ?total) WHERE { GRAPH ?g { ?s a <http://purl.org/annotopia#AnnotationSet> }}";
-//		if(tgtUrl!=null && tgtFgt=="false") {
-//			queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> " +
-//				"SELECT (COUNT(DISTINCT ?g) AS ?total) WHERE { GRAPH ?g { ?s a <http://purl.org/annotopia#AnnotationSet> . ?s <http://purl.org/annotopia#annotatesResource> <" + tgtUrl + "> }}";
-//		} else if(tgtUrl!=null && tgtFgt=="true") {
-//			queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> " +
-//				"SELECT (COUNT(DISTINCT ?g) AS ?total) WHERE { GRAPH ?g { ?s a <http://purl.org/annotopia#AnnotationSet> .  {?s <http://purl.org/annotopia#annotatesResource> <" + tgtUrl +
-//				"> } UNION {?s oa:hasTarget ?t. ?t a oa:SpecificResource. ?t oa:hasSource <" + tgtUrl + ">}}}";
-//		}
-//		log.trace('[' + apiKey + '] ' +  queryString);
-//			
-//		int totalCount = 0;
-//		VirtuosoQueryExecution vqe = VirtuosoQueryExecutionFactory.create (QueryFactory.create(queryString), graph);
-//		ResultSet results=vqe.execSelect();
-//		if(results.hasNext()) {
-//			totalCount = Integer.parseInt(results.next().get("total").getString());
-//		}
-//		log.info('[' + apiKey + '] Total accessible Annotation Set Graphs: ' + totalCount);
-//		totalCount;
-//	}
-	
+
 	public int countAnnotations(apiKey) {
 
 		String queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> " +
@@ -145,28 +87,7 @@ class OpenAnnotationVirtuosoService {
 		log.info('[' + apiKey + '] Total accessible Annotations in Named Graphs: ' + totalCount);
 		totalCount;
 	}
-	
-//	public int countAnnotations(apiKey) {
-//		VirtGraph graph = new VirtGraph (
-//			grailsApplication.config.annotopia.storage.triplestore.host,
-//			grailsApplication.config.annotopia.storage.triplestore.user,
-//			grailsApplication.config.annotopia.storage.triplestore.pass);
-//		
-//		String queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> " +
-//			"SELECT (COUNT(DISTINCT ?s) AS ?total) WHERE { GRAPH ?g { ?s a oa:Annotation }}";
-//		log.trace('[' + apiKey + ']' +  queryString);
-//			
-//		int totalCount = 0;
-//		VirtuosoQueryExecution vqe = VirtuosoQueryExecutionFactory.create (QueryFactory.create(queryString), graph);
-//		ResultSet results=vqe.execSelect();
-//		if(results.hasNext())
-//		{
-//			totalCount = Integer.parseInt(results.next().get("total").getString());
-//		}
-//		log.info('[' + apiKey + '] Total accessible Annotations in Named Graphs: ' + totalCount);
-//		totalCount;
-//	}
-	
+
 	public Set<String> retrieveAnnotationGraphNames(apiKey, uri) {
 		
 		log.info '[' + apiKey + '] Retrieving Annotation Graph Names ' + uri;
@@ -275,6 +196,7 @@ class OpenAnnotationVirtuosoService {
 		}
 	}
 	
+	// TODO return all graphs also the onces that are bodies!!!!
 	public Dataset retrieveAnnotation(apiKey, uri) {
 		log.info '[' + apiKey + '] Retrieving annotation ' + uri;
 	
@@ -283,26 +205,38 @@ class OpenAnnotationVirtuosoService {
 			grailsApplication.config.annotopia.storage.triplestore.user,
 			grailsApplication.config.annotopia.storage.triplestore.pass);
 		
-		String queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> " +
-			"SELECT DISTINCT ?g WHERE { GRAPH ?g { <" + uri + "> a oa:Annotation }}";		
+		String queryString = "PREFIX oa:<http://www.w3.org/ns/oa#> " +
+			"SELECT ?body ?graph  WHERE {{ GRAPH ?graph { <" + uri + "> a oa:Annotation }} " +  
+			"UNION { GRAPH ?g {<" + uri + "> oa:hasBody ?body. ?body a <http://www.w3.org/2004/03/trix/rdfg-1/Graph>}}}";		
 		log.trace('[' + apiKey + '] ' + queryString);
-		
+			
 		Dataset graphs;
 		VirtuosoQueryExecution vqe = VirtuosoQueryExecutionFactory.create (QueryFactory.create(queryString), graph);	
 		try {
 			ResultSet results = vqe.execSelect();
 			while (results.hasNext()) {
 				QuerySolution result = results.nextSolution();
-				RDFNode graph_name = result.get("g");
-				if(graphs==null) graphs =  jenaVirtuosoStoreService.retrieveGraph(apiKey, graph_name.toString());
-				else {
-					Dataset ds = jenaVirtuosoStoreService.retrieveGraph(apiKey, graph_name.toString());
-					ds.listNames().each { name ->
-						graphs.addNamedModel(name, ds.getNamedModel(name));
+				RDFNode graph_name = result.get("graph");
+				RDFNode body_name = result.get("body");
+				if(graph_name!=null) {
+					if(graphs==null) graphs =  jenaVirtuosoStoreService.retrieveGraph(apiKey, graph_name.toString());
+					else {
+						Dataset ds = jenaVirtuosoStoreService.retrieveGraph(apiKey, graph_name.toString());
+						ds.listNames().each { name ->
+							graphs.addNamedModel(name, ds.getNamedModel(name));
+						}
+						if(ds.getDefaultModel()!=null) {
+							graphs.setDefaultModel(ds.getDefaultModel());
+						}
 					}
-					if(ds.getDefaultModel()!=null) {
-						println 'def model'
-						graphs.setDefaultModel(ds.getDefaultModel()); 
+				}
+				if(body_name!=null) {
+					if(graphs==null) graphs =  jenaVirtuosoStoreService.retrieveGraph(apiKey, body_name.toString());
+					else {
+						Dataset ds = jenaVirtuosoStoreService.retrieveGraph(apiKey, body_name.toString());
+						ds.listNames().each { name ->
+							graphs.addNamedModel(name, ds.getNamedModel(name));
+						}
 					}
 				}
 			}
