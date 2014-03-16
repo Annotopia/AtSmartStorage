@@ -31,6 +31,8 @@ class OpenAnnotationControllerPostTests extends GroovyTestCase {
 
 	def grailsApplication = new org.codehaus.groovy.grails.commons.DefaultGrailsApplication()
 	
+	def jenaVirtuosoStoreService;
+	
 	void testPublicEmbeddedCommentOnFullResourceNoGraph() {
 		
 		/*	 
@@ -74,11 +76,13 @@ class OpenAnnotationControllerPostTests extends GroovyTestCase {
 		assertEquals 1, json.result.item.size()
 		assertEquals 2, json.result.item[0]['@graph'].size()
 
+		def anns = [] as Set
 		boolean foundProvenanceGraph = false;
 		json.result.item[0]['@graph'].each { graph ->	
 			if(graph['@id']==grailsApplication.config.annotopia.storage.uri.graph.provenance) foundProvenanceGraph = true;
 			graph['@graph'].each { subgraph ->
 				if(subgraph['@type']=='http://www.w3.org/ns/oa#Annotation') {
+					anns.add(subgraph['@id'])
 					assertEquals 'urn:temp:001', subgraph['http://purl.org/pav/previousVersion']
 					assertEquals 'http://www.w3.org/ns/oa#commenting', subgraph['http://www.w3.org/ns/oa#motivatedBy']['@id']
 					assertEquals 'urn:application:domeo', subgraph['http://www.w3.org/ns/oa#serializedBy']['@id']
@@ -90,6 +94,14 @@ class OpenAnnotationControllerPostTests extends GroovyTestCase {
 			}
 		}
 		assertTrue foundProvenanceGraph;
+		
+		c.response.reset();
+		c.request.JSON.clear();
+		
+		anns.each { ann ->
+			c.request.JSON << JSON.parse('{"apiKey":"' + grailsApplication.config.annotopia.storage.testing.apiKey + '","uri":"' + ann + '"}')
+			c.delete();
+		}
 	}
 	
 	void testPublicEmbeddedCommentOnTextualFragmentOfResourceNoGraph() {
@@ -142,11 +154,13 @@ class OpenAnnotationControllerPostTests extends GroovyTestCase {
 		assertEquals 1, json.result.item.size()
 		assertEquals 2, json.result.item[0]['@graph'].size()
 		
+		def anns = [] as Set
 		boolean foundProvenanceGraph = false;
 		json.result.item[0]['@graph'].each { graph ->
 			if(graph['@id']==grailsApplication.config.annotopia.storage.uri.graph.provenance) foundProvenanceGraph = true;
 			graph['@graph'].each { subgraph ->
 				if(subgraph['@type']=='http://www.w3.org/ns/oa#Annotation') {
+					anns.add(subgraph['@id'])
 					assertEquals 'urn:temp:7', subgraph['http://purl.org/pav/previousVersion']
 					assertEquals 'http://www.w3.org/ns/oa#commenting', subgraph['http://www.w3.org/ns/oa#motivatedBy']['@id']
 					assertEquals 'urn:application:domeo', subgraph['http://www.w3.org/ns/oa#serializedBy']['@id']
@@ -166,6 +180,14 @@ class OpenAnnotationControllerPostTests extends GroovyTestCase {
 			}
 		}
 		assertTrue foundProvenanceGraph;
+		
+		c.response.reset();
+		c.request.JSON.clear();
+		
+		anns.each { ann ->
+			c.request.JSON << JSON.parse('{"apiKey":"' + grailsApplication.config.annotopia.storage.testing.apiKey + '","uri":"' + ann + '"}')
+			c.delete();
+		}
 	}
 	
 	void testPublicHighlightOnTextualFragmentOfResourceNoGraph() {
@@ -213,12 +235,14 @@ class OpenAnnotationControllerPostTests extends GroovyTestCase {
 		def json = JSON.parse(response.contentAsString);
 		assertEquals 'saved', json.status
 		
+		def anns = [] as Set
 		boolean foundBody = false;
 		boolean foundProvenanceGraph = false;
 		json.result.item[0]['@graph'].each { graph ->
 			if(graph['@id']==grailsApplication.config.annotopia.storage.uri.graph.provenance) foundProvenanceGraph = true;
 			graph['@graph'].each { subgraph ->
 				if(subgraph['@type']=='http://www.w3.org/ns/oa#Annotation') {
+					anns.add(subgraph['@id'])
 					assertEquals 'urn:temp:7', subgraph['http://purl.org/pav/previousVersion']
 					assertEquals 'http://www.w3.org/ns/oa#highlighting', subgraph['http://www.w3.org/ns/oa#motivatedBy']['@id']
 					assertEquals 'urn:application:domeo', subgraph['http://www.w3.org/ns/oa#serializedBy']['@id']
@@ -239,6 +263,14 @@ class OpenAnnotationControllerPostTests extends GroovyTestCase {
 		}
 		assertTrue foundProvenanceGraph;
 		assertFalse foundBody;
+		
+		c.response.reset();
+		c.request.JSON.clear();
+		
+		anns.each { ann ->
+			c.request.JSON << JSON.parse('{"apiKey":"' + grailsApplication.config.annotopia.storage.testing.apiKey + '","uri":"' + ann + '"}')
+			c.delete();
+		}
 	}
 	
 	void testPublicEmbeddedCommentOnFullResourceWithNamedGraph() {
@@ -280,6 +312,7 @@ class OpenAnnotationControllerPostTests extends GroovyTestCase {
 		def json = JSON.parse(response.contentAsString);
 		assertEquals 'saved', json.status
 		
+		def anns = [] as Set
 		int graphsCounter = 0;
 		boolean foundBody = false;
 		boolean foundProvenanceGraph = false;
@@ -288,6 +321,7 @@ class OpenAnnotationControllerPostTests extends GroovyTestCase {
 			if(graph['@id']==grailsApplication.config.annotopia.storage.uri.graph.provenance) foundProvenanceGraph = true;
 			graph['@graph'].each { subgraph ->
 				if(subgraph['@type']=='http://www.w3.org/ns/oa#Annotation') {
+					anns.add(subgraph['@id'])
 					assertEquals 'urn:temp:001', subgraph['http://purl.org/pav/previousVersion']
 					assertEquals 'http://www.w3.org/ns/oa#commenting', subgraph['http://www.w3.org/ns/oa#motivatedBy']['@id']
 					assertEquals 'urn:application:domeo', subgraph['http://www.w3.org/ns/oa#serializedBy']['@id']
@@ -302,6 +336,14 @@ class OpenAnnotationControllerPostTests extends GroovyTestCase {
 		assertEquals 2, graphsCounter;
 		assertTrue foundProvenanceGraph;
 		assertTrue foundBody;
+		
+		c.response.reset();
+		c.request.JSON.clear();
+		
+		anns.each { ann ->
+			c.request.JSON << JSON.parse('{"apiKey":"' + grailsApplication.config.annotopia.storage.testing.apiKey + '","uri":"' + ann + '"}')
+			c.delete();
+		}
 	}
 	
 	void testPublicHighlightOnTextualFragmentOfResourceWithNamedGraph() {
@@ -350,6 +392,7 @@ class OpenAnnotationControllerPostTests extends GroovyTestCase {
 		def json = JSON.parse(response.contentAsString);
 		assertEquals 'saved', json.status
 		
+		def anns = [] as Set
 		int graphsCounter = 0;
 		boolean foundBody = false;
 		boolean foundProvenanceGraph = false;
@@ -358,6 +401,7 @@ class OpenAnnotationControllerPostTests extends GroovyTestCase {
 			if(graph['@id']==grailsApplication.config.annotopia.storage.uri.graph.provenance) foundProvenanceGraph = true;
 			graph['@graph'].each { subgraph ->
 				if(subgraph['@type']=='http://www.w3.org/ns/oa#Annotation') {
+					anns.add(subgraph['@id'])
 					assertEquals 'urn:temp:7', subgraph['http://purl.org/pav/previousVersion']
 					assertEquals 'http://www.w3.org/ns/oa#highlighting', subgraph['http://www.w3.org/ns/oa#motivatedBy']['@id']
 					assertEquals 'urn:application:domeo', subgraph['http://www.w3.org/ns/oa#serializedBy']['@id']
@@ -371,7 +415,15 @@ class OpenAnnotationControllerPostTests extends GroovyTestCase {
 		}
 		assertEquals 2, graphsCounter;
 		assertTrue foundProvenanceGraph;
-		assertFalse foundBody;		
+		assertFalse foundBody;	
+		
+		c.response.reset();
+		c.request.JSON.clear();
+		
+		anns.each { ann ->
+			c.request.JSON << JSON.parse('{"apiKey":"' + grailsApplication.config.annotopia.storage.testing.apiKey + '","uri":"' + ann + '"}')
+			c.delete();
+		}
 	}
 	
 	void testPublicTwoEmbeddedCommentsOnFullResourceWithNamedGraph() {
@@ -412,6 +464,7 @@ class OpenAnnotationControllerPostTests extends GroovyTestCase {
 		def json = JSON.parse(response.contentAsString);
 		assertEquals 'saved', json.status
 						
+		def anns = [] as Set
 		int graphsCounter = 0;
 		int bodyCounter = 0;
 		boolean foundProvenanceGraph = false;
@@ -420,6 +473,7 @@ class OpenAnnotationControllerPostTests extends GroovyTestCase {
 			if(graph['@id']==grailsApplication.config.annotopia.storage.uri.graph.provenance) foundProvenanceGraph = true;
 			graph['@graph'].each { subgraph ->
 				if(subgraph['@type']=='http://www.w3.org/ns/oa#Annotation') {
+					anns.add(subgraph['@id'])
 					assertEquals 'urn:temp:001', subgraph['http://purl.org/pav/previousVersion']
 					assertEquals 'http://www.w3.org/ns/oa#commenting', subgraph['http://www.w3.org/ns/oa#motivatedBy']['@id']
 					assertEquals 'urn:application:domeo', subgraph['http://www.w3.org/ns/oa#serializedBy']['@id']
@@ -433,7 +487,15 @@ class OpenAnnotationControllerPostTests extends GroovyTestCase {
 		}
 		assertEquals 2, graphsCounter;
 		assertTrue foundProvenanceGraph;
-		assertEquals 2, bodyCounter;				
+		assertEquals 2, bodyCounter;
+		
+		c.response.reset();
+		c.request.JSON.clear();
+		
+		anns.each { ann ->
+			c.request.JSON << JSON.parse('{"apiKey":"' + grailsApplication.config.annotopia.storage.testing.apiKey + '","uri":"' + ann + '"}')
+			c.delete();
+		}
 	}	
 	
 	void testPublicTwoBodiesAsNamedGraphsOnFullResourceWithNamedGraph() {
@@ -487,6 +549,7 @@ class OpenAnnotationControllerPostTests extends GroovyTestCase {
 		def json = JSON.parse(response.contentAsString);
 		assertEquals 'saved', json.status
 		
+		def anns = [] as Set
 		int graphsCounter = 0;
 		int bodyGraphCounter = 0;
 		int bodyCounter = 0;
@@ -496,6 +559,7 @@ class OpenAnnotationControllerPostTests extends GroovyTestCase {
 			if(graph['@id']==grailsApplication.config.annotopia.storage.uri.graph.provenance) foundProvenanceGraph = true;
 			graph['@graph'].each { subgraph ->
 				if(subgraph['@type']=='http://www.w3.org/ns/oa#Annotation') {
+					anns.add(subgraph['@id'])
 					assertEquals 'urn:temp:7', subgraph['http://purl.org/pav/previousVersion']
 					assertEquals 'http://www.w3.org/ns/oa#describing', subgraph['http://www.w3.org/ns/oa#motivatedBy']['@id']
 				} else if(subgraph['@type']==null) {
@@ -511,5 +575,13 @@ class OpenAnnotationControllerPostTests extends GroovyTestCase {
 		assertTrue foundProvenanceGraph;
 		assertEquals 2, bodyCounter;
 		assertEquals 2, bodyGraphCounter
+		
+		c.response.reset();
+		c.request.JSON.clear();
+		
+		anns.each { ann ->
+			c.request.JSON << JSON.parse('{"apiKey":"' + grailsApplication.config.annotopia.storage.testing.apiKey + '","uri":"' + ann + '"}')
+			c.delete();
+		}
 	}
 }
