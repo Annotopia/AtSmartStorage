@@ -27,7 +27,7 @@ package org.annotopia.grails.vocabularies;
  * 
  * @author Paolo Ciccarese <paolo.ciccarese@gmail.com>
  */
-public interface PavVocabulary {
+public interface PAV {
 
 	/**
 	 * pav:createdBy

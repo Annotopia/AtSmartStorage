@@ -26,8 +26,9 @@ import java.text.SimpleDateFormat
 import java.util.regex.Pattern
 
 import org.annotopia.grails.vocabularies.AnnotopiaVocabulary
-import org.annotopia.grails.vocabularies.PavVocabulary
-import org.annotopia.grails.vocabularies.RdfVocabulary
+import org.annotopia.grails.vocabularies.OA
+import org.annotopia.grails.vocabularies.PAV
+import org.annotopia.grails.vocabularies.RDF
 import org.annotopia.groovy.service.store.StoreServiceException
 import org.apache.jena.riot.RDFDataMgr
 import org.apache.jena.riot.RDFLanguages
@@ -177,17 +178,17 @@ class OpenAnnotationStorageService {
 			log.trace("[" + apiKey + "] Default graph detected.");
 			// Annotation Set
 			identifiableURI(apiKey, inMemoryDataset.getDefaultModel(),
-				ResourceFactory.createProperty(RdfVocabulary.RDF_TYPE),
+				ResourceFactory.createProperty(RDF.RDF_TYPE),
 				ResourceFactory.createResource(AnnotopiaVocabulary.ANNOTATION_SET), "annotationset");
 			
 			// Specific Resource identifier
 			identifiableURIs(apiKey, inMemoryDataset.getDefaultModel(),
-				ResourceFactory.createProperty(RdfVocabulary.RDF_TYPE),
-				ResourceFactory.createResource("http://www.w3.org/ns/oa#SpecificResource"), "resource");
+				ResourceFactory.createProperty(RDF.RDF_TYPE),
+				ResourceFactory.createResource(OA.SPECIFIC_RESOURCE), "resource");
 
 			// Embedded content (as RDF) identifier
 			identifiableURIs(apiKey, inMemoryDataset.getDefaultModel(),
-				ResourceFactory.createProperty(RdfVocabulary.RDF_TYPE),
+				ResourceFactory.createProperty(RDF.RDF_TYPE),
 				ResourceFactory.createResource("http://www.w3.org/2011/content#ContentAsText"), "content");
 			
 			HashMap<Resource, String> oldNewAnnotationUriMapping = new HashMap<Resource, String>();
@@ -213,14 +214,14 @@ class OpenAnnotationStorageService {
 				
 				annotationModel.add(
 					ResourceFactory.createResource(oldNewAnnotationUriMapping.get(oldAnnotation)),
-					ResourceFactory.createProperty(PavVocabulary.PAV_PREVIOUS_VERSION),
+					ResourceFactory.createProperty(PAV.PAV_PREVIOUS_VERSION),
 					ResourceFactory.createPlainLiteral(oldAnnotation.toString()));
 			}
 			
 			// TODO make sure there is only one set
 			List<Statement> statementsToRemove = new ArrayList<Statement>();
 			StmtIterator statements = annotationModel.listStatements(null, 
-				ResourceFactory.createProperty(RdfVocabulary.RDF_TYPE),
+				ResourceFactory.createProperty(RDF.RDF_TYPE),
 				ResourceFactory.createResource(AnnotopiaVocabulary.ANNOTATION_SET));
 			if(statements.hasNext()) {
 				Statement annotationSetStatement = statements.nextStatement();
@@ -319,17 +320,17 @@ class OpenAnnotationStorageService {
 			
 			// Annotation identifier
 			Resource annotation = identifiableURI(apiKey, dataset.getDefaultModel(),
-				ResourceFactory.createProperty(RdfVocabulary.RDF_TYPE),
-				ResourceFactory.createResource("http://www.w3.org/ns/oa#Annotation"), "annotation");
+				ResourceFactory.createProperty(RDF.RDF_TYPE),
+				ResourceFactory.createResource(OA.ANNOTATION), "annotation");
 			
 			// Specific Resource identifier
 			identifiableURIs(apiKey, dataset.getDefaultModel(),
-				ResourceFactory.createProperty(RdfVocabulary.RDF_TYPE),
-				ResourceFactory.createResource("http://www.w3.org/ns/oa#SpecificResource"), "resource");
+				ResourceFactory.createProperty(RDF.RDF_TYPE),
+				ResourceFactory.createResource(OA.SPECIFIC_RESOURCE), "resource");
 
 			// Embedded content (as RDF) identifier
 			identifiableURIs(apiKey, dataset.getDefaultModel(),
-				ResourceFactory.createProperty(RdfVocabulary.RDF_TYPE),
+				ResourceFactory.createProperty(RDF.RDF_TYPE),
 				ResourceFactory.createResource("http://www.w3.org/2011/content#ContentAsText"), "content");
 			
 			// TODO Tags management
@@ -380,17 +381,17 @@ class OpenAnnotationStorageService {
 				
 				// Annotation identifier
 				Resource annotation = identifiableURI(apiKey, workingDataset.getNamedModel(annotationGraphUri.toString()),
-					ResourceFactory.createProperty(RdfVocabulary.RDF_TYPE),
-					ResourceFactory.createResource("http://www.w3.org/ns/oa#Annotation"), "annotation");
+					ResourceFactory.createProperty(RDF.RDF_TYPE),
+					ResourceFactory.createResource(OA.ANNOTATION), "annotation");
 				
 				// Specific Resource identifier
 				identifiableURI(apiKey, workingDataset.getNamedModel(annotationGraphUri.toString()),
-					ResourceFactory.createProperty(RdfVocabulary.RDF_TYPE),
-					ResourceFactory.createResource("http://www.w3.org/ns/oa#SpecificResource"), "resource");
+					ResourceFactory.createProperty(RDF.RDF_TYPE),
+					ResourceFactory.createResource(OA.SPECIFIC_RESOURCE), "resource");
 				
 				// Embedded content (as RDF) identifier
 				identifiableURIs(apiKey, workingDataset.getNamedModel(annotationGraphUri.toString()),
-					ResourceFactory.createProperty(RdfVocabulary.RDF_TYPE),
+					ResourceFactory.createProperty(RDF.RDF_TYPE),
 					ResourceFactory.createResource("http://www.w3.org/2011/content#ContentAsText"), "content");
 				
 				// Annotation graphs identifier
@@ -401,7 +402,7 @@ class OpenAnnotationStorageService {
 					graphMetadataService.getAnnotationGraphCreationMetadata(apiKey, creationDataset, newAnnotationGraphUri);
 				newAnnotationGraphMetadataModel.add(
 					ResourceFactory.createResource(newAnnotationGraphUri), 
-					ResourceFactory.createProperty(PavVocabulary.PAV_PREVIOUS_VERSION), 
+					ResourceFactory.createProperty(PAV.PAV_PREVIOUS_VERSION), 
 					ResourceFactory.createResource(annotationGraphUri.toString()));
 				
 				if(bodiesGraphsUris.size()>0) {
@@ -419,7 +420,7 @@ class OpenAnnotationStorageService {
 							graphMetadataService.getBodyGraphCreationMetadata(apiKey, creationDataset, newBodyGraphUri);
 						newBodyGraphMetadataModel.add(
 							ResourceFactory.createResource(newBodyGraphUri),
-							ResourceFactory.createProperty(PavVocabulary.PAV_PREVIOUS_VERSION),
+							ResourceFactory.createProperty(PAV.PAV_PREVIOUS_VERSION),
 							ResourceFactory.createResource(bodyGraphUri.toString()));
 					}
 						
@@ -427,16 +428,16 @@ class OpenAnnotationStorageService {
 					oldNewBodyUriMapping.keySet().each { oldUri ->
 						Model annotationModel = workingDataset.getNamedModel(annotationGraphUri.toString());
 						StmtIterator statements = annotationModel.listStatements(annotation, 
-							ResourceFactory.createProperty("http://www.w3.org/ns/oa#hasBody"), ResourceFactory.createResource(oldUri));
+							ResourceFactory.createProperty(OA.HAS_BODY), ResourceFactory.createResource(oldUri));
 						List<Statement> statementsToRemove = new ArrayList<Statement>();
 						statementsToRemove.addAll(statements);
 						statementsToRemove.each { statement ->
 							annotationModel.remove(statement);
-							annotationModel.add(annotation, ResourceFactory.createProperty("http://www.w3.org/ns/oa#hasBody"), 
+							annotationModel.add(annotation, ResourceFactory.createProperty(OA.HAS_BODY), 
 								ResourceFactory.createResource(oldNewBodyUriMapping.get(oldUri)));
 							// Adding trig:Graph type
 							annotationModel.add(ResourceFactory.createResource(oldNewBodyUriMapping.get(oldUri)), 
-								ResourceFactory.createProperty(RdfVocabulary.RDF_TYPE),
+								ResourceFactory.createProperty(RDF.RDF_TYPE),
 								ResourceFactory.createResource("http://www.w3.org/2004/03/trix/rdfg-1/Graph"));
 						}
 						// Graphs metadata linkage (Annotation Graph to Bodies Graphs)
@@ -685,12 +686,12 @@ class OpenAnnotationStorageService {
 		
 		if(!originalSubject.isAnon())
 			model.add(model.createStatement(rUri,
-				ResourceFactory.createProperty(PavVocabulary.PAV_PREVIOUS_VERSION),
+				ResourceFactory.createProperty(PAV.PAV_PREVIOUS_VERSION),
 				ResourceFactory.createPlainLiteral(originalSubject.toString())
 				));
 		else
 			model.add(model.createStatement(rUri,
-				ResourceFactory.createProperty(PavVocabulary.PAV_PREVIOUS_VERSION),
+				ResourceFactory.createProperty(PAV.PAV_PREVIOUS_VERSION),
 				ResourceFactory.createPlainLiteral("blank")
 				));
 			
@@ -741,12 +742,12 @@ class OpenAnnotationStorageService {
 		originalSubjects.keySet().each { subject ->
 			if(!subject.isAnon())
 				model.add(model.createStatement(originalSubjects.get(subject),
-					ResourceFactory.createProperty(PavVocabulary.PAV_PREVIOUS_VERSION),
+					ResourceFactory.createProperty(PAV.PAV_PREVIOUS_VERSION),
 					ResourceFactory.createPlainLiteral(subject.toString())
 					));
 			else
 				model.add(model.createStatement(originalSubjects.get(subject),
-					ResourceFactory.createProperty(PavVocabulary.PAV_PREVIOUS_VERSION),
+					ResourceFactory.createProperty(PAV.PAV_PREVIOUS_VERSION),
 					ResourceFactory.createPlainLiteral("blank")
 					));
 		}

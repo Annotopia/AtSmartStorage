@@ -23,8 +23,8 @@ package org.annotopia.grails.services.storage.utils.jena
 import java.text.SimpleDateFormat
 
 import org.annotopia.grails.vocabularies.AnnotopiaVocabulary
-import org.annotopia.grails.vocabularies.PavVocabulary
-import org.annotopia.grails.vocabularies.RdfVocabulary
+import org.annotopia.grails.vocabularies.PAV
+import org.annotopia.grails.vocabularies.RDF
 
 import com.hp.hpl.jena.query.Dataset
 import com.hp.hpl.jena.rdf.model.Model
@@ -50,12 +50,12 @@ class GraphMetadataService {
 			 metaModel = ModelFactory.createDefaultModel();
 			 dataset.addNamedModel("annotopia:graphs:provenance", metaModel);
 		}
-		metaModel.add(graphRes, ResourceFactory.createProperty(RdfVocabulary.RDF_TYPE), ResourceFactory.createResource(AnnotopiaVocabulary.ANNOTATION_SET_GRAPH));
-		metaModel.add(graphRes, ResourceFactory.createProperty(PavVocabulary.PAV_CREATED_BY), ResourceFactory.createResource("annotopia:client:" + apiKey));
-		metaModel.add(graphRes, ResourceFactory.createProperty(PavVocabulary.PAV_CREATED_AT), ResourceFactory.createPlainLiteral(dateFormat.format(new Date())));
-		metaModel.add(graphRes, ResourceFactory.createProperty(PavVocabulary.PAV_CREATED_WITH), ResourceFactory.createResource("annotopia:test:001"));
-		metaModel.add(graphRes, ResourceFactory.createProperty(PavVocabulary.PAV_LAST_UPDATED_ON), ResourceFactory.createPlainLiteral(dateFormat.format(new Date())));
-		metaModel.add(graphRes, ResourceFactory.createProperty(PavVocabulary.PAV_LAST_UPDATED_BY), ResourceFactory.createResource("annotopia:client:" + apiKey));	
+		metaModel.add(graphRes, ResourceFactory.createProperty(RDF.RDF_TYPE), ResourceFactory.createResource(AnnotopiaVocabulary.ANNOTATION_SET_GRAPH));
+		metaModel.add(graphRes, ResourceFactory.createProperty(PAV.PAV_CREATED_BY), ResourceFactory.createResource("annotopia:client:" + apiKey));
+		metaModel.add(graphRes, ResourceFactory.createProperty(PAV.PAV_CREATED_AT), ResourceFactory.createPlainLiteral(dateFormat.format(new Date())));
+		metaModel.add(graphRes, ResourceFactory.createProperty(PAV.PAV_CREATED_WITH), ResourceFactory.createResource("annotopia:test:001"));
+		metaModel.add(graphRes, ResourceFactory.createProperty(PAV.PAV_LAST_UPDATED_ON), ResourceFactory.createPlainLiteral(dateFormat.format(new Date())));
+		metaModel.add(graphRes, ResourceFactory.createProperty(PAV.PAV_LAST_UPDATED_BY), ResourceFactory.createResource("annotopia:client:" + apiKey));	
 		metaModel.add(graphRes, ResourceFactory.createProperty(AnnotopiaVocabulary.AT_STATUS), ResourceFactory.createPlainLiteral("current"));
 		dataset.addNamedModel("annotopia:graphs:provenance", metaModel);
 		metaModel
@@ -71,12 +71,12 @@ class GraphMetadataService {
 		 	 metaModel = ModelFactory.createDefaultModel();
 			 dataset.addNamedModel("annotopia:graphs:provenance", metaModel);
 		}
-		metaModel.add(graphRes, ResourceFactory.createProperty(RdfVocabulary.RDF_TYPE), ResourceFactory.createResource(AnnotopiaVocabulary.ANNOTATION_GRAPH));
-		metaModel.add(graphRes, ResourceFactory.createProperty(PavVocabulary.PAV_CREATED_BY), ResourceFactory.createResource("annotopia:client:" + apiKey));
-		metaModel.add(graphRes, ResourceFactory.createProperty(PavVocabulary.PAV_CREATED_AT), ResourceFactory.createPlainLiteral(dateFormat.format(new Date())));
-		metaModel.add(graphRes, ResourceFactory.createProperty(PavVocabulary.PAV_LAST_UPDATED_ON), ResourceFactory.createPlainLiteral(dateFormat.format(new Date())));
-		metaModel.add(graphRes, ResourceFactory.createProperty(PavVocabulary.PAV_LAST_UPDATED_BY), ResourceFactory.createResource("annotopia:client:" + apiKey));
-		metaModel.add(graphRes, ResourceFactory.createProperty(PavVocabulary.PAV_CREATED_WITH), ResourceFactory.createResource("annotopia:test:001"));
+		metaModel.add(graphRes, ResourceFactory.createProperty(RDF.RDF_TYPE), ResourceFactory.createResource(AnnotopiaVocabulary.ANNOTATION_GRAPH));
+		metaModel.add(graphRes, ResourceFactory.createProperty(PAV.PAV_CREATED_BY), ResourceFactory.createResource("annotopia:client:" + apiKey));
+		metaModel.add(graphRes, ResourceFactory.createProperty(PAV.PAV_CREATED_AT), ResourceFactory.createPlainLiteral(dateFormat.format(new Date())));
+		metaModel.add(graphRes, ResourceFactory.createProperty(PAV.PAV_LAST_UPDATED_ON), ResourceFactory.createPlainLiteral(dateFormat.format(new Date())));
+		metaModel.add(graphRes, ResourceFactory.createProperty(PAV.PAV_LAST_UPDATED_BY), ResourceFactory.createResource("annotopia:client:" + apiKey));
+		metaModel.add(graphRes, ResourceFactory.createProperty(PAV.PAV_CREATED_WITH), ResourceFactory.createResource("annotopia:test:001"));
 		metaModel.add(graphRes, ResourceFactory.createProperty(AnnotopiaVocabulary.AT_STATUS), ResourceFactory.createPlainLiteral("current"));
 		dataset.addNamedModel("annotopia:graphs:provenance", metaModel);
 		metaModel
@@ -92,21 +92,21 @@ class GraphMetadataService {
 		 	 metaModel = ModelFactory.createDefaultModel();
 			 dataset.addNamedModel("annotopia:graphs:provenance", metaModel);
 		}
-		metaModel.add(graphRes, ResourceFactory.createProperty(RdfVocabulary.RDF_TYPE), ResourceFactory.createResource(AnnotopiaVocabulary.ANNOTATION_BODY_GRAPH));
-		metaModel.add(graphRes, ResourceFactory.createProperty(PavVocabulary.PAV_CREATED_BY), ResourceFactory.createResource("annotopia:client:" + apiKey));
-		metaModel.add(graphRes, ResourceFactory.createProperty(PavVocabulary.PAV_CREATED_AT), ResourceFactory.createPlainLiteral(dateFormat.format(new Date())));
-		metaModel.add(graphRes, ResourceFactory.createProperty(PavVocabulary.PAV_LAST_UPDATED_ON), ResourceFactory.createPlainLiteral(dateFormat.format(new Date())));
-		metaModel.add(graphRes, ResourceFactory.createProperty(PavVocabulary.PAV_CREATED_WITH), ResourceFactory.createResource("annotopia:test:001"));
+		metaModel.add(graphRes, ResourceFactory.createProperty(RDF.RDF_TYPE), ResourceFactory.createResource(AnnotopiaVocabulary.ANNOTATION_BODY_GRAPH));
+		metaModel.add(graphRes, ResourceFactory.createProperty(PAV.PAV_CREATED_BY), ResourceFactory.createResource("annotopia:client:" + apiKey));
+		metaModel.add(graphRes, ResourceFactory.createProperty(PAV.PAV_CREATED_AT), ResourceFactory.createPlainLiteral(dateFormat.format(new Date())));
+		metaModel.add(graphRes, ResourceFactory.createProperty(PAV.PAV_LAST_UPDATED_ON), ResourceFactory.createPlainLiteral(dateFormat.format(new Date())));
+		metaModel.add(graphRes, ResourceFactory.createProperty(PAV.PAV_CREATED_WITH), ResourceFactory.createResource("annotopia:test:001"));
 		metaModel.add(graphRes, ResourceFactory.createProperty(AnnotopiaVocabulary.AT_STATUS), ResourceFactory.createPlainLiteral("current"));
 		metaModel
 	}
 	
 	public Model getAnnotationGraphUpdateMetadata(String apiKey, Model metaModel, def graphUri) {
 		def graphRes = ResourceFactory.createResource(graphUri);
-		metaModel.removeAll(graphRes, ResourceFactory.createProperty(PavVocabulary.PAV_LAST_UPDATED_ON), null);
-		metaModel.add(graphRes, ResourceFactory.createProperty(PavVocabulary.PAV_LAST_UPDATED_ON), ResourceFactory.createPlainLiteral(dateFormat.format(new Date())));
-		metaModel.removeAll(graphRes, ResourceFactory.createProperty(PavVocabulary.PAV_LAST_UPDATED_BY), null);
-		metaModel.add(graphRes, ResourceFactory.createProperty(PavVocabulary.PAV_LAST_UPDATED_BY), ResourceFactory.createResource("annotopia:client:" + apiKey));
+		metaModel.removeAll(graphRes, ResourceFactory.createProperty(PAV.PAV_LAST_UPDATED_ON), null);
+		metaModel.add(graphRes, ResourceFactory.createProperty(PAV.PAV_LAST_UPDATED_ON), ResourceFactory.createPlainLiteral(dateFormat.format(new Date())));
+		metaModel.removeAll(graphRes, ResourceFactory.createProperty(PAV.PAV_LAST_UPDATED_BY), null);
+		metaModel.add(graphRes, ResourceFactory.createProperty(PAV.PAV_LAST_UPDATED_BY), ResourceFactory.createResource("annotopia:client:" + apiKey));
 		metaModel.removeAll(graphRes, ResourceFactory.createProperty(AnnotopiaVocabulary.AT_CURRENT), null);
 		metaModel.add(graphRes, ResourceFactory.createProperty(AnnotopiaVocabulary.AT_STATUS), ResourceFactory.createPlainLiteral("current"));
 		metaModel

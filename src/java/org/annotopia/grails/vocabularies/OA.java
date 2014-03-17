@@ -21,12 +21,15 @@
 package org.annotopia.grails.vocabularies;
 
 /**
- * This is a class collecting the properties and classes proper of 
- * the RDF vocabulary.
+ * This is a class collecting the properties defined by the Open
+ * Annotation Model (see: http://www.openannotation.org/spec/core/) 
  * 
  * @author Paolo Ciccarese <paolo.ciccarese@gmail.com>
  */
-public interface RdfVocabulary {
+public interface OA {
 
-	public static final String RDF_TYPE 	= "http://www.w3.org/1999/02/22-rdf-syntax-ns#type";
+	public static final String ANNOTATION 			= "http://www.w3.org/ns/oa#Annotation";
+	public static final String SPECIFIC_RESOURCE    = "http://www.w3.org/ns/oa#SpecificResource";
+	
+	public static final String HAS_BODY    			= "http://www.w3.org/ns/oa#hasBody";
 }
