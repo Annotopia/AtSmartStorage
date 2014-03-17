@@ -30,6 +30,8 @@ public interface OA {
 
 	public static final String ANNOTATION 			= "http://www.w3.org/ns/oa#Annotation";
 	public static final String SPECIFIC_RESOURCE    = "http://www.w3.org/ns/oa#SpecificResource";
+	public static final String CONTEXT_AS_TEXT      = "http://www.w3.org/2011/content#ContentAsText";
+	public static final String GRAPH      			="http://www.w3.org/2004/03/trix/rdfg-1/Graph";
 	
 	public static final String HAS_BODY    			= "http://www.w3.org/ns/oa#hasBody";
 }

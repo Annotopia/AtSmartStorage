@@ -189,7 +189,7 @@ class OpenAnnotationStorageService {
 			// Embedded content (as RDF) identifier
 			identifiableURIs(apiKey, inMemoryDataset.getDefaultModel(),
 				ResourceFactory.createProperty(RDF.RDF_TYPE),
-				ResourceFactory.createResource("http://www.w3.org/2011/content#ContentAsText"), "content");
+				ResourceFactory.createResource(OA.CONTEXT_AS_TEXT), "content");
 			
 			HashMap<Resource, String> oldNewAnnotationUriMapping = new HashMap<Resource, String>();
 			Iterator<Resource> annotationUrisIterator = annotationUris.iterator();
@@ -331,7 +331,7 @@ class OpenAnnotationStorageService {
 			// Embedded content (as RDF) identifier
 			identifiableURIs(apiKey, dataset.getDefaultModel(),
 				ResourceFactory.createProperty(RDF.RDF_TYPE),
-				ResourceFactory.createResource("http://www.w3.org/2011/content#ContentAsText"), "content");
+				ResourceFactory.createResource(OA.CONTEXT_AS_TEXT), "content");
 			
 			// TODO Tags management
 			// TODO Extension points
@@ -392,7 +392,7 @@ class OpenAnnotationStorageService {
 				// Embedded content (as RDF) identifier
 				identifiableURIs(apiKey, workingDataset.getNamedModel(annotationGraphUri.toString()),
 					ResourceFactory.createProperty(RDF.RDF_TYPE),
-					ResourceFactory.createResource("http://www.w3.org/2011/content#ContentAsText"), "content");
+					ResourceFactory.createResource(OA.CONTEXT_AS_TEXT), "content");
 				
 				// Annotation graphs identifier
 				def newAnnotationGraphUri = getGraphUri();
@@ -438,7 +438,7 @@ class OpenAnnotationStorageService {
 							// Adding trig:Graph type
 							annotationModel.add(ResourceFactory.createResource(oldNewBodyUriMapping.get(oldUri)), 
 								ResourceFactory.createProperty(RDF.RDF_TYPE),
-								ResourceFactory.createResource("http://www.w3.org/2004/03/trix/rdfg-1/Graph"));
+								ResourceFactory.createResource(OA.GRAPH));
 						}
 						// Graphs metadata linkage (Annotation Graph to Bodies Graphs)
 						newAnnotationGraphMetadataModel.add(
