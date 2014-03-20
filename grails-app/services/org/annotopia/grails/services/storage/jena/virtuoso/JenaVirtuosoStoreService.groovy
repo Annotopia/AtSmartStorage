@@ -51,6 +51,11 @@ class JenaVirtuosoStoreService implements ITripleStore {
 	
 	def grailsApplication
 	
+	/**
+	 * Returns a Virtuoso Graph for connecting to the Virtuoso
+	 * triple store.
+	 * @return The Virtuoso graph.
+	 */
 	private VirtGraph graph() {
 		return new VirtGraph (
 			grailsApplication.config.annotopia.storage.triplestore.host,
@@ -61,7 +66,13 @@ class JenaVirtuosoStoreService implements ITripleStore {
 	// -----------------------------------------------------------------------
 	//    COUNT
 	// -----------------------------------------------------------------------
-	public int count(apiKey, queryString) {
+	/**
+	 * Generic method for counting items in the triple store.
+	 * @param apiKey		The API software key
+	 * @param queryString	The query for counting.
+	 * @return The count.
+	 */
+	public int count(apiKey, queryString, counter = "total") {
 		VirtGraph graph = graph();
 		log.trace('[' + apiKey + '] ' +  queryString);
 			
@@ -69,7 +80,7 @@ class JenaVirtuosoStoreService implements ITripleStore {
 		VirtuosoQueryExecution vqe = VirtuosoQueryExecutionFactory.create (QueryFactory.create(queryString), graph);
 		ResultSet results=vqe.execSelect();
 		if(results.hasNext()) {
-			totalCount = Integer.parseInt(results.next().get("total").getString());
+			totalCount = Integer.parseInt(results.next().get(counter).getString());
 		}
 		log.info('[' + apiKey + '] Total: ' + totalCount);
 		totalCount;
@@ -112,7 +123,7 @@ class JenaVirtuosoStoreService implements ITripleStore {
 	 * @return The set of 'g' that have been selected.
 	 */
 	public Set<String> retrieveGraphsNames(apiKey, queryString) {
-		VirtGraph graph = new VirtGraph (graph());
+		VirtGraph graph = graph();
 		log.trace('[' + apiKey + '] ' + queryString);
 		
 		Set<String> graphNames = new HashSet<String>();
