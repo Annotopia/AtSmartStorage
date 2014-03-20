@@ -40,6 +40,7 @@ import com.hp.hpl.jena.query.QueryFactory
 import com.hp.hpl.jena.query.QuerySolution
 import com.hp.hpl.jena.query.ResultSet
 import com.hp.hpl.jena.rdf.model.Model
+import com.hp.hpl.jena.rdf.model.RDFNode
 
 /**
  * Basic storage services for Virtuoso Triple store.
@@ -50,14 +51,18 @@ class JenaVirtuosoStoreService implements ITripleStore {
 	
 	def grailsApplication
 	
+	private VirtGraph graph() {
+		return new VirtGraph (
+			grailsApplication.config.annotopia.storage.triplestore.host,
+			grailsApplication.config.annotopia.storage.triplestore.user,
+			grailsApplication.config.annotopia.storage.triplestore.pass);
+	}
+	
 	// -----------------------------------------------------------------------
 	//    COUNT
 	// -----------------------------------------------------------------------
 	public int count(apiKey, queryString) {
-		VirtGraph graph = new VirtGraph (
-			grailsApplication.config.annotopia.storage.triplestore.host,
-			grailsApplication.config.annotopia.storage.triplestore.user,
-			grailsApplication.config.annotopia.storage.triplestore.pass);
+		VirtGraph graph = graph();
 		log.trace('[' + apiKey + '] ' +  queryString);
 			
 		int totalCount = 0;
@@ -70,24 +75,55 @@ class JenaVirtuosoStoreService implements ITripleStore {
 		totalCount;
 	}
 	
-	// -----------------------------------------------------------------------
-	//    QUERY
-	// -----------------------------------------------------------------------
-	public Map<String, Integer> countAndGroupBy(apiKey, queryString, c, groupBy) {
-		VirtGraph graph = new VirtGraph (
-			grailsApplication.config.annotopia.storage.triplestore.host,
-			grailsApplication.config.annotopia.storage.triplestore.user,
-			grailsApplication.config.annotopia.storage.triplestore.pass);
+	/**
+	 * Counts occurrences of grouped entities.
+	 * @param apiKey		The API software key
+	 * @param queryString	The query 
+	 * @param counter		The label of the counter in the query
+	 * @param groupBy		The grouping criteria in the query
+	 * @return The map of the counter for each item of the group.
+	 */
+	public Map<String, Integer> countAndGroupBy(apiKey, queryString, counter, groupBy) {
+		VirtGraph graph = graph();
+		log.trace('[' + apiKey + '] ' + queryString);
 		
 		Map<String, Integer> map = new HashMap<String, Integer>();
-		Query  sparqlGraphs = QueryFactory.create(queryString);
-		VirtuosoQueryExecution qGraphs = VirtuosoQueryExecutionFactory.create (sparqlGraphs, graph);
+		VirtuosoQueryExecution qGraphs = VirtuosoQueryExecutionFactory.create (QueryFactory.create(queryString), graph);
 		ResultSet rGraphs = qGraphs.execSelect();
 		while (rGraphs.hasNext()) {
 			QuerySolution querySolution = rGraphs.nextSolution();
-			map.put(querySolution.get(groupBy).toString(), querySolution.get(c).asLiteral().int);
+			map.put(
+				querySolution.get(groupBy).toString(), 
+				querySolution.get(counter).asLiteral().int
+			);
 		}
 		map
+	}
+	
+	// -----------------------------------------------------------------------
+	//    QUERY
+	// -----------------------------------------------------------------------
+	/**
+	 * This method runs all the queries that return a set of URIs. Normally
+	 * this is used for graph names hence the SELECT should contain the item
+	 * name 'g' which is the one that gets returned. 
+	 * @param apiKey		The API software key
+	 * @param queryString	The query that select 'g'
+	 * @return The set of 'g' that have been selected.
+	 */
+	public Set<String> retrieveGraphsNames(apiKey, queryString) {
+		VirtGraph graph = new VirtGraph (graph());
+		log.trace('[' + apiKey + '] ' + queryString);
+		
+		Set<String> graphNames = new HashSet<String>();
+		VirtuosoQueryExecution vqe = VirtuosoQueryExecutionFactory.create(QueryFactory.create(queryString), graph);
+		ResultSet results = vqe.execSelect();
+		while (results.hasNext()) {
+			QuerySolution result = results.nextSolution();
+			RDFNode graph_name = result.get("g");
+			graphNames.add(graph_name.toString());
+		}
+		graphNames
 	}
 	
 	// -----------------------------------------------------------------------
