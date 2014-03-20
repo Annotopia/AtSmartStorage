@@ -77,6 +77,14 @@ class OpenAnnotationVirtuosoService {
 		totalCount;
 	}
 
+	/**
+	 * Weather or not Annotation have been originally stored as graph, 
+	 * Annotopia wraps each anotation in a Named Graph. Therefore when
+	 * counting the total of annotations, the SPARQL query includes the
+	 * named graph parameter ?g
+	 * @param apiKey	The API key for the requerst
+	 * @return The total number of annotations that can be accessed.
+	 */
 	public int countAnnotations(apiKey) {
 
 		String queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> " +
@@ -107,7 +115,6 @@ class OpenAnnotationVirtuosoService {
 
 		String queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> " +
 			"SELECT DISTINCT ?g WHERE { GRAPH ?g { ?s a oa:Annotation }} LIMIT " + max + " OFFSET " + offset;
-		
 		if(tgtUrl!=null && tgtFgt=="false") {
 			queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> " +
 				"SELECT DISTINCT ?g WHERE { GRAPH ?g { ?s a oa:Annotation . ?s oa:hasTarget <" + tgtUrl + "> }} LIMIT " + max + " OFFSET " + offset;
@@ -129,7 +136,6 @@ class OpenAnnotationVirtuosoService {
 			
 		String queryString = "PREFIX at: <http://purl.org/annotopia#> " +
 			"SELECT DISTINCT ?g WHERE { GRAPH ?g { ?s a at:AnnotationSet }} LIMIT " + max + " OFFSET " + offset;
-		
 		if(tgtUrl!=null) {
 			queryString = "PREFIX oa: <http://www.w3.org/ns/oa#> PREFIX at:  <http://purl.org/annotopia#> " +
 				"SELECT DISTINCT ?g WHERE { GRAPH ?g { ?s a at:AnnotationSet . ?s at:annotatesResource <" + tgtUrl + "> }} LIMIT " + max + " OFFSET " + offset;
