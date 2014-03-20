@@ -82,12 +82,12 @@ class OpenAnnotationStorageService {
 		log.info '[' + apiKey + '] Retrieving annotation graphs';
 	
 		Set<Dataset> datasets = new HashSet<Dataset>();
-		List<String> graphNames = openAnnotationVirtuosoService.retrieveAnnotationGraphsNames(apiKey, max, offset, tgtUrl, tgtFgt);
+		Set<String> graphNames = openAnnotationVirtuosoService.retrieveAnnotationGraphsNames(apiKey, max, offset, tgtUrl, tgtFgt);
 		if(graphNames!=null) {
 			graphNames.each { graphName ->
 				Dataset ds = jenaVirtuosoStoreService.retrieveGraph(apiKey, graphName);
 				if(incGph=='true') {
-					Model m = jenaVirtuosoStoreService.retrieveGraphMetadata(apiKey, graphName, "annotopia:graphs:provenance");
+					Model m = jenaVirtuosoStoreService.retrieveGraphMetadata(apiKey, graphName, grailsApplication.config.annotopia.storage.uri.graph.provenance);
 					if(m!=null) ds.setDefaultModel(m);
 				}
 				if(ds!=null) datasets.add(ds);
@@ -110,12 +110,12 @@ class OpenAnnotationStorageService {
 		log.info '[' + apiKey + '] Retrieving annotation sets';
 	
 		Set<Dataset> datasets = new HashSet<Dataset>();
-		List<String> graphNames = openAnnotationVirtuosoService.retrieveAnnotationSetsGraphsNames(apiKey, max, offset, tgtUrl, tgtFgt);
+		Set<String> graphNames = openAnnotationVirtuosoService.retrieveAnnotationSetsGraphsNames(apiKey, max, offset, tgtUrl, tgtFgt);
 		if(graphNames!=null) {
 			graphNames.each { graphName ->
 				Dataset ds = jenaVirtuosoStoreService.retrieveGraph(apiKey, graphName);
 				if(incGph=='true') {
-					Model m = jenaVirtuosoStoreService.retrieveGraphMetadata(apiKey, graphName, "annotopia:graphs:provenance");
+					Model m = jenaVirtuosoStoreService.retrieveGraphMetadata(apiKey, graphName, grailsApplication.config.annotopia.storage.uri.graph.provenance);
 					if(m!=null) ds.setDefaultModel(m);
 				}
 				if(ds!=null) datasets.add(ds);
@@ -250,10 +250,10 @@ class OpenAnnotationStorageService {
 			def graphResource = ResourceFactory.createResource(graphUri);
 			Model metaModel = graphMetadataService.getAnnotationSetGraphCreationMetadata(apiKey, creationDataset, graphUri);
 			oldNewAnnotationUriMapping.values().each { annotationUri ->
-				metaModel.add(graphResource, ResourceFactory.createProperty("http://purl.org/annotopia#annotation"), ResourceFactory.createPlainLiteral(annotationUri));
+				metaModel.add(graphResource, ResourceFactory.createProperty(AnnotopiaVocabulary.ANNOTATION), ResourceFactory.createPlainLiteral(annotationUri));
 			}
 			if(oldNewAnnotationUriMapping.values().size()>0) {
-				metaModel.add(graphResource, ResourceFactory.createProperty("http://purl.org/annotopia#annotationcount"), ResourceFactory.createPlainLiteral(""+oldNewAnnotationUriMapping.values().size()));
+				metaModel.add(graphResource, ResourceFactory.createProperty(AnnotopiaVocabulary.ANNOTATION_COUNT), ResourceFactory.createPlainLiteral(""+oldNewAnnotationUriMapping.values().size()));
 			}
 				
 			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -443,12 +443,12 @@ class OpenAnnotationStorageService {
 						// Graphs metadata linkage (Annotation Graph to Bodies Graphs)
 						newAnnotationGraphMetadataModel.add(
 							ResourceFactory.createResource(newAnnotationGraphUri), 
-							ResourceFactory.createProperty("http://purl.org/annotopia#graphbody"),
+							ResourceFactory.createProperty(AnnotopiaVocabulary.BODY),
 							ResourceFactory.createResource(oldNewBodyUriMapping.get(oldUri)));
 					}
 					if(oldNewBodyUriMapping.values().size()>0) {
 						newAnnotationGraphMetadataModel.add(ResourceFactory.createResource(newAnnotationGraphUri),
-							ResourceFactory.createProperty("http://purl.org/annotopia#graphbodycount"), ResourceFactory.createPlainLiteral(""+oldNewBodyUriMapping.values().size()));
+							ResourceFactory.createProperty(AnnotopiaVocabulary.BODIES_COUNT), ResourceFactory.createPlainLiteral(""+oldNewBodyUriMapping.values().size()));
 					}
 					
 				} else {
@@ -580,15 +580,15 @@ class OpenAnnotationStorageService {
 					def annotationGraphUri;
 					storedAnnotationDataset.listNames().each { annotationGraphUri = it }
 					
-					Model metaModel = jenaVirtuosoStoreService.retrieveGraphMetadata(apiKey, annotationGraphUri, "annotopia:graphs:provenance");
+					Model metaModel = jenaVirtuosoStoreService.retrieveGraphMetadata(apiKey, annotationGraphUri, grailsApplication.config.annotopia.storage.uri.graph.provenance);
 					graphMetadataService.getAnnotationGraphUpdateMetadata(apiKey, metaModel, annotationGraphUri);					
-					updateDataset.addNamedModel("annotopia:graphs:provenance", metaModel);
+					updateDataset.addNamedModel(grailsApplication.config.annotopia.storage.uri.graph.provenance, metaModel);
 					
 					ByteArrayOutputStream outputStream3 = new ByteArrayOutputStream();
 					RDFDataMgr.write(outputStream3, updateDataset, RDFLanguages.JSONLD);
 					println outputStream3.toString();
 					
-					jenaVirtuosoStoreService.updateGraphMetadata(apiKey, metaModel, annotationGraphUri, "annotopia:graphs:provenance")
+					jenaVirtuosoStoreService.updateGraphMetadata(apiKey, metaModel, annotationGraphUri, grailsApplication.config.annotopia.storage.uri.graph.provenance)
 					
 					jenaVirtuosoStoreService.updateDataset(apiKey, updateDataset);
 					
