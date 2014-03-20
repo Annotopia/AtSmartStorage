@@ -31,10 +31,14 @@ public interface AnnotopiaVocabulary {
 	public static final String AT_STATUS 	= "http://purl.org/annotopia#status";
 	public static final String AT_CURRENT 	= "http://purl.org/annotopia#current";
 	
-	public static final String ANNOTATION_SET_GRAPH    = "http://purl.org/annotopia#AnnotationSetGraph";
-	public static final String ANNOTATION_GRAPH   	   = "http://purl.org/annotopia#AnnotationGraph";
-	public static final String ANNOTATION_BODY_GRAPH   = "http://purl.org/annotopia#BodyGraph"; 
+	public static final String ANNOTATION_SET_GRAPH    	= "http://purl.org/annotopia#AnnotationSetGraph";
+	public static final String ANNOTATION_GRAPH   	   	= "http://purl.org/annotopia#AnnotationGraph";
+	public static final String BODY_GRAPH   			= "http://purl.org/annotopia#BodyGraph"; 
+	public static final String BODY   					= "http://purl.org/annotopia#graphbody"; 
+	public static final String BODIES_COUNT   			= "http://purl.org/annotopia#graphbodycount"; 
 	
-	public static final String ANNOTATION_SET          = "http://purl.org/annotopia#AnnotationSet";
-	public static final String ANNOTATIONS             = "http://purl.org/annotopia#annotations";
+	public static final String ANNOTATION_SET          	= "http://purl.org/annotopia#AnnotationSet";
+	public static final String ANNOTATIONS             	= "http://purl.org/annotopia#annotations";
+	public static final String ANNOTATION             	= "http://purl.org/annotopia#annotation";
+	public static final String ANNOTATION_COUNT         = "http://purl.org/annotopia#annotationcount";
 }

@@ -92,7 +92,7 @@ class GraphMetadataService {
 		 	 metaModel = ModelFactory.createDefaultModel();
 			 dataset.addNamedModel("annotopia:graphs:provenance", metaModel);
 		}
-		metaModel.add(graphRes, ResourceFactory.createProperty(RDF.RDF_TYPE), ResourceFactory.createResource(AnnotopiaVocabulary.ANNOTATION_BODY_GRAPH));
+		metaModel.add(graphRes, ResourceFactory.createProperty(RDF.RDF_TYPE), ResourceFactory.createResource(AnnotopiaVocabulary.BODY_GRAPH));
 		metaModel.add(graphRes, ResourceFactory.createProperty(PAV.PAV_CREATED_BY), ResourceFactory.createResource("annotopia:client:" + apiKey));
 		metaModel.add(graphRes, ResourceFactory.createProperty(PAV.PAV_CREATED_AT), ResourceFactory.createPlainLiteral(dateFormat.format(new Date())));
 		metaModel.add(graphRes, ResourceFactory.createProperty(PAV.PAV_LAST_UPDATED_ON), ResourceFactory.createPlainLiteral(dateFormat.format(new Date())));

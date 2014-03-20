@@ -46,12 +46,12 @@ public interface PAV {
 	public static final String PAV_CREATED_WITH 	= "http://purl.org/pav/createdWith";
 	
 	/**
-	 * pav:lastUpdatedBy
+	 * pav:??
 	 * See: (not in PAV yet)
 	 */
 	public static final String PAV_LAST_UPDATED_BY 	= "http://purl.org/pav/lastUpdatedBy";	
 	/**
-	 * pav:
+	 * pav:lastUpdatedOn
 	 * See: http://pav-ontology.googlecode.com/svn/trunk/pav.html#d4e641
 	 */
 	public static final String PAV_LAST_UPDATED_ON 	= "http://purl.org/pav/lastUpdatedOn";
