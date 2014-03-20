@@ -44,6 +44,9 @@ import com.hp.hpl.jena.rdf.model.Model
  */
 class OpenAnnotationController extends BaseController {
 
+	String OA_CONTEXT = "https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/OAContext.json";
+	String OA_FRAME = "https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/OAFrame.json";
+	
 	def openAnnotationVirtuosoService;
 	def annotationJenaStorageService;
 	def openAnnotationStorageService
@@ -141,9 +144,9 @@ class OpenAnnotationController extends BaseController {
 						// This serializes with and according to the context
 						if(contextJson==null) {
 							if(outCmd=='context') {
-								contextJson = JSONUtils.fromInputStream(new URL("https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/OAContext.json").openStream());
+								contextJson = JSONUtils.fromInputStream(new URL(OA_CONTEXT).openStream());
 							} else if(outCmd=='frame') {
-								contextJson = JSONUtils.fromInputStream(new URL("https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/OAFrame.json").openStream());						
+								contextJson = JSONUtils.fromInputStream(new URL(OA_FRAME).openStream());						
 							}
 						}
 
@@ -197,9 +200,9 @@ class OpenAnnotationController extends BaseController {
 				} else {
 					if(contextJson==null) {
 						if(outCmd=='context') {
-							contextJson = JSONUtils.fromInputStream(new URL("https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/OAContext.json").openStream());
+							contextJson = JSONUtils.fromInputStream(new URL(OA_CONTEXT).openStream());
 						} else if(outCmd=='frame') {
-							contextJson = JSONUtils.fromInputStream(new URL("https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/OAFrame.json").openStream());						
+							contextJson = JSONUtils.fromInputStream(new URL(OA_FRAME).openStream());						
 						}
 					}
 				
@@ -263,17 +266,18 @@ class OpenAnnotationController extends BaseController {
 		// Parsing the incoming parameters
 		def item = request.JSON.item
 		def flavor = (request.JSON.flavor!=null)?request.JSON.flavor:"OA";
-		def validate = (request.JSON.validate!=null)?request.JSON.validate:"OFF";
+		def validate = (request.JSON.validate!=null &&  request.JSON.validate in ['ON'])?request.JSON.validate:"OFF";
 				
 		if(item!=null) {
-			log.warn("[" + apiKey + "] TODO: Validation of the Annotation content requested but not implemented yest!");
+			if(request.JSON.validate=='ON')  log.warn("[" + apiKey + "] TODO: Validation of the Annotation content requested but not implemented yest!");
 						
 			// Reads the inputs in a dataset
 			Dataset inMemoryDataset = DatasetFactory.createMem();
 			try {
 				RDFDataMgr.read(inMemoryDataset, new ByteArrayInputStream(item.toString().getBytes("UTF-8")), RDFLanguages.JSONLD);
 			} catch (Exception ex) {
-				log.error(ex.getMessage());
+				log.error("[" + apiKey + "] " + ex.getMessage());
+				log.error("[" + apiKey + "] Invalid content: " + item.toString());
 				def message = "Annotation cannot be read";
 				render(status: 500, text: returnMessage(apiKey, "invalidcontent", message, startTime), contentType: "text/json", encoding: "UTF-8");
 				return;
@@ -332,15 +336,17 @@ class OpenAnnotationController extends BaseController {
 		
 		def item = request.JSON.item
 		def flavor = (request.JSON.flavor!=null)?request.JSON.flavor:"OA";
-		def validate = (request.JSON.validate!=null)?request.JSON.validate:"OFF";
+		def validate = (request.JSON.validate!=null &&  request.JSON.validate in ['ON'])?request.JSON.validate:"OFF";
 				
 		if(item!=null) {
-			log.warn("[" + apiKey + "] TODO: Validation of the Annotation content requested but not implemented yest!");
+			if(request.JSON.validate=='ON') log.warn("[" + apiKey + "] TODO: Validation of the Annotation content requested but not implemented yest!");
 			
 			Dataset inMemoryDataset = DatasetFactory.createMem();
 			try {
 				RDFDataMgr.read(inMemoryDataset, new ByteArrayInputStream(item.toString().getBytes("UTF-8")), RDFLanguages.JSONLD);
 			} catch (Exception ex) {
+				log.error("[" + apiKey + "] " + ex.getMessage());
+				log.error("[" + apiKey + "] Invalid content: " + item.toString());
 				def message = "Annotation cannot be read";
 				render(status: 500, text: returnMessage(apiKey, "invalidcontent", message, startTime), contentType: "text/json", encoding: "UTF-8");
 				return;
