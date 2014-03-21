@@ -56,7 +56,7 @@ environments {
 		log4j = {
 			appenders {
 				// Set up a log file in the standard tomcat area; be sure to use .toString() with ${}
-				rollingFile name:'tomcatLog', file:"${logDirectory}/"+appName+".log".toString(), maxFileSize:1024
+				rollingFile name:'tomcatLog', threshold: org.apache.log4j.Level.INFO,  file:"${logDirectory}/"+appName+".log".toString(), maxFileSize:1024
 			}
 			
 			root {
