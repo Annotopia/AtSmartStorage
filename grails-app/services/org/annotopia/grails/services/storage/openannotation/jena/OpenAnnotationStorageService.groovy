@@ -86,6 +86,25 @@ class OpenAnnotationStorageService {
 		if(graphNames!=null) {
 			graphNames.each { graphName ->
 				Dataset ds = jenaVirtuosoStoreService.retrieveGraph(apiKey, graphName);
+				
+				if(ds!=null) {
+					List<Statement> statementsToRemove = new ArrayList<Statement>();
+					Set<Resource> subjectsToRemove = new HashSet<Resource>();
+					Iterator<String> names = ds.listNames();
+					names.each { name ->
+						Model m = ds.getNamedModel(name);
+						// Remove AnnotationSets data and leave oa:Annotation
+						StmtIterator statements = m.listStatements(null, ResourceFactory.createProperty(RDF.RDF_TYPE), ResourceFactory.createResource(AnnotopiaVocabulary.ANNOTATION_SET));
+						statements.each { statement ->
+							subjectsToRemove.add(statement.getSubject())
+						}		
+						
+						subjectsToRemove.each { subjectToRemove ->
+							m.removeAll(subjectToRemove, null, null);
+						}
+					}
+				}
+				
 				if(incGph=='true') {
 					Model m = jenaVirtuosoStoreService.retrieveGraphMetadata(apiKey, graphName, grailsApplication.config.annotopia.storage.uri.graph.provenance);
 					if(m!=null) ds.setDefaultModel(m);
