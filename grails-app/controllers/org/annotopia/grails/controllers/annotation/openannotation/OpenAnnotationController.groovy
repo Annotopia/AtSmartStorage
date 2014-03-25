@@ -68,12 +68,13 @@ class OpenAnnotationController extends BaseController {
 		long startTime = System.currentTimeMillis();
 		
 		def apiKey = request.JSON.apiKey;
+		if(apiKey==null) apiKey = params.apiKey;
 		if(!apiKeyAuthenticationService.isApiKeyValid(request.getRemoteAddr(), apiKey)) {
 			invalidApiKey(request.getRemoteAddr()); return;
 		}
 		
 		def outCmd = (request.JSON.outCmd!=null)?request.JSON.outCmd:"none";
-		def incGph = (request.JSON.incGph!=null)?request.JSON.incGph:"true";
+		def incGph = (request.JSON.incGph!=null)?request.JSON.incGph:"false";
 		
 		if(outCmd=='frame' && incGph=='true') {
 			log.warn("[" + apiKey + "] Invalid options, framing does not currently support Named Graphs");
@@ -103,8 +104,7 @@ class OpenAnnotationController extends BaseController {
 				((tgtIds!=null) ? (" tgtIds:" + tgtIds):"") +
 				((flavor!=null) ? (" flavor:" + flavor):"") +
 				((outCmd!=null) ? (" outCmd:" + outCmd):"") +
-				((incGph!=null) ? (" incGph:" + incGph):""));
-			
+				((incGph!=null) ? (" incGph:" + incGph):""));	
 			
 			int annotationsTotal = openAnnotationVirtuosoService.countAnnotationGraphs(apiKey, tgtUrl, tgtFgt);
 			int annotationsPages = (annotationsTotal/Integer.parseInt(max));		
@@ -125,7 +125,10 @@ class OpenAnnotationController extends BaseController {
 					'"items":[';
 					
 			Object contextJson = null;
-			response.contentType = "text/json;charset=UTF-8"
+			// Enabling CORS
+			response.setHeader('Access-Control-Allow-Origin', request.getHeader("Origin"))
+			
+			response.contentType = "application/json;charset=UTF-8"	
 			if(annotationGraphs!=null) {
 				response.outputStream << '{"status":"results", "result": {' + summaryPrefix	
 				boolean firstStreamed = false // To add the commas between items
@@ -188,7 +191,10 @@ class OpenAnnotationController extends BaseController {
 			
 			Object contextJson = null;
 			if(graphs!=null && graphs.listNames().hasNext()) {
-				response.contentType = "text/json;charset=UTF-8"			
+				// Enabling CORS
+				response.setHeader('Access-Control-Allow-Origin', request.getHeader("Origin"))
+				
+				response.contentType = "application/json;charset=UTF-8"			
 				if(outCmd=='none') { 
 					if(incGph=='false') {
 						Model m = graphs.getNamedModel(graphs.listNames().next());
