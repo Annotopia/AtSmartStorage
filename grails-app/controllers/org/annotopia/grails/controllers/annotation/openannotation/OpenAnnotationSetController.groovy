@@ -45,11 +45,22 @@ class OpenAnnotationSetController extends BaseController {
 	def apiKeyAuthenticationService;
 	def openAnnotationStorageService;
 	def openAnnotationVirtuosoService;
-	
+
+	/*
+	 * GET
+	 *
+	 * Either retrieve a representation of the requested annotation set (if an 
+	 * id is specified and the requested annotation set exists) or lists 
+	 * available annotation sets (using pagination).
+	 *
+	 * The returned format is compliant with the Open Annotation specification
+	 * http://www.openannotation.org/spec/core/
+	 */
 	def show = {
 		long startTime = System.currentTimeMillis();
 		
 		def apiKey = request.JSON.apiKey;
+		if(apiKey==null) apiKey = params.apiKey;
 		if(!apiKeyAuthenticationService.isApiKeyValid(request.getRemoteAddr(), apiKey)) {
 			invalidApiKey(request.getRemoteAddr()); return;
 		}
@@ -107,7 +118,10 @@ class OpenAnnotationSetController extends BaseController {
 					'"sets":[';
 					
 			Object contextJson = null;
-			response.contentType = "text/json;charset=UTF-8"
+			// Enabling CORS
+			response.setHeader('Access-Control-Allow-Origin', request.getHeader("Origin"))	
+			response.contentType = "application/json;charset=UTF-8"
+			
 			if(annotationSets!=null) {
 				response.outputStream << '{"status":"results", "result": {' + summaryPrefix
 				boolean firstStreamed = false // To add the commas between items
@@ -172,7 +186,9 @@ class OpenAnnotationSetController extends BaseController {
 			
 			Object contextJson = null;
 			if(graphs!=null && graphs.listNames().hasNext()) {
-				response.contentType = "text/json;charset=UTF-8"
+				// Enabling CORS
+				response.setHeader('Access-Control-Allow-Origin', request.getHeader("Origin"))
+				response.contentType = "application/json;charset=UTF-8"
 				if(outCmd=='none') {
 					if(incGph=='false') {
 						Model m = graphs.getNamedModel(graphs.listNames().next());
@@ -216,6 +232,17 @@ class OpenAnnotationSetController extends BaseController {
 		}
 	}
 	
+	/*
+	 * POST
+	 *
+	 * It accepts an annotation set formatted according to the Open Annotation specification
+	 * http://www.openannotation.org/spec/core/
+	 *
+	 * The single annotation set can be wrapped in a graph or not. This is not currently 
+	 * handling multiple annotations.
+	 *
+	 * Validation not yet implemented.
+	 */
 	def save = {
 		long startTime = System.currentTimeMillis();
 		
@@ -266,6 +293,16 @@ class OpenAnnotationSetController extends BaseController {
 		render 'saved'
 	}
 	
+	/*
+	 * PUT
+	 *
+	 * It accepts updates existing annotation set formatted according to the Open Annotation specification
+	 * http://www.openannotation.org/spec/core/
+	 *
+	 * The single annotation set can be wrapped in a graph or not. 
+	 *
+	 * Validation not yet implemented.
+	 */
 	def update = {
 		long startTime = System.currentTimeMillis();
 		
