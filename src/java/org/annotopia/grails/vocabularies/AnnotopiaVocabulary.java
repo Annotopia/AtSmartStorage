@@ -39,6 +39,7 @@ public interface AnnotopiaVocabulary {
 	
 	public static final String ANNOTATION_SET          	= "http://purl.org/annotopia#AnnotationSet";
 	public static final String ANNOTATIONS             	= "http://purl.org/annotopia#annotations";
-	public static final String ANNOTATION             	= "http://purl.org/annotopia#annotation";
-	public static final String ANNOTATION_COUNT         = "http://purl.org/annotopia#annotationcount";
+	
+	public static final String ANNOTATION             	= "http://purl.org/annotopia#graphannotation";
+	public static final String ANNOTATION_COUNT         = "http://purl.org/annotopia#graphannotationcount";
 }

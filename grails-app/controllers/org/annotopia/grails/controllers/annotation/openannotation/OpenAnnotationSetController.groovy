@@ -289,8 +289,6 @@ class OpenAnnotationSetController extends BaseController {
 			def message = "No annotation set found in the request";
 			render(status: 200, text: returnMessage(apiKey, "nocontent", message, startTime), contentType: "text/json", encoding: "UTF-8");
 		}
-		
-		render 'saved'
 	}
 	
 	/*
