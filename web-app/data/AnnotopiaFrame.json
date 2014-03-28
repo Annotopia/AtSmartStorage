@@ -67,7 +67,6 @@
    "at:annotations": {
 	  "@type": "oa:Annotation",
 	  "hasBody": {
-	    "@type": "cnt:ContentAsText"
 	  },
 	  "hasTarget": {
 	  },
