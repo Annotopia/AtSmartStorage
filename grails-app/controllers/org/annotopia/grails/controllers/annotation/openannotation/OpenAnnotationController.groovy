@@ -126,7 +126,7 @@ class OpenAnnotationController extends BaseController {
 					
 			Object contextJson = null;
 			// Enabling CORS
-			response.setHeader('Access-Control-Allow-Origin', request.getHeader("Origin"))
+			response.setHeader('Access-Control-Allow-Origin', '*')
 			
 			response.contentType = "application/json;charset=UTF-8"	
 			if(annotationGraphs!=null) {
@@ -192,7 +192,7 @@ class OpenAnnotationController extends BaseController {
 			Object contextJson = null;
 			if(graphs!=null && graphs.listNames().hasNext()) {
 				// Enabling CORS
-				response.setHeader('Access-Control-Allow-Origin', request.getHeader("Origin"))
+				response.setHeader('Access-Control-Allow-Origin', '*')
 				
 				response.contentType = "application/json;charset=UTF-8"			
 				if(outCmd=='none') { 
@@ -299,6 +299,8 @@ class OpenAnnotationController extends BaseController {
 			}
 			
 			if(savedAnnotation!=null) { 
+				// Enable CORS
+				response.setHeader('Access-Control-Allow-Origin', '*')
 				// Streams back the saved annotation with the proper provenance
 				response.contentType = "text/json;charset=UTF-8"
 				response.outputStream << '{"status":"saved", "result": {' +
@@ -367,6 +369,8 @@ class OpenAnnotationController extends BaseController {
 			}
 			
 			if(updatedAnnotation!=null) {
+				// Enable CORS
+				response.setHeader('Access-Control-Allow-Origin', '*')
 				response.contentType = "text/json;charset=UTF-8"
 				response.outputStream << '{"status":"updated", "result": {' +
 					'"duration": "' + (System.currentTimeMillis()-startTime) + 'ms", ' +
