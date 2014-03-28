@@ -2,7 +2,7 @@
     "@context": {
 	    "oa": "http://www.w3.org/ns/oa#",
 	    "at": "http://purl.org/annotopia#",
-	    "pav": "http://purl.org/pav#",
+	    "pav": "http://purl.org/pav/",
 	    "lit" :    "http://www.example.org/lit-annotation-ns#",
 	    "cnt" :    "http://www.w3.org/2011/content#",
 	    "dc" :     "http://purl.org/dc/elements/1.1/",
