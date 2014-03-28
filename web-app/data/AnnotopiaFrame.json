@@ -63,8 +63,8 @@
 	    "annotations" 	: {"@type":"@id", "@id" : "at:annotations"}
 
   },
-   "@type": "oa:AnnotationSet",
-   'at:annotations': {
+   "@type": "at:AnnotationSet",
+   "at:annotations": {
 	  "@type": "oa:Annotation",
 	  "hasBody": {
 	    "@type": "cnt:ContentAsText"
