@@ -1,6 +1,8 @@
 {
   "@context": {
- "oa": "http://www.w3.org/ns/oa#",
+        "at": "http://purl.org/annotopia#",
+        "pav": "http://purl.org/pav/",
+        "oa": "http://www.w3.org/ns/oa#",
 	    "lit" :    "http://www.example.org/lit-annotation-ns#",
 	    "cnt" :    "http://www.w3.org/2011/content#",
 	    "dc" :     "http://purl.org/dc/elements/1.1/",
@@ -45,16 +47,32 @@
 	    "label" :        "rdfs:label",
 	    "name" :         "foaf:name",
 	    "mbox" :         "foaf:mbox",
-	    "styleClass" :   "oa:styleClass"
-  },
-  "@type": "oa:Annotation",
-  "hasBody": {
-    "@type": "cnt:ContentAsText"
-  },
-  "hasTarget": {
-  },
-  "annotatedBy" : { 
-    "@type": ["foaf:Person","foaf:Software"]
-  }
+	    "styleClass" :   "oa:styleClass",
+	    
+	    "createdOn" :      	"pav:createdOn",
+	    "createdBy" :      	{"@type":"@id", "@id" : "pav:createdBy"},
+	    "createdWith" :     {"@type":"@id", "@id" : "pav:createdWith"},
+	    "lastSavedOn" :     "pav:lastSavedOn",
+	    "versionNumber" :   "pav:versionNumber",
+	    "previousVersion" : "pav:previousVersion",
+	    
+	    "label": "rdfs:label",
+	    "description": "dcterms:description",
+	    
+	    "targets"		: "at:targets",
+	    "annotations" 	: {"@type":"@id", "@id" : "at:annotations"}
 
+  },
+   "@type": "oa:AnnotationSet",
+   'at:annotations': {
+	  "@type": "oa:Annotation",
+	  "hasBody": {
+	    "@type": "cnt:ContentAsText"
+	  },
+	  "hasTarget": {
+	  },
+	  "annotatedBy" : { 
+	    "@type": ["foaf:Person","foaf:Software"]
+	  }
+   }
 }
