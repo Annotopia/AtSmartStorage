@@ -186,13 +186,6 @@ class OpenAnnotationStorageService {
 			throw new StoreServiceException(200, json, "text/json", "UTF-8");
 		}
 		
-		println 'graphsUris ' + graphsUris.size();
-		println 'annotationsInDefaultGraphsCounter ' + annotationsInDefaultGraphsCounter;
-		println 'annotationUris ' + annotationUris;
-		println 'detectedAnnotationGraphsCounter ' + detectedAnnotationGraphsCounter;
-		println 'annotationsInDefaultGraphs ' + annotationsGraphsUris;
-		println 'annotationsGraphsUris ' + annotationsGraphsUris.size();
-		
 		if(defaultGraphDetected) {
 			log.trace("[" + apiKey + "] Default graph detected.");
 			// Annotation Set
@@ -245,6 +238,7 @@ class OpenAnnotationStorageService {
 			if(statements.hasNext()) {
 				Statement annotationSetStatement = statements.nextStatement();
 				Resource annotationSet = annotationSetStatement.getSubject();
+				// Getting all the annotations of the set
 				StmtIterator stats = annotationModel.listStatements(annotationSet,
 					ResourceFactory.createProperty(AnnotopiaVocabulary.ANNOTATIONS),
 					null);
