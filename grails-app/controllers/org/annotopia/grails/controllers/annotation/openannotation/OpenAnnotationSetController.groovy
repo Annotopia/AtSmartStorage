@@ -66,7 +66,9 @@ class OpenAnnotationSetController extends BaseController {
 		}
 		
 		def outCmd = (request.JSON.outCmd!=null)?request.JSON.outCmd:"none";
-		def incGph = (request.JSON.incGph!=null)?request.JSON.incGph:"true";
+		if(params.outCmd!=null) outCmd = params.outCmd;
+		
+		def incGph = (request.JSON.incGph!=null)?request.JSON.incGph:"false";
 		
 		if(outCmd=='frame' && incGph=='true') {
 			log.warn("[" + apiKey + "] Invalid options, framing does not currently support Named Graphs");
@@ -142,7 +144,7 @@ class OpenAnnotationSetController extends BaseController {
 							if(outCmd=='context') {
 								contextJson = JSONUtils.fromInputStream(new URL("https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/AnnotopiaContext.json").openStream());
 							} else if(outCmd=='frame') {
-								contextJson = JSONUtils.fromInputStream(new URL("https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/OAFrame.json").openStream());
+								contextJson = JSONUtils.fromInputStream(new URL("https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/AnnotopiaFrame.json").openStream());
 							}
 						}
 
