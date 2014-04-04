@@ -115,8 +115,7 @@ class OpenAnnotationReportingService {
 	Map<String, Integer> countAnnotationsForAllResources(def apiKey) {
 		String queryString = PREFIX_OPEN_ANNOTATION + PREFIX_ANNOTOPIA +
 		"SELECT ?target (COUNT(DISTINCT ?annotation) AS ?total) WHERE { GRAPH ?g { ?annotation a oa:Annotation . { ?a oa:hasTarget ?target. FILTER NOT EXISTS { ?target a oa:SpecificResource } } " +
-		"UNION { ?a oa:hasTarget ?t. ?t a oa:SpecificResource. ?t oa:hasSource ?target.}}} GROUP BY ?target";
-		
+		"UNION { ?a oa:hasTarget ?t. ?t a oa:SpecificResource. ?t oa:hasSource ?target.}}} GROUP BY ?target";	
 		jenaVirtuosoStoreService.countAndGroupBy(apiKey, queryString, "total", "target");
 	}
 	
@@ -128,7 +127,18 @@ class OpenAnnotationReportingService {
 	Map<String, Integer> countAnnotationsForEachUser(def apiKey) {
 		String queryString = PREFIX_OPEN_ANNOTATION + PREFIX_ANNOTOPIA +
 		"SELECT ?user (COUNT(DISTINCT ?annotation) AS ?total) WHERE { GRAPH ?g { ?annotation a oa:Annotation . { ?a oa:annotatedBy ?user }}} GROUP BY ?user";
-		
+		jenaVirtuosoStoreService.countAndGroupBy(apiKey, queryString, "total", "user");
+	}
+	
+	/**
+	 * Counts the resources annotated by each user (anntates).
+	 * @param apiKey The apiKey used for the request
+	 * @return A Map with all the users and the counters of the resources they annotated.
+	 */
+	Map<String, Integer> countResourcesAnnotatedByEachUser(def apiKey) {
+		String queryString = PREFIX_OPEN_ANNOTATION + PREFIX_ANNOTOPIA +
+		"SELECT ?user (COUNT(DISTINCT ?u) AS ?total) WHERE { GRAPH ?g { ?a a oa:Annotation . ?a oa:annotatedBy ?user. { ?a oa:hasTarget ?u. FILTER NOT EXISTS { ?u  a oa:SpecificResource } } " +
+		"UNION { ?a oa:hasTarget ?t. ?t a oa:SpecificResource. ?t oa:hasSource ?u.}}} GROUP BY ?user";
 		jenaVirtuosoStoreService.countAndGroupBy(apiKey, queryString, "total", "user");
 	}
 }

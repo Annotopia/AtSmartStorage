@@ -18,7 +18,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.annotopia.grails.controllers.annotation.openannotation
+package org.annotopia.grails.controllers.storage
 
 import org.annotopia.groovy.service.store.BaseController;
 import org.apache.commons.collections.functors.WhileClosure;
@@ -29,7 +29,7 @@ import org.apache.commons.collections.functors.WhileClosure;
  * 
  * @author Paolo Ciccarese <paolo.ciccarese@gmail.com>
  */
-class OpenAnnotationReportingController extends BaseController {
+class ReportingController extends BaseController {
 
 	def apiKeyAuthenticationService;
 	def openAnnotationReportingService;
@@ -204,6 +204,29 @@ class OpenAnnotationReportingController extends BaseController {
 		try {
 			Map map = openAnnotationReportingService.countAnnotationsForEachUser(apiKey);
 			serializeMapResults(startTime, map, 'user', 'annotations');
+		} catch(Exception e) {
+			log.error("[" + apiKey + "] " + e.getMessage())
+			def message = 'Counting of Annotations for each Target Resource not completed';
+			render(status: 500, text: returnMessage(apiKey, "failure", message, startTime),
+				contentType: "text/json", encoding: "UTF-8");
+		}
+	}
+	
+	/**
+	 * Return the total of annotations produced by each User
+	 */
+	def countResourcesAnnotatedByEachUser = {
+		long startTime = System.currentTimeMillis();
+		
+		// Verifying the API key
+		def apiKey = request.JSON.apiKey;
+		if(!apiKeyAuthenticationService.isApiKeyValid(request.getRemoteAddr(), apiKey)) {
+			invalidApiKey(request.getRemoteAddr()); return;
+		}
+		
+		try {
+			Map map = openAnnotationReportingService.countResourcesAnnotatedByEachUser(apiKey);
+			serializeMapResults(startTime, map, 'user', 'resources');
 		} catch(Exception e) {
 			log.error("[" + apiKey + "] " + e.getMessage())
 			def message = 'Counting of Annotations for each Target Resource not completed';

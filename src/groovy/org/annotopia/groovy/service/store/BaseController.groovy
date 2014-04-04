@@ -27,6 +27,8 @@ import grails.converters.JSON
 import javax.servlet.http.HttpServletRequest
 
 /**
+ * Basic 
+ * 
  * @author Paolo Ciccarese <paolo.ciccarese@gmail.com>
  */
 class BaseController {
