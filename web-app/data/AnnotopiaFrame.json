@@ -64,7 +64,7 @@
 
   },
    "@type": "at:AnnotationSet",
-   "at:annotations": {
+   "annotations": {
 	  "@type": "oa:Annotation",
 	  "hasBody": {
 	  },
