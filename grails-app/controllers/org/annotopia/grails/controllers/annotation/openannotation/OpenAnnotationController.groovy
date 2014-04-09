@@ -221,7 +221,7 @@ class OpenAnnotationController extends BaseController {
 					}
 					
 					if(outCmd=='context') {
-						Object compact = JsonLdProcessor.compact(JSONUtils.fromString(baos.toString()), contextJson,  new JsonLdOptions());
+						Object compact = JsonLdProcessor.compact(JSONUtils.fromString(baos.toString()), contextJson, new JsonLdOptions());
 						response.outputStream << JSONUtils.toPrettyString(compact)
 					}  else if(outCmd=='frame') {
 						Object framed =  JsonLdProcessor.frame(JSONUtils.fromString(baos.toString()),contextJson, new JsonLdOptions());

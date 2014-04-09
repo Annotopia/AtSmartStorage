@@ -18,7 +18,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.annotopia.grails.controllers.storage
+package org.annotopia.grails.controllers.annotation.openannotation
 
 import org.annotopia.groovy.service.store.BaseController;
 import org.apache.commons.collections.functors.WhileClosure;
@@ -29,7 +29,7 @@ import org.apache.commons.collections.functors.WhileClosure;
  * 
  * @author Paolo Ciccarese <paolo.ciccarese@gmail.com>
  */
-class ReportingController extends BaseController {
+class OpenAnnotationReportingController extends BaseController {
 
 	def apiKeyAuthenticationService;
 	def openAnnotationReportingService;

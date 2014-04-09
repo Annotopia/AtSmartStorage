@@ -46,10 +46,10 @@ class OpenAnnotationSetControllerTests extends GroovyTestCase {
 		assertEquals 200, response.status
 	}
 	
-	void testValidationInvalidApiKey() {
-		def c = new OpenAnnotationSetController()
-		c.validate()
-		
-		assertEquals 401, response.status
-	}
+//	void testValidationInvalidApiKey() {
+//		def c = new OpenAnnotationSetController()
+//		c.validate()
+//		
+//		assertEquals 401, response.status
+//	}
 }

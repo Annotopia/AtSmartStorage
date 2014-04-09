@@ -184,7 +184,9 @@ class OpenAnnotationSetController extends BaseController {
 		// If the annotation is related to multiple graphs, all of the graphs will
 		// be returned.
 		else {
-			Dataset graphs =  openAnnotationVirtuosoService.retrieveAnnotationSet(apiKey, getCurrentUrl(request));
+			String url = getCurrentUrl(request).substring(0, getCurrentUrl(request).indexOf("?"))
+			
+			Dataset graphs =  openAnnotationVirtuosoService.retrieveAnnotationSet(apiKey, url);
 			
 			Object contextJson = null;
 			if(graphs!=null && graphs.listNames().hasNext()) {
@@ -194,7 +196,6 @@ class OpenAnnotationSetController extends BaseController {
 				if(outCmd=='none') {
 					if(incGph=='false') {
 						Model m = graphs.getNamedModel(graphs.listNames().next());
-						println "*** " + m;
 						RDFDataMgr.write(response.outputStream, m, RDFLanguages.JSONLD);
 					} else {
 						RDFDataMgr.write(response.outputStream, graphs, RDFLanguages.JSONLD);
@@ -204,7 +205,7 @@ class OpenAnnotationSetController extends BaseController {
 						if(outCmd=='context') {
 							contextJson = JSONUtils.fromInputStream(new URL("https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/AnnotopiaContext.json").openStream());
 						} else if(outCmd=='frame') {
-							contextJson = JSONUtils.fromInputStream(new URL("https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/OAFrame.json").openStream());
+							contextJson = JSONUtils.fromInputStream(new URL("https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/AnnotopiaFrame.json").openStream());
 						}
 					}
 				
