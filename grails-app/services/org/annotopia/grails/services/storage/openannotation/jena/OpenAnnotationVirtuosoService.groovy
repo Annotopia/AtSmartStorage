@@ -58,7 +58,6 @@ class OpenAnnotationVirtuosoService {
 	}
 	
 	public int countAnnotationSetGraphs(apiKey, tgtUrl, tgtFgt) {
-
 		String queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> " +
 			"SELECT (COUNT(DISTINCT ?g) AS ?total) WHERE { GRAPH ?g { ?s a <http://purl.org/annotopia#AnnotationSet> }}";
 		if(tgtUrl!=null && tgtFgt=="false") {
@@ -67,8 +66,8 @@ class OpenAnnotationVirtuosoService {
 		} else if(tgtUrl!=null && tgtFgt=="true") {
 			queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> " +
 				"SELECT (COUNT(DISTINCT ?g) AS ?total) WHERE { GRAPH ?g { ?s a <http://purl.org/annotopia#AnnotationSet> . ?s <http://purl.org/annotopia#annotations> ?a. " +
-					"{ ?a oa:hasTarget <" + tgtUrl + "> }}" +
-					"UNION {?a <http://www.w3.org/ns/oa#hasTarget> ?t. ?t <http://www.w3.org/ns/oa#hasSource> <" + tgtUrl + "> }"
+					"{ ?a oa:hasTarget <" + tgtUrl + "> }" +
+					" UNION {?a <http://www.w3.org/ns/oa#hasTarget> ?t. ?t <http://www.w3.org/ns/oa#hasSource> <" + tgtUrl + "> }}}"
 				"}";
 		}
 			
@@ -138,7 +137,9 @@ class OpenAnnotationVirtuosoService {
 			"SELECT DISTINCT ?g WHERE { GRAPH ?g { ?s a at:AnnotationSet }} LIMIT " + max + " OFFSET " + offset;
 		if(tgtUrl!=null) {
 			queryString = "PREFIX oa: <http://www.w3.org/ns/oa#> PREFIX at:  <http://purl.org/annotopia#> " +
-				"SELECT DISTINCT ?g WHERE { GRAPH ?g { ?s a at:AnnotationSet . ?s at:annotatesResource <" + tgtUrl + "> }} LIMIT " + max + " OFFSET " + offset;
+				"SELECT DISTINCT ?g WHERE { GRAPH ?g { ?s a at:AnnotationSet . ?s <http://purl.org/annotopia#annotations> ?a. " +
+				"{ ?a oa:hasTarget <" + tgtUrl + "> }" +
+				" UNION {?a <http://www.w3.org/ns/oa#hasTarget> ?t. ?t <http://www.w3.org/ns/oa#hasSource> <" + tgtUrl + "> }}} LIMIT " + max + " OFFSET " + offset;
 		}
 		
 		Set<String> graphs = jenaVirtuosoStoreService.retrieveGraphsNames(apiKey, queryString);
