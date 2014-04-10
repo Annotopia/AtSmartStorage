@@ -68,6 +68,7 @@ class OpenAnnotationSetController extends BaseController {
 		def outCmd = (request.JSON.outCmd!=null)?request.JSON.outCmd:"none";
 		if(params.outCmd!=null) outCmd = params.outCmd;
 		
+		
 		def incGph = (request.JSON.incGph!=null)?request.JSON.incGph:"false";
 		
 		if(outCmd=='frame' && incGph=='true') {
@@ -86,7 +87,9 @@ class OpenAnnotationSetController extends BaseController {
 			
 			// Target filters
 			def tgtUrl = request.JSON.tgtUrl
-			def tgtFgt = request.JSON.tgtFgt
+			if(params.tgtUrl!=null) tgtUrl = params.tgtUrl;
+			
+			def tgtFgt = (request.JSON.tgtFgt!=null)?request.JSON.tgtFgt:"true"; 
 			def tgtExt = request.JSON.tgtExt
 			def tgtIds = request.JSON.tgtIds
 			def flavor = request.JSON.flavor
