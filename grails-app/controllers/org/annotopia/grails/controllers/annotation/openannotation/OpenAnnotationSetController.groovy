@@ -237,26 +237,6 @@ class OpenAnnotationSetController extends BaseController {
 		}
 	}
 	
-	private InputStream callExternalUrl(String URL) {
-		Proxy httpProxy = null;
-		if(grailsApplication.config.annotopia.server.proxy.host!=null && grailsApplication.config.annotopia.server.proxy.port!=null) {
-			String proxyHost = grailsApplication.config.annotopia.server.proxy.host; //replace with your proxy server name or IP
-			int proxyPort = grailsApplication.config.annotopia.server.proxy.port.toInteger(); //your proxy server port
-			SocketAddress addr = new InetSocketAddress(proxyHost, proxyPort);
-			httpProxy = new Proxy(Proxy.Type.HTTP, addr);
-		}
-		
-		if(httpProxy!=null) {
-			URL url = new URL(URL);
-			//Pass the Proxy instance defined above, to the openConnection() method
-			URLConnection urlConn = url.openConnection(httpProxy);
-			urlConn.connect();
-			return urlConn.getInputStream();
-		} else {
-			return new URL(URL).openStream();
-		}
-	}
-	
 	/*
 	 * POST
 	 *

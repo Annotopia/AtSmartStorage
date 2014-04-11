@@ -20,6 +20,7 @@
  */
 package org.annotopia.groovy.service.store
 
+import java.io.InputStream;
 import java.text.SimpleDateFormat;
 
 import grails.converters.JSON
@@ -60,6 +61,30 @@ class BaseController {
 			sb << request.getAttribute("javax.servlet.forward.query_string")
 		}
 		return sb.toString();
+	}
+	
+	private InputStream callExternalUrl(String URL) {
+		Proxy httpProxy = null;
+		if(grailsApplication.config.annotopia.server.proxy.host!=null && grailsApplication.config.annotopia.server.proxy.port!=null) {
+			String proxyHost = grailsApplication.config.annotopia.server.proxy.host; //replace with your proxy server name or IP
+			int proxyPort = grailsApplication.config.annotopia.server.proxy.port.toInteger(); //your proxy server port
+			SocketAddress addr = new InetSocketAddress(proxyHost, proxyPort);
+			httpProxy = new Proxy(Proxy.Type.HTTP, addr);
+		}
+		
+		if(httpProxy!=null) {
+			long startTime = System.currentTimeMillis();
+			log.info ("Proxy request: " + URL);
+			URL url = new URL(URL);
+			//Pass the Proxy instance defined above, to the openConnection() method
+			URLConnection urlConn = url.openConnection(httpProxy);
+			urlConn.connect();
+			log.info ("Proxy resolved in (" + (System.currentTimeMillis()-startTime) + "ms)");
+			return urlConn.getInputStream();
+		} else {
+			log.info ("No proxy request: " + URL);
+			return new URL(URL).openStream();
+		}
 	}
 	
 	/**

@@ -40,7 +40,8 @@ environments {
 		
 		    warn   'org.mortbay.log'
 					   
-			debug  'grails.app.services.org.annotopia.grails.services.storage.jena.VirtuosoJenaStoreService'
+			debug  'grails.app.services.org.annotopia.grails.services.storage.jena.VirtuosoJenaStoreService',
+				   'org.annotopia.groovy.service.store'
 			
 			trace  'grails.app' // Necessary for Bootstrap logging
 		}
