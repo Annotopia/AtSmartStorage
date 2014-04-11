@@ -124,8 +124,8 @@ class OpenAnnotationSetController extends BaseController {
 					
 			Object contextJson = null;
 			// Enabling CORS
-			response.setHeader('Access-Control-Allow-Origin', '*')
-			response.contentType = "application/json;charset=UTF-8"
+			//response.setHeader('Access-Control-Allow-Origin', '*')
+			//response.contentType = "application/json;charset=UTF-8"
 			
 			if(annotationSets!=null) {
 				response.outputStream << '{"status":"results", "result": {' + summaryPrefix
@@ -194,8 +194,8 @@ class OpenAnnotationSetController extends BaseController {
 			Object contextJson = null;
 			if(graphs!=null && graphs.listNames().hasNext()) {
 				// Enabling CORS
-				response.setHeader('Access-Control-Allow-Origin', '*')
-				response.contentType = "application/json;charset=UTF-8"
+				//response.setHeader('Access-Control-Allow-Origin', '*')
+				//response.contentType = "application/json;charset=UTF-8"
 				if(outCmd=='none') {
 					if(incGph=='false') {
 						Model m = graphs.getNamedModel(graphs.listNames().next());
@@ -268,6 +268,7 @@ class OpenAnnotationSetController extends BaseController {
 		if(set!=null) {	
 			Dataset savedAnnotationSet;
 			try {
+				println set.toString();
 				savedAnnotationSet = openAnnotationStorageService.saveAnnotationSet(apiKey, startTime, set.toString()); 
 			} catch(StoreServiceException exception) {
 				render(status: exception.status, text: exception.text, contentType: exception.contentType, encoding: exception.encoding);
@@ -276,7 +277,8 @@ class OpenAnnotationSetController extends BaseController {
 			
 			if(savedAnnotationSet!=null) {
 				// Enable CORS
-				response.setHeader('Access-Control-Allow-Origin', '*')
+				//response.setHeader('Access-Control-Allow-Origin', '*')
+				//response.setHeader('Access-Control-Allow-Methods': 'GET, POST, PUT');
 				// Streams back the saved annotation with the proper provenance
 				response.contentType = "text/json;charset=UTF-8"
 				response.outputStream << '{"status":"saved", "result": {' +
