@@ -63,7 +63,7 @@ class BaseController {
 		return sb.toString();
 	}
 	
-	private InputStream callExternalUrl(String URL) {
+	private InputStream callExternalUrl(def apiKey, String URL) {
 		Proxy httpProxy = null;
 		if(grailsApplication.config.annotopia.server.proxy.host!=null && grailsApplication.config.annotopia.server.proxy.port!=null) {
 			String proxyHost = grailsApplication.config.annotopia.server.proxy.host; //replace with your proxy server name or IP
@@ -74,15 +74,15 @@ class BaseController {
 		
 		if(httpProxy!=null) {
 			long startTime = System.currentTimeMillis();
-			log.info ("Proxy request: " + URL);
+			log.info ("[" + apiKey + "] " + "Proxy request: " + URL);
 			URL url = new URL(URL);
 			//Pass the Proxy instance defined above, to the openConnection() method
 			URLConnection urlConn = url.openConnection(httpProxy);
 			urlConn.connect();
-			log.info ("Proxy resolved in (" + (System.currentTimeMillis()-startTime) + "ms)");
+			log.info ("[" + apiKey + "] " + "Proxy resolved in (" + (System.currentTimeMillis()-startTime) + "ms)");
 			return urlConn.getInputStream();
 		} else {
-			log.info ("No proxy request: " + URL);
+			log.info ("[" + apiKey + "] " + "No proxy request: " + URL);
 			return new URL(URL).openStream();
 		}
 	}

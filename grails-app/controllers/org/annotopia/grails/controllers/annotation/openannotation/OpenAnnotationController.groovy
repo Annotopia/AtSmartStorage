@@ -147,9 +147,9 @@ class OpenAnnotationController extends BaseController {
 						// This serializes with and according to the context
 						if(contextJson==null) {
 							if(outCmd=='context') {
-								contextJson = JSONUtils.fromInputStream(new URL(OA_CONTEXT).openStream());
+								contextJson = JSONUtils.fromInputStream(callExternalUrl(apiKey, OA_CONTEXT));
 							} else if(outCmd=='frame') {
-								contextJson = JSONUtils.fromInputStream(new URL(OA_FRAME).openStream());						
+								contextJson = JSONUtils.fromInputStream(callExternalUrl(apiKey, OA_FRAME));						
 							}
 						}
 
@@ -206,9 +206,9 @@ class OpenAnnotationController extends BaseController {
 				} else {
 					if(contextJson==null) {
 						if(outCmd=='context') {
-							contextJson = JSONUtils.fromInputStream(new URL(OA_CONTEXT).openStream());
+							contextJson = JSONUtils.fromInputStream(callExternalUrl(apiKey, OA_CONTEXT));
 						} else if(outCmd=='frame') {
-							contextJson = JSONUtils.fromInputStream(new URL(OA_FRAME).openStream());						
+							contextJson = JSONUtils.fromInputStream(callExternalUrl(apiKey,OA_FRAME));						
 						}
 					}
 				
