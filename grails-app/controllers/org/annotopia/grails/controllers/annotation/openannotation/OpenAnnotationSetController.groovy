@@ -20,13 +20,11 @@
  */
 package org.annotopia.grails.controllers.annotation.openannotation
 
-import grails.converters.JSON
-
 import java.text.SimpleDateFormat
 
 import javax.servlet.http.HttpServletRequest
 
-import org.annotopia.groovy.service.store.BaseController;
+import org.annotopia.groovy.service.store.BaseController
 import org.annotopia.groovy.service.store.StoreServiceException
 import org.apache.jena.riot.RDFDataMgr
 import org.apache.jena.riot.RDFLanguages
@@ -42,6 +40,7 @@ import com.hp.hpl.jena.rdf.model.Model
  */
 class OpenAnnotationSetController extends BaseController {
 
+	def grailsApplication;
 	def apiKeyAuthenticationService;
 	def openAnnotationStorageService;
 	def openAnnotationVirtuosoService;
@@ -145,9 +144,9 @@ class OpenAnnotationSetController extends BaseController {
 						// This serializes with and according to the context
 						if(contextJson==null) {
 							if(outCmd=='context') {
-								contextJson = JSONUtils.fromInputStream(new URL("https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/AnnotopiaContext.json").openStream());
+								contextJson = JSONUtils.fromInputStream(callExternalUrl("https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/AnnotopiaContext.json"));
 							} else if(outCmd=='frame') {
-								contextJson = JSONUtils.fromInputStream(new URL("https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/AnnotopiaFrame.json").openStream());
+								contextJson = JSONUtils.fromInputStream(callExternalUrl("https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/AnnotopiaFrame.json"));
 							}
 						}
 
@@ -203,12 +202,12 @@ class OpenAnnotationSetController extends BaseController {
 					} else {
 						RDFDataMgr.write(response.outputStream, graphs, RDFLanguages.JSONLD);
 					}
-				} else {
+				} else {				
 					if(contextJson==null) {
 						if(outCmd=='context') {
-							contextJson = JSONUtils.fromInputStream(new URL("https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/AnnotopiaContext.json").openStream());
+							contextJson = JSONUtils.fromInputStream(callExternalUrl("https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/AnnotopiaContext.json"));
 						} else if(outCmd=='frame') {
-							contextJson = JSONUtils.fromInputStream(new URL("https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/AnnotopiaFrame.json").openStream());
+							contextJson = JSONUtils.fromInputStream(callExternalUrl("https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/AnnotopiaFrame.json"));
 						}
 					}
 				
@@ -235,6 +234,26 @@ class OpenAnnotationSetController extends BaseController {
 				render(status: 404, text: returnMessage(apiKey, "notfound", message, startTime), contentType: "text/json", encoding: "UTF-8");
 				return;
 			}
+		}
+	}
+	
+	private InputStream callExternalUrl(String URL) {
+		Proxy httpProxy = null;
+		if(grailsApplication.config.annotopia.server.proxy.host!=null && grailsApplication.config.annotopia.server.proxy.port!=null) {
+			String proxyHost = grailsApplication.config.annotopia.server.proxy.host; //replace with your proxy server name or IP
+			int proxyPort = grailsApplication.config.annotopia.server.proxy.port.toInteger(); //your proxy server port
+			SocketAddress addr = new InetSocketAddress(proxyHost, proxyPort);
+			httpProxy = new Proxy(Proxy.Type.HTTP, addr);
+		}
+		
+		if(httpProxy!=null) {
+			URL url = new URL(URL);
+			//Pass the Proxy instance defined above, to the openConnection() method
+			URLConnection urlConn = url.openConnection(httpProxy);
+			urlConn.connect();
+			return urlConn.getInputStream();
+		} else {
+			return new URL(URL).openStream();
 		}
 	}
 	

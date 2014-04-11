@@ -62,6 +62,18 @@ class BootStrap {
 		else log.warn ' ...no debug configuration file found!'
 		
 		separator();
+		log.info  '** Proxy Configuration';
+		if(grailsApplication.config.annotopia.server.proxy.host &&
+				grailsApplication.config.annotopia.server.proxy.port &&
+				grailsApplication.config.annotopia.server.proxy.protocol) {
+			log.info  ' ip         : ' + grailsApplication.config.annotopia.server.proxy.host ;
+			log.info  ' port       : ' + grailsApplication.config.annotopia.server.proxy.port ;
+			log.info  ' protocol   : ' + grailsApplication.config.annotopia.server.proxy.protocol ;
+		} else {
+			log.info  ' No proxy configuration';
+		}
+		
+		separator();
 		log.info  '** Virtuoso Configuration';
 		log.info  ' url        : ' + grailsApplication.config.annotopia.storage.triplestore.host ;
 		log.info  ' user       : ' + grailsApplication.config.annotopia.storage.triplestore.user ;
