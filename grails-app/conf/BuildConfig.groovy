@@ -72,5 +72,6 @@ grails.project.dependency.resolution = {
 		test(":spock:0.7") {
 			exclude "spock-grails-support"
 		}
+		runtime ":cors:1.1.4"
     }
 }

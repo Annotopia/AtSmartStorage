@@ -81,3 +81,7 @@ environments {
 		}
 	}
 }
+
+cors.url.pattern = ['/s/annotation/*','/s/annotationset/*']
+cors.headers = ['Access-Control-Allow-Origin':'*']
+
