@@ -263,14 +263,18 @@ class OpenAnnotationStorageService {
 			def graphResource = ResourceFactory.createResource(graphUri);
 			Model metaModel = graphMetadataService.getAnnotationSetGraphCreationMetadata(apiKey, creationDataset, graphUri);
 			oldNewAnnotationUriMapping.values().each { annotationUri ->
-				metaModel.add(graphResource, ResourceFactory.createProperty(AnnotopiaVocabulary.ANNOTATION), ResourceFactory.createPlainLiteral(annotationUri));
+				metaModel.add(graphResource, ResourceFactory.createProperty(AnnotopiaVocabulary.ANNOTATION),
+					 ResourceFactory.createPlainLiteral(annotationUri));
 			}
 			if(oldNewAnnotationUriMapping.values().size()>0) {
-				metaModel.add(graphResource, ResourceFactory.createProperty(AnnotopiaVocabulary.ANNOTATION_COUNT), ResourceFactory.createPlainLiteral(""+oldNewAnnotationUriMapping.values().size()));
+				metaModel.add(graphResource, ResourceFactory.createProperty(AnnotopiaVocabulary.ANNOTATION_COUNT), 
+					ResourceFactory.createPlainLiteral(""+oldNewAnnotationUriMapping.values().size()));
 			}
 				
 			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 			RDFDataMgr.write(outputStream, creationDataset, RDFLanguages.JSONLD);
+			
+			// TODO remove before release
 			println outputStream.toString();
 			
 			jenaVirtuosoStoreService.storeDataset(apiKey, creationDataset);
@@ -697,12 +701,13 @@ class OpenAnnotationStorageService {
 			
 		s.each { model.add(it); }
 		
-		if(!originalSubject.isAnon())
+		model.removeAll(rUri, ResourceFactory.createProperty(PAV.PAV_PREVIOUS_VERSION), null);
+		if(!originalSubject.isAnon()) {
 			model.add(model.createStatement(rUri,
 				ResourceFactory.createProperty(PAV.PAV_PREVIOUS_VERSION),
 				ResourceFactory.createPlainLiteral(originalSubject.toString())
 				));
-		else
+		} else
 			model.add(model.createStatement(rUri,
 				ResourceFactory.createProperty(PAV.PAV_PREVIOUS_VERSION),
 				ResourceFactory.createPlainLiteral("blank")
@@ -714,7 +719,7 @@ class OpenAnnotationStorageService {
 	// Supports for multiple URIs
 	private identifiableURIs(String apiKey, Model model, Property property, Resource resource, String uriType) {
 		
-		log.info("[" + apiKey + "] Minting URIs (2) " + uriType + " " + resource.toString());
+		log.info("[" + apiKey + "] Minting URIs (3) " + uriType + " " + resource.toString());
 		
 		HashMap<Resource, Resource> originalSubjects = new HashSet<Resource, Resource>();
 		StmtIterator statements = model.listStatements(null, property, resource);
@@ -753,12 +758,13 @@ class OpenAnnotationStorageService {
 		s.each { model.add(it); }
 		
 		originalSubjects.keySet().each { subject ->
-			if(!subject.isAnon())
+			model.removeAll(subject, ResourceFactory.createProperty(PAV.PAV_PREVIOUS_VERSION), null);
+			if(!subject.isAnon()) {
 				model.add(model.createStatement(originalSubjects.get(subject),
 					ResourceFactory.createProperty(PAV.PAV_PREVIOUS_VERSION),
 					ResourceFactory.createPlainLiteral(subject.toString())
 					));
-			else
+			} else
 				model.add(model.createStatement(originalSubjects.get(subject),
 					ResourceFactory.createProperty(PAV.PAV_PREVIOUS_VERSION),
 					ResourceFactory.createPlainLiteral("blank")
