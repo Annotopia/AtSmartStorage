@@ -64,7 +64,7 @@
 
   },
    "@type": "at:AnnotationSet",
-   "annotations": {
+   "annotations": [{
 	  "@type": "oa:Annotation",
 	  "hasBody": {
 	  },
@@ -73,7 +73,7 @@
 	  "annotatedBy" : { 
 	    "@type": ["foaf:Person","prov:Software"]
 	  }
-   },
+   }],
    "createdBy" : { 
       "@type": ["foaf:Person","prov:Software"]
    }
