@@ -71,6 +71,10 @@
 	  "hasTarget": {
 	  },
 	  "annotatedBy" : { 
+	    "@type": ["foaf:Person","prov:Software"]
 	  }
+   },
+   "annotatedBy" : { 
+      "@type": ["foaf:Person","prov:Software"]
    }
 }
