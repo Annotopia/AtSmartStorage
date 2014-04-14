@@ -92,7 +92,9 @@ class OpenAnnotationController extends BaseController {
 			
 			// Target filters
 			def tgtUrl = request.JSON.tgtUrl
-			def tgtFgt = request.JSON.tgtFgt
+			if(params.tgtUrl!=null) tgtUrl = params.tgtUrl;
+			
+			def tgtFgt = (request.JSON.tgtFgt!=null)?request.JSON.tgtFgt:"true"; 
 			def tgtExt = request.JSON.tgtExt
 			def tgtIds = request.JSON.tgtIds
 			def flavor = request.JSON.flavor
