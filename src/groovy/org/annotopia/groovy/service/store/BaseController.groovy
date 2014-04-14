@@ -65,7 +65,7 @@ class BaseController {
 	
 	private InputStream callExternalUrl(def apiKey, String URL) {
 		Proxy httpProxy = null;
-		if(grailsApplication.config.annotopia.server.proxy.host!=null && grailsApplication.config.annotopia.server.proxy.port!=null) {
+		if(grailsApplication.config.annotopia.server.proxy.host && grailsApplication.config.annotopia.server.proxy.port) {
 			String proxyHost = grailsApplication.config.annotopia.server.proxy.host; //replace with your proxy server name or IP
 			int proxyPort = grailsApplication.config.annotopia.server.proxy.port.toInteger(); //your proxy server port
 			SocketAddress addr = new InetSocketAddress(proxyHost, proxyPort);
