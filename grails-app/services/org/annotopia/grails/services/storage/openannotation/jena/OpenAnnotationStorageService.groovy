@@ -271,10 +271,9 @@ class OpenAnnotationStorageService {
 					ResourceFactory.createPlainLiteral(""+oldNewAnnotationUriMapping.values().size()));
 			}
 				
+			// TODO remove before release
 			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 			RDFDataMgr.write(outputStream, creationDataset, RDFLanguages.JSONLD);
-			
-			// TODO remove before release
 			println outputStream.toString();
 			
 			jenaVirtuosoStoreService.storeDataset(apiKey, creationDataset);
@@ -476,7 +475,8 @@ class OpenAnnotationStorageService {
 						throw new StoreServiceException(501, json, "text/json", "UTF-8");
 					}
 				}
-			}			
+			}
+						
 //			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 //			RDFDataMgr.write(outputStream, creationDataset, RDFLanguages.JSONLD);
 //			println outputStream.toString();
@@ -631,10 +631,6 @@ class OpenAnnotationStorageService {
 				',"duration": "' + (System.currentTimeMillis()-startTime) + 'ms", ' + '}');
 			throw new StoreServiceException(200, json, "text/json", "UTF-8");
 		}
-	}
-	
-	public void deleteAnnotation(apiKey, startTime, annotationUri) {
-		
 	}
 	
 	public String getGraphUri() {
