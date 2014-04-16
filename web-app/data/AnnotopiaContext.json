@@ -54,7 +54,7 @@
 	    "createdBy" :      	{"@type":"@id", "@id" : "pav:createdBy"},
 	    "createdWith" :     {"@type":"@id", "@id" : "pav:createdWith"},
 	    "lastUpdateOn" :    "pav:lastUpdateOn",
-	    "versionNumber" :   "pav:versionNumber",
+	    "version" :      "pav:version",
 	    "previousVersion" : "pav:previousVersion",
 	    
 	    "label": "rdfs:label",
