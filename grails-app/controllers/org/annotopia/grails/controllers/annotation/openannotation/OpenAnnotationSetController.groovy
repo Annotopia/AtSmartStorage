@@ -61,18 +61,18 @@ class OpenAnnotationSetController extends BaseController {
 	def show = {
 		long startTime = System.currentTimeMillis();
 		
+		// Verifying the API key
 		def apiKey = request.JSON.apiKey;
 		if(apiKey==null) apiKey = params.apiKey;
 		if(!apiKeyAuthenticationService.isApiKeyValid(request.getRemoteAddr(), apiKey)) {
 			invalidApiKey(request.getRemoteAddr()); return;
 		}
 		
+		// Response format parametrization and constraints
 		def outCmd = (request.JSON.outCmd!=null)?request.JSON.outCmd:"none";
-		if(params.outCmd!=null) outCmd = params.outCmd;
-		
-		
+		if(params.outCmd!=null) outCmd = params.outCmd;		
 		def incGph = (request.JSON.incGph!=null)?request.JSON.incGph:"false";
-		
+		if(params.incGph!=null) incGph = params.incGph;
 		if(outCmd=='frame' && incGph=='true') {
 			log.warn("[" + apiKey + "] Invalid options, framing does not currently support Named Graphs");
 			def message = 'Invalid options, framing does not currently support Named Graphs';
@@ -85,13 +85,17 @@ class OpenAnnotationSetController extends BaseController {
 		if(params.id==null) {
 			// Pagination
 			def max = (request.JSON.max!=null)?request.JSON.max:"10";
+			if(params.max!=null) max = params.max;
 			def offset = (request.JSON.offset!=null)?request.JSON.offset:"0";
+			if(params.offset!=null) offset = params.offset;
 			
 			// Target filters
 			def tgtUrl = request.JSON.tgtUrl
 			if(params.tgtUrl!=null) tgtUrl = params.tgtUrl;
-			
 			def tgtFgt = (request.JSON.tgtFgt!=null)?request.JSON.tgtFgt:"true"; 
+			if(params.tgtFgt!=null) tgtFgt = params.tgtFgt;
+			
+			// Currently unusued, planned
 			def tgtExt = request.JSON.tgtExt
 			def tgtIds = request.JSON.tgtIds
 			def flavor = request.JSON.flavor
@@ -125,10 +129,6 @@ class OpenAnnotationSetController extends BaseController {
 					'"sets":[';
 					
 			Object contextJson = null;
-			// Enabling CORS
-			//response.setHeader('Access-Control-Allow-Origin', '*')
-			//response.contentType = "application/json;charset=UTF-8"
-			
 			if(annotationSets!=null) {
 				response.outputStream << '{"status":"results", "result": {' + summaryPrefix
 				boolean firstStreamed = false // To add the commas between items
@@ -260,10 +260,25 @@ class OpenAnnotationSetController extends BaseController {
 			invalidApiKey(request.getRemoteAddr()); return;
 		}
 		
+		// Response format parametrization and constraints
+		def outCmd = (request.JSON.outCmd!=null)?request.JSON.outCmd:"none";
+		if(params.outCmd!=null) outCmd = params.outCmd;
+		def incGph = (request.JSON.incGph!=null)?request.JSON.incGph:"false";
+		if(params.incGph!=null) incGph = params.incGph;
+		if(outCmd=='frame' && incGph=='true') {
+			log.warn("[" + apiKey + "] Invalid options, framing does not currently support Named Graphs");
+			def message = 'Invalid options, framing does not currently support Named Graphs';
+			render(status: 401, text: returnMessage(apiKey, "rejected", message, startTime),
+				contentType: "text/json", encoding: "UTF-8");
+			return;
+		}
+		
 		log.info("[" + apiKey + "] Saving Annotation Set");
 		
 		// Parsing the incoming parameters
 		def set = request.JSON.set
+		
+		// Unused but planned
 		def flavor = (request.JSON.flavor!=null)?request.JSON.flavor:"OA";
 		def validate = (request.JSON.validate!=null)?request.JSON.validate:"OFF";
 				
@@ -277,20 +292,52 @@ class OpenAnnotationSetController extends BaseController {
 				return;
 			}
 			
+			Object contextJson = null;
 			if(savedAnnotationSet!=null) {
-				// Enable CORS
-				//response.setHeader('Access-Control-Allow-Origin', '*')
-				//response.setHeader('Access-Control-Allow-Methods': 'GET, POST, PUT');
-				// Streams back the saved annotation with the proper provenance
-				response.contentType = "text/json;charset=UTF-8"
-				response.outputStream << '{"status":"saved", "result": {' +
-					'"duration": "' + (System.currentTimeMillis()-startTime) + 'ms", ' +
-					'"item":['
-						
-				RDFDataMgr.write(response.outputStream, savedAnnotationSet, RDFLanguages.JSONLD);
+				if(outCmd=='none') {
+					if(incGph=='false') {
+						Model m = savedAnnotationSet.getNamedModel(graphs.listNames().next());
+						RDFDataMgr.write(response.outputStream, m, RDFLanguages.JSONLD);
+					} else {
+						RDFDataMgr.write(response.outputStream, graphs, RDFLanguages.JSONLD);
+					}
+				} else {
+					if(contextJson==null) {
+						if(outCmd=='context') {
+							contextJson = JSONUtils.fromInputStream(callExternalUrl(apiKey, AT_CONTEXT));
+						} else if(outCmd=='frame') {
+							contextJson = JSONUtils.fromInputStream(callExternalUrl(apiKey, AT_FRAME));
+						}
+					}
 				
-				response.outputStream <<  ']}}';
+					ByteArrayOutputStream baos = new ByteArrayOutputStream();
+					if(incGph=='false') {
+						Model m = savedAnnotationSet.getNamedModel(savedAnnotationSet.listNames().next());
+						RDFDataMgr.write(baos, m.getGraph(), RDFLanguages.JSONLD);
+					} else {
+						RDFDataMgr.write(baos, graphs, RDFLanguages.JSONLD);
+					}
+					
+					if(outCmd=='context') {
+						Object compact = JsonLdProcessor.compact(JSONUtils.fromString(baos.toString()), contextJson,  new JsonLdOptions());
+						response.outputStream << JSONUtils.toPrettyString(compact)
+					}  else if(outCmd=='frame') {
+						Object framed =  JsonLdProcessor.frame(JSONUtils.fromString(baos.toString()),contextJson, new JsonLdOptions());
+						response.outputStream << JSONUtils.toPrettyString(framed)
+					}
+				}
 				response.outputStream.flush()
+				
+//				// Streams back the saved annotation with the proper provenance
+//				response.contentType = "text/json;charset=UTF-8"
+//				response.outputStream << '{"status":"saved", "result": {' +
+//					'"duration": "' + (System.currentTimeMillis()-startTime) + 'ms", ' +
+//					'"item":['
+//						
+//				RDFDataMgr.write(response.outputStream, savedAnnotationSet, RDFLanguages.JSONLD);
+//				
+//				response.outputStream <<  ']}}';
+//				response.outputStream.flush()
 			} else {
 				// Dataset returned null
 				def message = "Null Annotation Set Dataset. Something went terribly wrong";
@@ -322,7 +369,10 @@ class OpenAnnotationSetController extends BaseController {
 			invalidApiKey(request.getRemoteAddr()); return;
 		}
 		
+		// Parsing the incoming parameters
 		def set = request.JSON.set
+		
+		// Unused but planned
 		def flavor = (request.JSON.flavor!=null)?request.JSON.flavor:"OA";
 		def validate = (request.JSON.validate!=null)?request.JSON.validate:"OFF";
 				
