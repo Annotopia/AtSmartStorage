@@ -48,7 +48,7 @@ import com.hp.hpl.jena.rdf.model.StmtIterator
  */
 class OpenAnnotationStorageService {
 
-	SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSz")
+	SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ")
 	
 	def grailsApplication
 	def jenaUtilsService
@@ -189,7 +189,7 @@ class OpenAnnotationStorageService {
 		if(defaultGraphDetected) {
 			log.trace("[" + apiKey + "] Default graph detected.");
 			// Annotation Set
-			identifiableURI(apiKey, inMemoryDataset.getDefaultModel(),
+			Resource annotationSetUri = identifiableURI(apiKey, inMemoryDataset.getDefaultModel(),
 				ResourceFactory.createProperty(RDF.RDF_TYPE),
 				ResourceFactory.createResource(AnnotopiaVocabulary.ANNOTATION_SET), "annotationset");
 			
@@ -224,10 +224,17 @@ class OpenAnnotationStorageService {
 						statement.getPredicate(), statement.getObject());
 				}
 				
+				annotationModel.removeAll(ResourceFactory.createResource(oldNewAnnotationUriMapping.get(oldAnnotation)), ResourceFactory.createProperty(PAV.PAV_PREVIOUS_VERSION), null);
 				annotationModel.add(
 					ResourceFactory.createResource(oldNewAnnotationUriMapping.get(oldAnnotation)),
 					ResourceFactory.createProperty(PAV.PAV_PREVIOUS_VERSION),
 					ResourceFactory.createPlainLiteral(oldAnnotation.toString()));
+				
+				annotationModel.removeAll(ResourceFactory.createResource(oldNewAnnotationUriMapping.get(oldAnnotation)), ResourceFactory.createProperty(PAV.PAV_LAST_UPDATED_ON), null);
+				annotationModel.add(
+					ResourceFactory.createResource(oldNewAnnotationUriMapping.get(oldAnnotation)),
+					ResourceFactory.createProperty(PAV.PAV_LAST_UPDATED_ON),
+					ResourceFactory.createPlainLiteral(dateFormat.format(new Date())));
 			}
 			
 			// TODO make sure there is only one set
@@ -253,6 +260,10 @@ class OpenAnnotationStorageService {
 				annotationModel.add(s.getSubject(), ResourceFactory.createProperty(AnnotopiaVocabulary.ANNOTATIONS),
 					ResourceFactory.createProperty(oldNewAnnotationUriMapping.get(s.getObject())));
 			}
+			
+			// Last saved on
+			annotationModel.add(annotationSetUri, ResourceFactory.createProperty(PAV.PAV_LAST_UPDATED_ON),
+				ResourceFactory.createPlainLiteral(dateFormat.format(new Date())));
 			
 			// Minting of the URI for the Named Graph that will wrap the
 			// default graph
