@@ -73,9 +73,11 @@ class OpenAnnotationController extends BaseController {
 			invalidApiKey(request.getRemoteAddr()); return;
 		}
 		
+		// Response format parametrization and constraints
 		def outCmd = (request.JSON.outCmd!=null)?request.JSON.outCmd:"none";
+		if(params.outCmd!=null) outCmd = params.outCmd;
 		def incGph = (request.JSON.incGph!=null)?request.JSON.incGph:"false";
-		
+		if(params.incGph!=null) incGph = params.incGph;
 		if(outCmd=='frame' && incGph=='true') {
 			log.warn("[" + apiKey + "] Invalid options, framing does not currently support Named Graphs");
 			def message = 'Invalid options, framing does not currently support Named Graphs';
@@ -88,16 +90,21 @@ class OpenAnnotationController extends BaseController {
 		if(params.id==null) {
 			// Pagination
 			def max = (request.JSON.max!=null)?request.JSON.max:"10";
-			def offset = (request.JSON.offset!=null)?request.JSON.offset:"0";	
+			if(params.max!=null) max = params.max;
+			def offset = (request.JSON.offset!=null)?request.JSON.offset:"0";
+			if(params.offset!=null) offset = params.offset;	
 			
 			// Target filters
 			def tgtUrl = request.JSON.tgtUrl
 			if(params.tgtUrl!=null) tgtUrl = params.tgtUrl;
+			def tgtFgt = (request.JSON.tgtFgt!=null)?request.JSON.tgtFgt:"true";
+			if(params.tgtFgt!=null) tgtFgt = params.tgtFgt;
 			
-			def tgtFgt = (request.JSON.tgtFgt!=null)?request.JSON.tgtFgt:"true"; 
+			// Currently unusued, planned
 			def tgtExt = request.JSON.tgtExt
 			def tgtIds = request.JSON.tgtIds
 			def flavor = request.JSON.flavor
+			
 			log.info("[" + apiKey + "] List >>" +
 				" max:" + max + " offset:" + offset +
 				((tgtUrl!=null) ? (" tgtUrl:" + tgtUrl):"") +
@@ -261,8 +268,9 @@ class OpenAnnotationController extends BaseController {
 		}
 		
 		def outCmd = (request.JSON.outCmd!=null)?request.JSON.outCmd:"none";
-		def incGph = (request.JSON.incGph!=null)?request.JSON.incGph:"true";
-		
+		if(params.outCmd!=null) outCmd = params.outCmd;		
+		def incGph = (request.JSON.incGph!=null)?request.JSON.incGph:"false";
+		if(params.incGph!=null) incGph = params.incGph;
 		if(outCmd=='frame' && incGph=='true') {
 			log.warn("[" + apiKey + "] Invalid options, framing does not currently support Named Graphs");
 			def message = 'Invalid options, framing does not currently support Named Graphs';
@@ -339,12 +347,15 @@ class OpenAnnotationController extends BaseController {
 	def update = {
 		long startTime = System.currentTimeMillis();
 		
+		// Verifying the API key
 		def apiKey = request.JSON.apiKey;
 		if(!apiKeyAuthenticationService.isApiKeyValid(request.getRemoteAddr(), apiKey)) {
 			invalidApiKey(request.getRemoteAddr()); return;
 		}
 		
 		def item = request.JSON.item
+		
+		// Unused but planned
 		def flavor = (request.JSON.flavor!=null)?request.JSON.flavor:"OA";
 		def validate = (request.JSON.validate!=null &&  request.JSON.validate in ['ON'])?request.JSON.validate:"OFF";
 				
@@ -399,12 +410,15 @@ class OpenAnnotationController extends BaseController {
 		
 		log.info 'validating....'
 		
+		// Verifying the API key
 		def apiKey = request.JSON.apiKey;
 		if(!apiKeyAuthenticationService.isApiKeyValid(request.getRemoteAddr(), apiKey)) {
 			invalidApiKey(request.getRemoteAddr()); return;
 		}
 		
 		def item = request.JSON.item
+		
+		// Unused but planned
 		def flavor = (request.JSON.flavor!=null)?request.JSON.flavor:"OA";
 
 		if(item!=null) {
@@ -489,6 +503,7 @@ class OpenAnnotationController extends BaseController {
 	def delete = {
 		long startTime = System.currentTimeMillis();
 
+		// Verifying the API key
 		def apiKey = request.JSON.apiKey;
 		if(!apiKeyAuthenticationService.isApiKeyValid(request.getRemoteAddr(), apiKey)) {
 			invalidApiKey(request.getRemoteAddr()); return;
