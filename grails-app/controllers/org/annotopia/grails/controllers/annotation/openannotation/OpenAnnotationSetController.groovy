@@ -296,7 +296,7 @@ class OpenAnnotationSetController extends BaseController {
 			if(savedAnnotationSet!=null) {
 				if(outCmd=='none') {
 					if(incGph=='false') {
-						Model m = savedAnnotationSet.getNamedModel(graphs.listNames().next());
+						Model m = savedAnnotationSet.getNamedModel(savedAnnotationSet.listNames().next());
 						RDFDataMgr.write(response.outputStream, m, RDFLanguages.JSONLD);
 					} else {
 						RDFDataMgr.write(response.outputStream, graphs, RDFLanguages.JSONLD);
