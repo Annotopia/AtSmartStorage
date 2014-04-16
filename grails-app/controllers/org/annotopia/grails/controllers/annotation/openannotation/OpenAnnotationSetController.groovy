@@ -327,17 +327,6 @@ class OpenAnnotationSetController extends BaseController {
 					}
 				}
 				response.outputStream.flush()
-				
-//				// Streams back the saved annotation with the proper provenance
-//				response.contentType = "text/json;charset=UTF-8"
-//				response.outputStream << '{"status":"saved", "result": {' +
-//					'"duration": "' + (System.currentTimeMillis()-startTime) + 'ms", ' +
-//					'"item":['
-//						
-//				RDFDataMgr.write(response.outputStream, savedAnnotationSet, RDFLanguages.JSONLD);
-//				
-//				response.outputStream <<  ']}}';
-//				response.outputStream.flush()
 			} else {
 				// Dataset returned null
 				def message = "Null Annotation Set Dataset. Something went terribly wrong";
