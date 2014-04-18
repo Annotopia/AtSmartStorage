@@ -135,7 +135,7 @@ class OpenAnnotationController extends BaseController {
 					
 			Object contextJson = null;
 			// Enabling CORS
-			// response.setHeader('Access-Control-Allow-Origin', '*')
+			response.setHeader('Access-Control-Allow-Origin', '*')
 			
 			response.contentType = "application/json;charset=UTF-8"	
 			if(annotationGraphs!=null) {
@@ -311,51 +311,15 @@ class OpenAnnotationController extends BaseController {
 			if(savedAnnotation!=null) { 
 				// Enable CORS
 				// response.setHeader('Access-Control-Allow-Origin', '*')
-				Object contextJson = null;
 				// Streams back the saved annotation with the proper provenance
 				response.contentType = "text/json;charset=UTF-8"
-				if(outCmd=='none') {
-					if(incGph=='false') {
-						Model m = savedAnnotation.getNamedModel(savedAnnotation.listNames().next());
-						println "*** " + m;
-						RDFDataMgr.write(response.outputStream, m, RDFLanguages.JSONLD);
-					} else {
-						RDFDataMgr.write(response.outputStream, graphs, RDFLanguages.JSONLD);
-					}
-				} else {
-					if(contextJson==null) {
-						if(outCmd=='context') {
-							contextJson = JSONUtils.fromInputStream(callExternalUrl(apiKey, OA_CONTEXT));
-						} else if(outCmd=='frame') {
-							contextJson = JSONUtils.fromInputStream(callExternalUrl(apiKey,OA_FRAME));
-						}
-					}
+				response.outputStream << '{"status":"saved", "result": {' +
+					'"duration": "' + (System.currentTimeMillis()-startTime) + 'ms", ' +
+					'"item":['
+						
+				RDFDataMgr.write(response.outputStream, savedAnnotation, RDFLanguages.JSONLD);
 				
-					ByteArrayOutputStream baos = new ByteArrayOutputStream();
-					if(incGph=='false') {
-						Model m = savedAnnotation.getNamedModel(savedAnnotation.listNames().next());
-						RDFDataMgr.write(baos, m.getGraph(), RDFLanguages.JSONLD);
-					} else {
-						RDFDataMgr.write(baos, graphs, RDFLanguages.JSONLD);
-					}
-					
-					if(outCmd=='context') {
-						Object compact = JsonLdProcessor.compact(JSONUtils.fromString(baos.toString()), contextJson, new JsonLdOptions());
-						response.outputStream << JSONUtils.toPrettyString(compact)
-					}  else if(outCmd=='frame') {
-						Object framed =  JsonLdProcessor.frame(JSONUtils.fromString(baos.toString()),contextJson, new JsonLdOptions());
-						response.outputStream << JSONUtils.toPrettyString(framed)
-					}
-				}
-				response.outputStream.flush()
-				
-//				response.outputStream << '{"status":"saved", "result": {' +
-//					'"duration": "' + (System.currentTimeMillis()-startTime) + 'ms", ' +
-//					'"item":['
-//						
-//				RDFDataMgr.write(response.outputStream, savedAnnotation, RDFLanguages.JSONLD);
-//				
-//				response.outputStream <<  ']}}';
+				response.outputStream <<  ']}}';
 				response.outputStream.flush()
 			} else {
 				// Dataset returned null
@@ -418,6 +382,8 @@ class OpenAnnotationController extends BaseController {
 			}
 			
 			if(updatedAnnotation!=null) {
+				// Enable CORS
+				response.setHeader('Access-Control-Allow-Origin', '*')
 				response.contentType = "text/json;charset=UTF-8"
 				response.outputStream << '{"status":"updated", "result": {' +
 					'"duration": "' + (System.currentTimeMillis()-startTime) + 'ms", ' +
