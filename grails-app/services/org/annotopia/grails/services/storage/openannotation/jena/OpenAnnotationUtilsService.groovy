@@ -21,15 +21,12 @@
 package org.annotopia.grails.services.storage.openannotation.jena
 
 import com.hp.hpl.jena.query.Dataset
-import com.hp.hpl.jena.query.Query
 import com.hp.hpl.jena.query.QueryExecution
 import com.hp.hpl.jena.query.QueryExecutionFactory
 import com.hp.hpl.jena.query.QueryFactory
 import com.hp.hpl.jena.query.QuerySolution
 import com.hp.hpl.jena.query.ResultSet
-import com.hp.hpl.jena.rdf.model.Model
 import com.hp.hpl.jena.rdf.model.Resource
-import com.hp.hpl.jena.rdf.model.ResourceFactory
 
 /**
  * This service provides some utilities for analyzing Open Annotation content
@@ -38,7 +35,7 @@ import com.hp.hpl.jena.rdf.model.ResourceFactory
  * @author Paolo Ciccarese <paolo.ciccarese@gmail.com>
  */
 class OpenAnnotationUtilsService {
-
+	
 	/**
 	 * Verifies if there are Annotation items in the default graph and returns the total number.
 	 * @param apiKey			The API key of the client that issued the request
@@ -138,7 +135,7 @@ class OpenAnnotationUtilsService {
 	public int detectContextAsTextInDefaultGraph(apiKey, Dataset dataset, Set<Resource> embeddedTextualBodiesUris) {
 		log.info("[" + apiKey + "] Identifiable Content as Text detection in default graph...");
 		String QUERY = "PREFIX cnt:<http://www.w3.org/2011/content#> SELECT DISTINCT ?s WHERE " +
-			"{{  { ?s a cnt:ContentAsText . }} }"
+			"{{ { ?s a cnt:ContentAsText . }} }"
 		
 		int embeddedTextualBodiesCounter = 0;
 		QueryExecution qEmbeddedTextualBodies  = QueryExecutionFactory.create (QueryFactory.create(QUERY), dataset);
