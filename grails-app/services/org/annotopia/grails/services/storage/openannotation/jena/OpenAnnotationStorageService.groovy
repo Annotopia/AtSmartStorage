@@ -35,6 +35,11 @@ import org.apache.jena.riot.RDFLanguages
 
 import com.hp.hpl.jena.query.Dataset
 import com.hp.hpl.jena.query.DatasetFactory
+import com.hp.hpl.jena.query.QueryExecution
+import com.hp.hpl.jena.query.QueryExecutionFactory
+import com.hp.hpl.jena.query.QueryFactory
+import com.hp.hpl.jena.query.QuerySolution
+import com.hp.hpl.jena.query.ResultSet
 import com.hp.hpl.jena.rdf.model.Model
 import com.hp.hpl.jena.rdf.model.Property
 import com.hp.hpl.jena.rdf.model.Resource
@@ -50,10 +55,10 @@ class OpenAnnotationStorageService {
 
 	SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ")
 	
-	def grailsApplication
 	def jenaUtilsService
-	def jenaVirtuosoStoreService
+	def grailsApplication
 	def graphMetadataService
+	def jenaVirtuosoStoreService
 	def openAnnotationUtilsService
 	def openAnnotationVirtuosoService
 	
@@ -113,183 +118,6 @@ class OpenAnnotationStorageService {
 			}
 		}
 		return datasets;
-	}
-	
-	public listAnnotationSets(apiKey, max, offset, tgtUrl, tgtFgt, tgtExt, tgtIds, incGph) {
-		log.info '[' + apiKey + '] List annotation sets' +
-			' max:' + max +
-			' offset:' + offset +
-			' incGph:' + incGph +
-			' tgtUrl:' + tgtUrl +
-			' tgtFgt:' + tgtFgt;
-		retrieveAnnotationSets(apiKey, max, offset, tgtUrl, tgtFgt, incGph);
-	}
-	
-	public Set<Dataset> retrieveAnnotationSets(apiKey, max, offset, tgtUrl, tgtFgt, incGph) {
-		log.info '[' + apiKey + '] Retrieving annotation sets';
-	
-		Set<Dataset> datasets = new HashSet<Dataset>();
-		Set<String> graphNames = openAnnotationVirtuosoService.retrieveAnnotationSetsGraphsNames(apiKey, max, offset, tgtUrl, tgtFgt);
-		if(graphNames!=null) {
-			graphNames.each { graphName ->
-				Dataset ds = jenaVirtuosoStoreService.retrieveGraph(apiKey, graphName);
-				if(incGph=='true') {
-					Model m = jenaVirtuosoStoreService.retrieveGraphMetadata(apiKey, graphName, grailsApplication.config.annotopia.storage.uri.graph.provenance);
-					if(m!=null) ds.setDefaultModel(m);
-				}
-				if(ds!=null) datasets.add(ds);
-			}
-		}
-		return datasets;
-	}
-	
-	public Dataset saveAnnotationSet(String apiKey, Long startTime, String set) {
-		// Reads the inputs in a dataset
-		Dataset inMemoryDataset = DatasetFactory.createMem();
-		try {
-			RDFDataMgr.read(inMemoryDataset, new ByteArrayInputStream(set.getBytes("UTF-8")), RDFLanguages.JSONLD);
-		} catch (Exception ex) {
-			log.error(ex.getMessage());
-//			def message = "Annotation cannot be read";
-//			render(status: 500, text: returnMessage(apiKey, "invalidcontent", message, startTime), contentType: "text/json", encoding: "UTF-8");
-			return;
-		}
-		
-		// Registry of the URIs of the annotations.
-		// Note: The method currently supports the saving of one annotation at a time
-		Set<Resource> annotationUris = new HashSet<Resource>();
-		
-		// Registry of all named graphs in the transaction
-		Set<Resource> graphsUris = jenaUtilsService.detectNamedGraphs(apiKey, inMemoryDataset);
-
-		// Detection of default graph
-		int annotationsInDefaultGraphsCounter = openAnnotationUtilsService.detectAnnotationsInDefaultGraph(apiKey, inMemoryDataset, annotationUris, null)
-		boolean defaultGraphDetected = (annotationsInDefaultGraphsCounter>0);
-		
-		// Query for graphs containing annotation
-		// See: https://www.mail-archive.com/wikidata-l@lists.wikimedia.org/msg00370.html
-		Set<Resource> annotationsGraphsUris = new HashSet<Resource>();
-		int detectedAnnotationGraphsCounter = openAnnotationUtilsService.detectAnnotationsInNamedGraph(
-			apiKey, inMemoryDataset, graphsUris, annotationsGraphsUris, annotationUris, null)
-		
-		// Enforcing the limit to one annotation per transaction
-		if(defaultGraphDetected && detectedAnnotationGraphsCounter>0) {
-			log.info("[" + apiKey + "] Mixed Annotation content detected... request rejected.");
-			def json = JSON.parse('{"status":"nocontent" ,"message":"The request carries a mix of Annotations and Annotation Graphs"' +
-				',"duration": "' + (System.currentTimeMillis()-startTime) + 'ms", ' + '}');
-			throw new StoreServiceException(200, json, "text/json", "UTF-8");
-		} else if(detectedAnnotationGraphsCounter>1 || graphsUris.size()>2) {
-			// Annotation Set not found
-			log.info("[" + apiKey + "] Multiple Annotation graphs detected... request rejected.");
-			def json = JSON.parse('{"status":"nocontent" ,"message":"The request carries multiple Annotations or Annotation Graphs"' +
-				',"duration": "' + (System.currentTimeMillis()-startTime) + 'ms", ' + '}');
-			throw new StoreServiceException(200, json, "text/json", "UTF-8");
-		}
-		
-		if(defaultGraphDetected) {
-			log.trace("[" + apiKey + "] Default graph detected.");
-			// Annotation Set
-			Resource annotationSetUri = identifiableURI(apiKey, inMemoryDataset.getDefaultModel(),
-				ResourceFactory.createProperty(RDF.RDF_TYPE),
-				ResourceFactory.createResource(AnnotopiaVocabulary.ANNOTATION_SET), "annotationset");
-			
-			// Specific Resource identifier
-			identifiableURIs(apiKey, inMemoryDataset.getDefaultModel(),
-				ResourceFactory.createProperty(RDF.RDF_TYPE),
-				ResourceFactory.createResource(OA.SPECIFIC_RESOURCE), "resource");
-
-			// Embedded content (as RDF) identifier
-			identifiableURIs(apiKey, inMemoryDataset.getDefaultModel(),
-				ResourceFactory.createProperty(RDF.RDF_TYPE),
-				ResourceFactory.createResource(OA.CONTEXT_AS_TEXT), "content");
-			
-			HashMap<Resource, String> oldNewAnnotationUriMapping = new HashMap<Resource, String>();
-			Iterator<Resource> annotationUrisIterator = annotationUris.iterator();
-			while(annotationUrisIterator.hasNext()) {
-				// Bodies graphs identifiers
-				Resource annotation = annotationUrisIterator.next();
-				String newAnnotationUri = getAnnotationUri();
-				oldNewAnnotationUriMapping.put(annotation, newAnnotationUri);
-			}
-			
-			// Update Bodies graphs URIs
-			Model annotationModel = inMemoryDataset.getDefaultModel();
-			oldNewAnnotationUriMapping.keySet().each { oldAnnotation ->				
-				StmtIterator statements = annotationModel.listStatements(oldAnnotation, null, null);
-				List<Statement> statementsToRemove = new ArrayList<Statement>();
-				statements.each { statementsToRemove.add(it)}
-				statementsToRemove.each { statement ->
-					annotationModel.remove(statement);
-					annotationModel.add(ResourceFactory.createResource(oldNewAnnotationUriMapping.get(oldAnnotation)), 
-						statement.getPredicate(), statement.getObject());
-				}
-				
-				annotationModel.removeAll(ResourceFactory.createResource(oldNewAnnotationUriMapping.get(oldAnnotation)), ResourceFactory.createProperty(PAV.PAV_PREVIOUS_VERSION), null);
-				annotationModel.add(
-					ResourceFactory.createResource(oldNewAnnotationUriMapping.get(oldAnnotation)),
-					ResourceFactory.createProperty(PAV.PAV_PREVIOUS_VERSION),
-					ResourceFactory.createPlainLiteral(oldAnnotation.toString()));
-				
-				annotationModel.removeAll(ResourceFactory.createResource(oldNewAnnotationUriMapping.get(oldAnnotation)), ResourceFactory.createProperty(PAV.PAV_LAST_UPDATED_ON), null);
-				annotationModel.add(
-					ResourceFactory.createResource(oldNewAnnotationUriMapping.get(oldAnnotation)),
-					ResourceFactory.createProperty(PAV.PAV_LAST_UPDATED_ON),
-					ResourceFactory.createPlainLiteral(dateFormat.format(new Date())));
-			}
-			
-			// TODO make sure there is only one set
-			List<Statement> statementsToRemove = new ArrayList<Statement>();
-			StmtIterator statements = annotationModel.listStatements(null, 
-				ResourceFactory.createProperty(RDF.RDF_TYPE),
-				ResourceFactory.createResource(AnnotopiaVocabulary.ANNOTATION_SET));
-			if(statements.hasNext()) {
-				Statement annotationSetStatement = statements.nextStatement();
-				Resource annotationSet = annotationSetStatement.getSubject();
-				// Getting all the annotations of the set
-				StmtIterator stats = annotationModel.listStatements(annotationSet,
-					ResourceFactory.createProperty(AnnotopiaVocabulary.ANNOTATIONS),
-					null);
-				while(stats.hasNext()) {
-					Statement s = stats.nextStatement();
-					statementsToRemove.add(s);
-				}
-			}
-			
-			statementsToRemove.each { s ->
-				annotationModel.remove(s);
-				annotationModel.add(s.getSubject(), ResourceFactory.createProperty(AnnotopiaVocabulary.ANNOTATIONS),
-					ResourceFactory.createProperty(oldNewAnnotationUriMapping.get(s.getObject())));
-			}
-			
-			// Last saved on
-			annotationModel.add(annotationSetUri, ResourceFactory.createProperty(PAV.PAV_LAST_UPDATED_ON),
-				ResourceFactory.createPlainLiteral(dateFormat.format(new Date())));
-			
-			// Minting of the URI for the Named Graph that will wrap the
-			// default graph
-			def graphUri = getGraphUri();
-			Dataset creationDataset = DatasetFactory.createMem();
-			creationDataset.addNamedModel(graphUri, inMemoryDataset.getDefaultModel());
-			// Creation of the metadata for the Graph wrapper
-			def graphResource = ResourceFactory.createResource(graphUri);
-			Model metaModel = graphMetadataService.getAnnotationSetGraphCreationMetadata(apiKey, creationDataset, graphUri);
-			oldNewAnnotationUriMapping.values().each { annotationUri ->
-				metaModel.add(graphResource, ResourceFactory.createProperty(AnnotopiaVocabulary.ANNOTATION),
-					 ResourceFactory.createPlainLiteral(annotationUri));
-			}
-			if(oldNewAnnotationUriMapping.values().size()>0) {
-				metaModel.add(graphResource, ResourceFactory.createProperty(AnnotopiaVocabulary.ANNOTATION_COUNT), 
-					ResourceFactory.createPlainLiteral(""+oldNewAnnotationUriMapping.values().size()));
-			}
-				
-			// TODO remove before release
-			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-			RDFDataMgr.write(outputStream, creationDataset, RDFLanguages.JSONLD);
-			println outputStream.toString();
-			
-			jenaVirtuosoStoreService.storeDataset(apiKey, creationDataset);
-			return creationDataset;
-		}
 	}
 	
 	/**
@@ -644,33 +472,49 @@ class OpenAnnotationStorageService {
 		}
 	}
 	
+	/**
+	 * Mints a URI that is shaped according to the passed type.
+	 * @param uriType	The type of the URI (graph, annotation, ...)
+	 * @return The minted URI
+	 */
+	public String mintUri(uriType) {
+		return 'http://' + 
+				grailsApplication.config.grails.server.host + ':' +
+				grailsApplication.config.grails.server.port.http + '/s/' + uriType + '/' + 
+				org.annotopia.grails.services.storage.utils.UUID.uuid();
+	}
+	
 	public String getGraphUri() {
-		return 'http://' + grailsApplication.config.grails.server.host + ':' +
-			grailsApplication.config.grails.server.port.http + '/s/graph/' +
-			org.annotopia.grails.services.storage.utils.UUID.uuid();
+		return mintUri("graph");
 	}
 	
 	public String getAnnotationUri() {
-		return 'http://' + grailsApplication.config.grails.server.host + ':' +
-			grailsApplication.config.grails.server.port.http + '/s/annotation/' +
-			org.annotopia.grails.services.storage.utils.UUID.uuid();
+		return mintUri("annotation");
 	}
+	
+//	public String getAnnotationUri() {
+//		return 'http://' + grailsApplication.config.grails.server.host + ':' +
+//			grailsApplication.config.grails.server.port.http + '/s/annotation/' +
+//			org.annotopia.grails.services.storage.utils.UUID.uuid();
+//	}
 	
 	private String identifiableURIs(String apiKey, String content, Set<Resource> uris, String uriType) {
 		String toReturn = content;
 		uris.each { uri ->
-			def uuid = org.annotopia.grails.services.storage.utils.UUID.uuid();
-			def nUri = 'http://' + grailsApplication.config.grails.server.host + ':' +
-							grailsApplication.config.grails.server.port.http + '/s/' + uriType + '/' + uuid;
+//			def uuid = org.annotopia.grails.services.storage.utils.UUID.uuid();
+//			def nUri = 'http://' + grailsApplication.config.grails.server.host + ':' +
+//							grailsApplication.config.grails.server.port.http + '/s/' + uriType + '/' + uuid;
 
-			log.info("[" + apiKey + "] Minting URIs (1) " + uriType + " " + uri.toString() + " -> " + nUri);
+			def newUri = mintUri(uriType);			
+							
+			log.info("[" + apiKey + "] Minting URIs (1) " + uriType + " " + uri.toString() + " -> " + newUri);
 			if(uri.isAnon()) {
 				println 'blank ' + uri.getId();
 				toReturn = content.replaceAll(Pattern.quote("\"@id\" : \"" + uri + "\""),
-					"\"@id\" : \"" + nUri + "\"" + ",\"http://purl.org/pav/previousVersion\" : \"blank\"");
+					"\"@id\" : \"" + newUri + "\"" + ",\"http://purl.org/pav/previousVersion\" : \"blank\"");
 			} else
 			toReturn = content.replaceAll(Pattern.quote("\"@id\" : \"" + uri + "\""),
-				"\"@id\" : \"" + nUri + "\"" + ",\"http://purl.org/pav/previousVersion\" : \"" + uri.toString() + "\"");
+				"\"@id\" : \"" + newUri + "\"" + ",\"http://purl.org/pav/previousVersion\" : \"" + uri.toString() + "\"");
 		}
 		return toReturn;
 	}
@@ -679,10 +523,12 @@ class OpenAnnotationStorageService {
 		
 		log.info("[" + apiKey + "] Minting URIs (2) " + uriType + " " + resource.toString());
 		
-		def uuid = org.annotopia.grails.services.storage.utils.UUID.uuid();
-		def nUri = 'http://' + grailsApplication.config.grails.server.host + ':' +
-						grailsApplication.config.grails.server.port.http + '/s/' + uriType + '/' + uuid;
-		def rUri = ResourceFactory.createResource(nUri);
+//		def uuid = org.annotopia.grails.services.storage.utils.UUID.uuid();
+//		def nUri = 'http://' + grailsApplication.config.grails.server.host + ':' +
+//						grailsApplication.config.grails.server.port.http + '/s/' + uriType + '/' + uuid;
+		
+		def newResource = ResourceFactory.createResource(mintUri(uriType));
+		
 
 		def originalSubject;
 		List<Statement> s = new ArrayList<Statement>();
@@ -691,7 +537,7 @@ class OpenAnnotationStorageService {
 			originalSubject =  it.getSubject()
 			StmtIterator statements2 = model.listStatements(it.getSubject(), null, null);
 			statements2 .each { its ->
-				s.add(model.createStatement(rUri, its.getPredicate(), its.getObject()));
+				s.add(model.createStatement(newResource, its.getPredicate(), its.getObject()));
 			}
 		}
 		if(originalSubject==null) {
@@ -702,25 +548,25 @@ class OpenAnnotationStorageService {
 	
 		StmtIterator statements3 = model.listStatements(null, null, originalSubject);
 		statements3.each { its2 ->
-			s.add(model.createStatement(its2.getSubject(), its2.getPredicate(), rUri));
+			s.add(model.createStatement(its2.getSubject(), its2.getPredicate(), newResource));
 		}
 		model.removeAll(null, null, originalSubject);
 			
 		s.each { model.add(it); }
 		
-		model.removeAll(rUri, ResourceFactory.createProperty(PAV.PAV_PREVIOUS_VERSION), null);
+		model.removeAll(newResource, ResourceFactory.createProperty(PAV.PAV_PREVIOUS_VERSION), null);
 		if(!originalSubject.isAnon()) {
-			model.add(model.createStatement(rUri,
+			model.add(model.createStatement(newResource,
 				ResourceFactory.createProperty(PAV.PAV_PREVIOUS_VERSION),
 				ResourceFactory.createPlainLiteral(originalSubject.toString())
 				));
 		} else
-			model.add(model.createStatement(rUri,
+			model.add(model.createStatement(newResource,
 				ResourceFactory.createProperty(PAV.PAV_PREVIOUS_VERSION),
 				ResourceFactory.createPlainLiteral("blank")
 				));
 			
-		rUri;
+		newResource;
 	}
 	
 	// Supports for multiple URIs
@@ -733,11 +579,11 @@ class OpenAnnotationStorageService {
 		statements.each {
 			if(!originalSubjects.containsKey(it.getSubject())) {
 				log.info("[" + apiKey + "] Minting URI for content " + it.getSubject());
-				def uuid = org.annotopia.grails.services.storage.utils.UUID.uuid();
-				def nUri = 'http://' + grailsApplication.config.grails.server.host + ':' +
-								grailsApplication.config.grails.server.port.http + '/s/' + uriType + '/' + uuid;
-				def rUri = ResourceFactory.createResource(nUri);
-				originalSubjects.put(it.getSubject(), rUri)
+//				def uuid = org.annotopia.grails.services.storage.utils.UUID.uuid();
+//				def nUri = 'http://' + grailsApplication.config.grails.server.host + ':' +
+//								grailsApplication.config.grails.server.port.http + '/s/' + uriType + '/' + uuid;
+				def newResource = ResourceFactory.createResource(mintUri(uriType));
+				originalSubjects.put(it.getSubject(), newResource)
 			}
 		}
 		
