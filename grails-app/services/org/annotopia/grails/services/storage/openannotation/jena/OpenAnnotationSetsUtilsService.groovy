@@ -56,6 +56,7 @@ class OpenAnnotationSetsUtilsService {
 		QueryExecution vqe = QueryExecutionFactory.create (QUERY, dataset);
 		boolean result =  vqe.execAsk();
 		log.info 'Result: ' + result;
+		result
 	}
 	
 	/**
