@@ -315,22 +315,18 @@ class JenaVirtuosoStoreService implements ITripleStore {
 			" WHERE { ?s ?p ?o . }";
 		log.trace '[' + apiKey + '] ' + queryString
 		
-//		String queryString2 = "CONSTRUCT { <"+graphUri+"> ?p ?o . } FROM <annotopia:graphs:provenance>" + 
-//			" WHERE { <"+graphUri+"> ?p ?o .}";
-//		log.trace '[' + apiKey + '] ' + queryString2
-		
 		try {
-			//Model model = ModelFactory.createMemModelMaker().createModel(graphUri);
 			VirtuosoQueryExecution vqe = VirtuosoQueryExecutionFactory.create (QueryFactory.create(queryString), set);	
 			Model model = vqe.execConstruct();
-			
-			Dataset dataset = DatasetFactory.createMem();
-			dataset.addNamedModel(graphUri, model);
-			
-//			VirtuosoQueryExecution vqe2 = VirtuosoQueryExecutionFactory.create (QueryFactory.create(queryString2), set);
-//			Model model2 = vqe2.execConstruct();
-//			dataset.setDefaultModel(model2);
-			return dataset;
+			if(model!=null && !model.empty) {
+				Dataset dataset = DatasetFactory.createMem();
+				dataset.addNamedModel(graphUri, model);
+				return dataset;
+			} else {
+				// TODO Raise exception?
+				log.warn('[' + apiKey + '] Requested graph not found: ' + graphUri);
+				return null;
+			}
 		} catch (Exception e) {
 			log.error(e.getMessage());
 			return null;
