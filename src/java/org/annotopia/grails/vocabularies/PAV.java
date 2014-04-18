@@ -54,11 +54,17 @@ public interface PAV {
 	 * pav:lastUpdatedOn
 	 * See: http://pav-ontology.googlecode.com/svn/trunk/pav.html#d4e641
 	 */
-	public static final String PAV_LAST_UPDATED_ON 	= "http://purl.org/pav/lastUpdatedOn";
+	public static final String PAV_LAST_UPDATED_ON 	= "http://purl.org/pav/lastUpdateOn"; 
 	
 	/**
 	 * pav:previousVersion
 	 * See: http://pav-ontology.googlecode.com/svn/trunk/pav.html#d4e366
 	 */
 	public static final String PAV_PREVIOUS_VERSION = "http://purl.org/pav/previousVersion";
+	
+	/**
+	 * pav:version
+	 * See: http://pav-ontology.googlecode.com/svn/trunk/pav.html#d4e737
+	 */
+	public static final String PAV_VERSION = "http://purl.org/pav/version";
 }
