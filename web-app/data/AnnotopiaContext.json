@@ -61,6 +61,7 @@
 	    "description": "dcterms:description",
 	    
 	    "targets"		: "at:targets",
+	    "hasChanged"    : "at:hasChanged",
 	    "annotations" 	: {"@type":"@id", "@id" : "at:annotations"}
     }
 }

@@ -53,13 +53,14 @@
 	    "createdBy" :      	{"@type":"@id", "@id" : "pav:createdBy"},
 	    "createdWith" :     {"@type":"@id", "@id" : "pav:createdWith"},
 	    "lastUpdateOn" :    "pav:lastUpdateOn",
-	    "version"    :   "pav:version",
+	    "version"    :      "pav:version",
 	    "previousVersion" : "pav:previousVersion",
 	    
 	    "label": "rdfs:label",
 	    "description": "dcterms:description",
 	    
 	    "targets"		: "at:targets",
+	    "hasChanged"    : "at:hasChanged",
 	    "annotations" 	: {"@type":"@id", "@id" : "at:annotations"}
 
   },
