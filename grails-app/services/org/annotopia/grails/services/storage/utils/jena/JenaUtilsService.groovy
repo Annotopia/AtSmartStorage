@@ -35,7 +35,7 @@ import com.hp.hpl.jena.rdf.model.Resource
  * @author Paolo Ciccarese <paolo.ciccarese@gmail.com>
  */
 class JenaUtilsService {
-
+	
 	/**
 	 * Retrieves the set of all Named Graphs
 	 * @param apiKey			The API key of the client that issued the request
@@ -46,7 +46,7 @@ class JenaUtilsService {
 		// Detect all named graphs containing annotation
 		log.info("[" + apiKey + "] Named Graphs detection...");
 		Set<Resource> graphsUris = new HashSet<Resource>();
-		Query  sparqlGraphs = QueryFactory.create("PREFIX oa: <http://www.w3.org/ns/oa#> SELECT DISTINCT ?g WHERE { GRAPH ?g { ?s ?p ?o . }}");
+		Query  sparqlGraphs = QueryFactory.create("SELECT DISTINCT ?g WHERE { GRAPH ?g { ?s ?p ?o . }}");
 		QueryExecution qGraphs = QueryExecutionFactory.create (sparqlGraphs, dataset);
 		ResultSet rGraphs = qGraphs.execSelect();
 		while (rGraphs.hasNext()) {
