@@ -299,7 +299,7 @@ class OpenAnnotationSetController extends BaseController {
 						Model m = savedAnnotationSet.getNamedModel(savedAnnotationSet.listNames().next());
 						RDFDataMgr.write(response.outputStream, m, RDFLanguages.JSONLD);
 					} else {
-						RDFDataMgr.write(response.outputStream, graphs, RDFLanguages.JSONLD);
+						RDFDataMgr.write(response.outputStream, savedAnnotationSet, RDFLanguages.JSONLD);
 					}
 				} else {
 					if(contextJson==null) {
@@ -315,14 +315,14 @@ class OpenAnnotationSetController extends BaseController {
 						Model m = savedAnnotationSet.getNamedModel(savedAnnotationSet.listNames().next());
 						RDFDataMgr.write(baos, m.getGraph(), RDFLanguages.JSONLD);
 					} else {
-						RDFDataMgr.write(baos, graphs, RDFLanguages.JSONLD);
+						RDFDataMgr.write(baos, savedAnnotationSet, RDFLanguages.JSONLD);
 					}
 					
 					if(outCmd=='context') {
-						Object compact = JsonLdProcessor.compact(JSONUtils.fromString(baos.toString()), contextJson,  new JsonLdOptions());
+						Object compact = JsonLdProcessor.compact(JSONUtils.fromString(baos.toString()), contextJson, new JsonLdOptions());
 						response.outputStream << JSONUtils.toPrettyString(compact)
 					}  else if(outCmd=='frame') {
-						Object framed =  JsonLdProcessor.frame(JSONUtils.fromString(baos.toString()),contextJson, new JsonLdOptions());
+						Object framed =  JsonLdProcessor.frame(JSONUtils.fromString(baos.toString()), contextJson, new JsonLdOptions());
 						response.outputStream << JSONUtils.toPrettyString(framed)
 					}
 				}
@@ -392,12 +392,17 @@ class OpenAnnotationSetController extends BaseController {
 			
 			Object contextJson = null;
 			if(savedAnnotationSet!=null) {
+				
+				ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+				RDFDataMgr.write(outputStream, savedAnnotationSet, RDFLanguages.JSONLD);
+				println outputStream.toString();
+				
 				if(outCmd=='none') {
 					if(incGph=='false') {
 						Model m = savedAnnotationSet.getNamedModel(savedAnnotationSet.listNames().next());
 						RDFDataMgr.write(response.outputStream, m, RDFLanguages.JSONLD);
 					} else {
-						RDFDataMgr.write(response.outputStream, graphs, RDFLanguages.JSONLD);
+						RDFDataMgr.write(response.outputStream, savedAnnotationSet, RDFLanguages.JSONLD);
 					}
 				} else {
 					if(contextJson==null) {
@@ -413,14 +418,14 @@ class OpenAnnotationSetController extends BaseController {
 						Model m = savedAnnotationSet.getNamedModel(savedAnnotationSet.listNames().next());
 						RDFDataMgr.write(baos, m.getGraph(), RDFLanguages.JSONLD);
 					} else {
-						RDFDataMgr.write(baos, graphs, RDFLanguages.JSONLD);
+						RDFDataMgr.write(baos, savedAnnotationSet, RDFLanguages.JSONLD);
 					}
 					
 					if(outCmd=='context') {
 						Object compact = JsonLdProcessor.compact(JSONUtils.fromString(baos.toString()), contextJson,  new JsonLdOptions());
 						response.outputStream << JSONUtils.toPrettyString(compact)
 					}  else if(outCmd=='frame') {
-						Object framed =  JsonLdProcessor.frame(JSONUtils.fromString(baos.toString()),contextJson, new JsonLdOptions());
+						Object framed =  JsonLdProcessor.frame(JSONUtils.fromString(baos.toString()), contextJson, new JsonLdOptions());
 						response.outputStream << JSONUtils.toPrettyString(framed)
 					}
 				}
