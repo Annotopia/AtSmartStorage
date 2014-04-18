@@ -45,7 +45,7 @@ class OpenAnnotationSetController extends BaseController {
 	
 	def grailsApplication;
 	def apiKeyAuthenticationService;
-	def openAnnotationStorageService;
+	def openAnnotationSetStorageService;
 	def openAnnotationVirtuosoService;
 
 	/*
@@ -120,7 +120,7 @@ class OpenAnnotationSetController extends BaseController {
 				return;
 			}
 			
-			Set<Dataset> annotationSets = openAnnotationStorageService.listAnnotationSets(apiKey, max, offset, tgtUrl, tgtFgt, tgtExt, tgtIds, incGph);
+			Set<Dataset> annotationSets = openAnnotationSetStorageService.listAnnotationSets(apiKey, max, offset, tgtUrl, tgtFgt, tgtExt, tgtIds, incGph);
 			def summaryPrefix = '"total":"' + annotationSetsTotal + '", ' +
 					'"pages":"' + annotationSetsPages + '", ' +
 					'"duration": "' + (System.currentTimeMillis()-startTime) + 'ms", ' +
@@ -286,7 +286,7 @@ class OpenAnnotationSetController extends BaseController {
 			Dataset savedAnnotationSet;
 			try {
 				println set.toString();
-				savedAnnotationSet = openAnnotationStorageService.saveAnnotationSet(apiKey, startTime, set.toString()); 
+				savedAnnotationSet = openAnnotationSetStorageService.saveAnnotationSet(apiKey, startTime, set.toString()); 
 			} catch(StoreServiceException exception) {
 				render(status: exception.status, text: exception.text, contentType: exception.contentType, encoding: exception.encoding);
 				return;
@@ -358,6 +358,21 @@ class OpenAnnotationSetController extends BaseController {
 			invalidApiKey(request.getRemoteAddr()); return;
 		}
 		
+		// Response format parametrization and constraints
+		def outCmd = (request.JSON.outCmd!=null)?request.JSON.outCmd:"none";
+		if(params.outCmd!=null) outCmd = params.outCmd;
+		def incGph = (request.JSON.incGph!=null)?request.JSON.incGph:"false";
+		if(params.incGph!=null) incGph = params.incGph;
+		if(outCmd=='frame' && incGph=='true') {
+			log.warn("[" + apiKey + "] Invalid options, framing does not currently support Named Graphs");
+			def message = 'Invalid options, framing does not currently support Named Graphs';
+			render(status: 401, text: returnMessage(apiKey, "rejected", message, startTime),
+				contentType: "text/json", encoding: "UTF-8");
+			return;
+		}
+		
+		log.info("[" + apiKey + "] Updating Annotation Set");
+		
 		// Parsing the incoming parameters
 		def set = request.JSON.set
 		
@@ -365,10 +380,58 @@ class OpenAnnotationSetController extends BaseController {
 		def flavor = (request.JSON.flavor!=null)?request.JSON.flavor:"OA";
 		def validate = (request.JSON.validate!=null)?request.JSON.validate:"OFF";
 				
-		if(set!=null) {
-			//Dataset savedDataset = openAnnotationStorageService.saveAnnotationSet(apiKey, startTime, set.toString());
+		if(set!=null) {	
+			Dataset savedAnnotationSet;
+			try {
+				println set.toString();
+				savedAnnotationSet = openAnnotationSetStorageService.updateAnnotationSet(apiKey, startTime, set.toString()); 
+			} catch(StoreServiceException exception) {
+				render(status: exception.status, text: exception.text, contentType: exception.contentType, encoding: exception.encoding);
+				return;
+			}
+			
+			Object contextJson = null;
+			if(savedAnnotationSet!=null) {
+				if(outCmd=='none') {
+					if(incGph=='false') {
+						Model m = savedAnnotationSet.getNamedModel(savedAnnotationSet.listNames().next());
+						RDFDataMgr.write(response.outputStream, m, RDFLanguages.JSONLD);
+					} else {
+						RDFDataMgr.write(response.outputStream, graphs, RDFLanguages.JSONLD);
+					}
+				} else {
+					if(contextJson==null) {
+						if(outCmd=='context') {
+							contextJson = JSONUtils.fromInputStream(callExternalUrl(apiKey, AT_CONTEXT));
+						} else if(outCmd=='frame') {
+							contextJson = JSONUtils.fromInputStream(callExternalUrl(apiKey, AT_FRAME));
+						}
+					}
+				
+					ByteArrayOutputStream baos = new ByteArrayOutputStream();
+					if(incGph=='false') {
+						Model m = savedAnnotationSet.getNamedModel(savedAnnotationSet.listNames().next());
+						RDFDataMgr.write(baos, m.getGraph(), RDFLanguages.JSONLD);
+					} else {
+						RDFDataMgr.write(baos, graphs, RDFLanguages.JSONLD);
+					}
+					
+					if(outCmd=='context') {
+						Object compact = JsonLdProcessor.compact(JSONUtils.fromString(baos.toString()), contextJson,  new JsonLdOptions());
+						response.outputStream << JSONUtils.toPrettyString(compact)
+					}  else if(outCmd=='frame') {
+						Object framed =  JsonLdProcessor.frame(JSONUtils.fromString(baos.toString()),contextJson, new JsonLdOptions());
+						response.outputStream << JSONUtils.toPrettyString(framed)
+					}
+				}
+				response.outputStream.flush()
+			} else {
+				// Dataset returned null
+				def message = "Null Annotation Set Dataset. Something went terribly wrong";
+				render(status: 500, text: returnMessage(apiKey, "exception", message, startTime), contentType: "text/json", encoding: "UTF-8");
+			}
 		} else {
-			// Annotation Set not found
+			// Annotation not found
 			def message = "No annotation set found in the request";
 			render(status: 200, text: returnMessage(apiKey, "nocontent", message, startTime), contentType: "text/json", encoding: "UTF-8");
 		}
