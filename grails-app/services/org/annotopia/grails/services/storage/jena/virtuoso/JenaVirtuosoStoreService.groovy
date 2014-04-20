@@ -212,8 +212,6 @@ class JenaVirtuosoStoreService implements ITripleStore {
 	}
 	
 	private storeGraphs(String apiKey, InputStream inputStream, String baseUri) {
-		//JenaJSONLD.init(); // Only needed once
-		
 		Dataset dataset = DatasetFactory.createMem();
 		
 		// Using the RIOT reader
@@ -237,6 +235,7 @@ class JenaVirtuosoStoreService implements ITripleStore {
 		Iterator<String> names = dataset.listNames()
 		while(names.hasNext()) {
 			String name = names.next();
+			
 			log.debug '[' + apiKey + '] Storing graph: ' + name
 			Model model = dataset.getNamedModel(name)
 			VirtGraph virtGraph = new VirtGraph (name,
@@ -381,11 +380,13 @@ class JenaVirtuosoStoreService implements ITripleStore {
 		
 		Dataset dataset = retrieveGraph(apiKey, graphUri);
 		boolean existenceFlag = false;
-		Iterator<String> graphNames = dataset.listNames()
-		while(graphNames.hasNext()) {
-			String graphName = graphNames.next();
-			if(dataset.getNamedModel(graphName).size()>0)
-				existenceFlag = true;
+		if(dataset!=null) {
+			Iterator<String> graphNames = dataset.listNames()
+			while(graphNames.hasNext()) {
+				String graphName = graphNames.next();
+				if(dataset.getNamedModel(graphName).size()>0)
+					existenceFlag = true;
+			}
 		}
 		return existenceFlag;
 	}
