@@ -47,6 +47,35 @@ environments {
 		}
 	}
 	
+	test {
+		log4j = {
+			appenders {
+				console name:'stdout', threshold: org.apache.log4j.Level.TRACE,
+					layout:pattern(conversionPattern: '%d{mm:ss,SSS} %5p %c{1} %m%n')
+			}
+		
+			error  'org.codehaus.groovy.grails.web.servlet',  //  controllers
+				   'org.codehaus.groovy.grails.web.pages', //  GSP
+				   'org.codehaus.groovy.grails.web.sitemesh', //  layouts
+				   'org.codehaus.groovy.grails.web.mapping.filter', // URL mapping
+				   'org.codehaus.groovy.grails.web.mapping', // URL mapping
+				   'org.codehaus.groovy.grails.commons', // core / classloading
+				   'org.codehaus.groovy.grails.plugins', // plugins
+				   'org.codehaus.groovy.grails.orm.hibernate', // hibernate integration
+				   'org.springframework',
+				   'org.hibernate',
+				   'net.sf.ehcache.hibernate'
+		
+			warn   'org.mortbay.log'
+					   
+			debug  'grails.app.services.org.annotopia.grails.services.storage.jena.VirtuosoJenaStoreService',
+				   'org.annotopia.groovy.service.store',
+				   'org.annotopia.grails.controllers.annotation.openannotation'
+			
+			trace  'grails.app' // Necessary for Bootstrap logging
+		}
+	}
+	
 	production {		
 		grails.logging.jul.usebridge = false
 		
