@@ -274,14 +274,14 @@ class OpenAnnotationController extends BaseController {
 				contentType: "text/json", encoding: "UTF-8");
 			return;
 		}
-		
-		// Parsing the incoming parameters
-		def item = request.JSON.item
-		
+
 		// Unused but planned
 		def flavor = (request.JSON.flavor!=null)?request.JSON.flavor:"OA";
 		def validate = (request.JSON.validate!=null &&  request.JSON.validate in ['ON'])?request.JSON.validate:"OFF";
 				
+		// Parsing the incoming parameters
+		def item = request.JSON.item
+						
 		if(item!=null) {
 			if(request.JSON.validate=='ON')  log.warn("[" + apiKey + "] TODO: Validation of the Annotation content requested but not implemented yest!");
 						
@@ -306,52 +306,61 @@ class OpenAnnotationController extends BaseController {
 				return;
 			}
 			
-			if(savedAnnotation!=null) { 
-				response.contentType = "text/json;charset=UTF-8"
-				
-				
-				def summaryPrefix = '"duration": "' + (System.currentTimeMillis()-startTime) + 'ms", ' + '"item":[';
-				response.outputStream << '{"status":"saved", "result": {' + summaryPrefix
-				
-				Object contextJson = null;				
-				if(outCmd=='none') {
-					if(incGph=='false') {
-						Model m = savedAnnotation.getNamedModel(savedAnnotation.listNames().next());
-						RDFDataMgr.write(response.outputStream, m, RDFLanguages.JSONLD);
+			try {
+				if(savedAnnotation!=null) { 
+					response.contentType = "text/json;charset=UTF-8"
+										
+					def summaryPrefix = '"duration": "' + (System.currentTimeMillis()-startTime) + 'ms", ' + '"item":[';
+					response.outputStream << '{"status":"saved", "result": {' + summaryPrefix
+					
+					Object contextJson = null;				
+					if(outCmd=='none') {
+						if(incGph=='false') {
+							Model m = savedAnnotation.getNamedModel(savedAnnotation.listNames().next());
+							RDFDataMgr.write(response.outputStream, m, RDFLanguages.JSONLD);
+						} else {
+							RDFDataMgr.write(response.outputStream, savedAnnotation, RDFLanguages.JSONLD);
+						}
 					} else {
-						RDFDataMgr.write(response.outputStream, savedAnnotation, RDFLanguages.JSONLD);
-					}
-				} else {
-					if(contextJson==null) {
+						if(contextJson==null) {
+							if(outCmd=='context') {
+								contextJson = JSONUtils.fromInputStream(callExternalUrl(apiKey, OA_CONTEXT));
+							} else if(outCmd=='frame') {
+								contextJson = JSONUtils.fromInputStream(callExternalUrl(apiKey,OA_FRAME));
+							}
+						}
+					
+						ByteArrayOutputStream baos = new ByteArrayOutputStream();
+						if(incGph=='false') {
+							Model m = savedAnnotation.getNamedModel(savedAnnotation.listNames().next());
+							RDFDataMgr.write(baos, m.getGraph(), RDFLanguages.JSONLD);
+						} else {
+							RDFDataMgr.write(baos, savedAnnotation, RDFLanguages.JSONLD);
+						}
+						
 						if(outCmd=='context') {
-							contextJson = JSONUtils.fromInputStream(callExternalUrl(apiKey, OA_CONTEXT));
-						} else if(outCmd=='frame') {
-							contextJson = JSONUtils.fromInputStream(callExternalUrl(apiKey,OA_FRAME));
+							Object compact = JsonLdProcessor.compact(JSONUtils.fromString(baos.toString()), contextJson, new JsonLdOptions());
+							response.outputStream << JSONUtils.toPrettyString(compact)
+						}  else if(outCmd=='frame') {
+							Object framed =  JsonLdProcessor.frame(JSONUtils.fromString(baos.toString()), contextJson, new JsonLdOptions());
+							response.outputStream << JSONUtils.toPrettyString(framed)
 						}
 					}
-				
-					ByteArrayOutputStream baos = new ByteArrayOutputStream();
-					if(incGph=='false') {
-						Model m = savedAnnotation.getNamedModel(savedAnnotation.listNames().next());
-						RDFDataMgr.write(baos, m.getGraph(), RDFLanguages.JSONLD);
-					} else {
-						RDFDataMgr.write(baos, savedAnnotation, RDFLanguages.JSONLD);
-					}
-					
-					if(outCmd=='context') {
-						Object compact = JsonLdProcessor.compact(JSONUtils.fromString(baos.toString()), contextJson, new JsonLdOptions());
-						response.outputStream << JSONUtils.toPrettyString(compact)
-					}  else if(outCmd=='frame') {
-						Object framed =  JsonLdProcessor.frame(JSONUtils.fromString(baos.toString()), contextJson, new JsonLdOptions());
-						response.outputStream << JSONUtils.toPrettyString(framed)
-					}
+					response.outputStream << ']}}'
+					response.outputStream.flush()
+				} else {
+					// Annotation Set not found
+					def message = 'Annotation ' + getCurrentUrl(request) + ' has not been found';
+					render(status: 404, text: returnMessage(apiKey, "notfound", message, startTime), contentType: "text/json", encoding: "UTF-8");
+					return;
 				}
-				response.outputStream << ']}}'
-				response.outputStream.flush()
-			} else {
-				// Annotation Set not found
-				def message = 'Annotation ' + getCurrentUrl(request) + ' has not been found';
-				render(status: 404, text: returnMessage(apiKey, "notfound", message, startTime), contentType: "text/json", encoding: "UTF-8");
+			} catch(Exception ex) {
+				log.error("[" + apiKey + "] " + ex.getMessage());				
+				ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+				RDFDataMgr.write(outputStream, savedAnnotation, RDFLanguages.JSONLD);
+				log.error("[" + apiKey + "] Invalid content: " + outputStream.toString());
+				def message = "Saved annotation does not seem well formatted";
+				render(status: 500, text: returnMessage(apiKey, "invalidcontent", message, startTime), contentType: "text/json", encoding: "UTF-8");
 				return;
 			}
 		} else {
@@ -393,11 +402,11 @@ class OpenAnnotationController extends BaseController {
 			return;
 		}
 		
-		def item = request.JSON.item
-		
 		// Unused but planned
 		def flavor = (request.JSON.flavor!=null)?request.JSON.flavor:"OA";
 		def validate = (request.JSON.validate!=null &&  request.JSON.validate in ['ON'])?request.JSON.validate:"OFF";
+		
+		def item = request.JSON.item
 				
 		if(item!=null) {
 			if(request.JSON.validate=='ON') log.warn("[" + apiKey + "] TODO: Validation of the Annotation content requested but not implemented yest!");
@@ -421,61 +430,61 @@ class OpenAnnotationController extends BaseController {
 				return;
 			}
 			
-			if(updatedAnnotation!=null) {
-				response.contentType = "text/json;charset=UTF-8"
-				
-				response.outputStream << '{"status":"updated", "result": {' +
-					'"duration": "' + (System.currentTimeMillis()-startTime) + 'ms", ' + '"item":['
-				
-				Object contextJson = null;	
-				if(outCmd=='none') {
-					if(incGph=='false') {
-						Model m = updatedAnnotation.getNamedModel(updatedAnnotation.listNames().next());
-						RDFDataMgr.write(response.outputStream, m, RDFLanguages.JSONLD);
+			try {
+				if(updatedAnnotation!=null) {
+					response.contentType = "text/json;charset=UTF-8"
+					
+					response.outputStream << '{"status":"updated", "result": {' +
+						'"duration": "' + (System.currentTimeMillis()-startTime) + 'ms", ' + '"item":['
+					
+					Object contextJson = null;	
+					if(outCmd=='none') {
+						if(incGph=='false') {
+							Model m = updatedAnnotation.getNamedModel(updatedAnnotation.listNames().next());
+							RDFDataMgr.write(response.outputStream, m, RDFLanguages.JSONLD);
+						} else {
+							RDFDataMgr.write(response.outputStream, updatedAnnotation, RDFLanguages.JSONLD);
+						}
 					} else {
-						RDFDataMgr.write(response.outputStream, updatedAnnotation, RDFLanguages.JSONLD);
-					}
-				} else {
-					if(contextJson==null) {
+						if(contextJson==null) {
+							if(outCmd=='context') {
+								contextJson = JSONUtils.fromInputStream(callExternalUrl(apiKey, OA_CONTEXT));
+							} else if(outCmd=='frame') {
+								contextJson = JSONUtils.fromInputStream(callExternalUrl(apiKey,OA_FRAME));
+							}
+						}
+					
+						ByteArrayOutputStream baos = new ByteArrayOutputStream();
+						if(incGph=='false') {
+							Model m = updatedAnnotation.getNamedModel(updatedAnnotation.listNames().next());
+							RDFDataMgr.write(baos, m.getGraph(), RDFLanguages.JSONLD);
+						} else {
+							RDFDataMgr.write(baos, updatedAnnotation, RDFLanguages.JSONLD);
+						}
+						
 						if(outCmd=='context') {
-							contextJson = JSONUtils.fromInputStream(callExternalUrl(apiKey, OA_CONTEXT));
-						} else if(outCmd=='frame') {
-							contextJson = JSONUtils.fromInputStream(callExternalUrl(apiKey,OA_FRAME));
+							Object compact = JsonLdProcessor.compact(JSONUtils.fromString(baos.toString()), contextJson, new JsonLdOptions());
+							response.outputStream << JSONUtils.toPrettyString(compact)
+						}  else if(outCmd=='frame') {
+							Object framed =  JsonLdProcessor.frame(JSONUtils.fromString(baos.toString()), contextJson, new JsonLdOptions());
+							response.outputStream << JSONUtils.toPrettyString(framed)
 						}
 					}
-				
-					ByteArrayOutputStream baos = new ByteArrayOutputStream();
-					if(incGph=='false') {
-						Model m = updatedAnnotation.getNamedModel(updatedAnnotation.listNames().next());
-						RDFDataMgr.write(baos, m.getGraph(), RDFLanguages.JSONLD);
-					} else {
-						RDFDataMgr.write(baos, updatedAnnotation, RDFLanguages.JSONLD);
-					}
-					
-					if(outCmd=='context') {
-						Object compact = JsonLdProcessor.compact(JSONUtils.fromString(baos.toString()), contextJson, new JsonLdOptions());
-						response.outputStream << JSONUtils.toPrettyString(compact)
-					}  else if(outCmd=='frame') {
-						Object framed =  JsonLdProcessor.frame(JSONUtils.fromString(baos.toString()), contextJson, new JsonLdOptions());
-						response.outputStream << JSONUtils.toPrettyString(framed)
-					}
+					response.outputStream << ']}}'
+					response.outputStream.flush()
+				} else {
+					// Dataset returned null
+					def message = "Null Dataset. Something went terribly wrong";
+					render(status: 500, text: returnMessage(apiKey, "exception", message, startTime), contentType: "text/json", encoding: "UTF-8");
 				}
-				response.outputStream << ']}}'
-				response.outputStream.flush()
-
-//				response.contentType = "text/json;charset=UTF-8"
-//				response.outputStream << '{"status":"updated", "result": {' +
-//					'"duration": "' + (System.currentTimeMillis()-startTime) + 'ms", ' +
-//					'"item":['
-//						
-//				RDFDataMgr.write(response.outputStream, updatedAnnotation, RDFLanguages.JSONLD);
-//				
-//				response.outputStream <<  ']}}';
-//				response.outputStream.flush()
-			} else {
-				// Dataset returned null
-				def message = "Null Dataset. Something went terribly wrong";
-				render(status: 500, text: returnMessage(apiKey, "exception", message, startTime), contentType: "text/json", encoding: "UTF-8");
+			} catch(Exception ex) {
+				log.error("[" + apiKey + "] " + ex.getMessage());
+				ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+				RDFDataMgr.write(outputStream, updatedAnnotation, RDFLanguages.JSONLD);
+				log.error("[" + apiKey + "] Invalid content: " + outputStream.toString());
+				def message = "Updated annotation does not seem well formatted";
+				render(status: 500, text: returnMessage(apiKey, "invalidcontent", message, startTime), contentType: "text/json", encoding: "UTF-8");
+				return;
 			}
 		} else {
 			// Annotation Set not found
