@@ -381,28 +381,28 @@ class OpenAnnotationSetController extends BaseController {
 		def validate = (request.JSON.validate!=null)?request.JSON.validate:"OFF";
 				
 		if(set!=null) {	
-			Dataset savedAnnotationSet;
+			Dataset updatedAnnotationSet;
 			try {
 				println set.toString();
-				savedAnnotationSet = openAnnotationSetStorageService.updateAnnotationSet(apiKey, startTime, set.toString()); 
+				updatedAnnotationSet = openAnnotationSetStorageService.updateAnnotationSet(apiKey, startTime, set.toString()); 
 			} catch(StoreServiceException exception) {
 				render(status: exception.status, text: exception.text, contentType: exception.contentType, encoding: exception.encoding);
 				return;
 			}
 			
 			Object contextJson = null;
-			if(savedAnnotationSet!=null) {
+			if(updatedAnnotationSet!=null) {
 				
 				ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-				RDFDataMgr.write(outputStream, savedAnnotationSet, RDFLanguages.JSONLD);
+				RDFDataMgr.write(outputStream, updatedAnnotationSet, RDFLanguages.JSONLD);
 				println outputStream.toString();
 				
 				if(outCmd=='none') {
 					if(incGph=='false') {
-						Model m = savedAnnotationSet.getNamedModel(savedAnnotationSet.listNames().next());
+						Model m = updatedAnnotationSet.getNamedModel(updatedAnnotationSet.listNames().next());
 						RDFDataMgr.write(response.outputStream, m, RDFLanguages.JSONLD);
 					} else {
-						RDFDataMgr.write(response.outputStream, savedAnnotationSet, RDFLanguages.JSONLD);
+						RDFDataMgr.write(response.outputStream, updatedAnnotationSet, RDFLanguages.JSONLD);
 					}
 				} else {
 					if(contextJson==null) {
@@ -415,10 +415,10 @@ class OpenAnnotationSetController extends BaseController {
 				
 					ByteArrayOutputStream baos = new ByteArrayOutputStream();
 					if(incGph=='false') {
-						Model m = savedAnnotationSet.getNamedModel(savedAnnotationSet.listNames().next());
+						Model m = updatedAnnotationSet.getNamedModel(updatedAnnotationSet.listNames().next());
 						RDFDataMgr.write(baos, m.getGraph(), RDFLanguages.JSONLD);
 					} else {
-						RDFDataMgr.write(baos, savedAnnotationSet, RDFLanguages.JSONLD);
+						RDFDataMgr.write(baos, updatedAnnotationSet, RDFLanguages.JSONLD);
 					}
 					
 					if(outCmd=='context') {
