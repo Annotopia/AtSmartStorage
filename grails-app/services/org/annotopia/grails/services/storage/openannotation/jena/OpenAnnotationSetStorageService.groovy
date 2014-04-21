@@ -242,9 +242,7 @@ class OpenAnnotationSetStorageService {
 	}
 	
 	public Dataset updateAnnotationSet(String apiKey, Long startTime, String set) {
-		
-		
-		
+				
 		// Reads the inputs in a dataset
 		Dataset inMemoryDataset = DatasetFactory.createMem();
 		try {
@@ -344,6 +342,7 @@ class OpenAnnotationSetStorageService {
 								}
 							}
 							if(!found) {
+								log.info("[" + apiKey + "] Found new annotation " + newAnnotationResource.getURI());
 								oldNewAnnotationUriMapping.put(newAnnotationResource, openAnnotationStorageService.getAnnotationUri());
 								
 								StmtIterator statements = annotationModel.listStatements(newAnnotationResource, null, null);
@@ -368,6 +367,23 @@ class OpenAnnotationSetStorageService {
 									ResourceFactory.createPlainLiteral(dateFormat.format(new Date())));
 							} 
 						}
+						
+						// TODO make sure there is only one set
+						List<Statement> statementsToRemove = new ArrayList<Statement>();
+						StmtIterator stats = annotationModel.listStatements(ResourceFactory.createResource(annotationSetUri),
+							ResourceFactory.createProperty(AnnotopiaVocabulary.ANNOTATIONS),
+							null);
+						while(stats.hasNext()) {
+							Statement s = stats.nextStatement();
+							if(oldNewAnnotationUriMapping.get(s.getObject())!=null)  statementsToRemove.add(s);
+						}
+						
+						statementsToRemove.each { s ->
+							annotationModel.remove(s);
+							annotationModel.add(s.getSubject(), ResourceFactory.createProperty(AnnotopiaVocabulary.ANNOTATIONS),
+								ResourceFactory.createResource(oldNewAnnotationUriMapping.get(s.getObject())));
+						}
+						
 						
 						// Last saved on
 						annotationModel.removeAll(ResourceFactory.createResource(annotationSetUri), ResourceFactory.createProperty(PAV.PAV_LAST_UPDATED_ON), null);
@@ -419,7 +435,11 @@ class OpenAnnotationSetStorageService {
 	//					println outputStream2.toString();
 						
 						Dataset updateDataset = DatasetFactory.createMem();
+						
+						
+						
 						updateDataset.addNamedModel(annotationSetGraphName, annotationModel);
+						//updateDataset.addNamedModel(annotationSetGraphName, inMemoryDataset.getDefaultModel());
 						
 //						println "----------3 " + annotationSetGraphName
 //						ByteArrayOutputStream outputStream3 = new ByteArrayOutputStream();
