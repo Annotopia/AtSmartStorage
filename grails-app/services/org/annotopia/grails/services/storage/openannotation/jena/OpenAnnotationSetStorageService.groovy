@@ -135,7 +135,7 @@ class OpenAnnotationSetStorageService {
 			Resource annotationSetUri = openAnnotationStorageService.identifiableURI(apiKey, inMemoryDataset.getDefaultModel(),
 				ResourceFactory.createProperty(RDF.RDF_TYPE),
 				ResourceFactory.createResource(AnnotopiaVocabulary.ANNOTATION_SET), "annotationset");
-			
+
 			// Specific Resource identifier
 			openAnnotationStorageService.identifiableURIs(apiKey, inMemoryDataset.getDefaultModel(),
 				ResourceFactory.createProperty(RDF.RDF_TYPE),
@@ -145,7 +145,7 @@ class OpenAnnotationSetStorageService {
 			openAnnotationStorageService.identifiableURIs(apiKey, inMemoryDataset.getDefaultModel(),
 				ResourceFactory.createProperty(RDF.RDF_TYPE),
 				ResourceFactory.createResource(OA.CONTEXT_AS_TEXT), "content");
-			
+
 			HashMap<Resource, String> oldNewAnnotationUriMapping = new HashMap<Resource, String>();
 			Iterator<Resource> annotationUrisIterator = annotationUris.iterator();
 			while(annotationUrisIterator.hasNext()) {
@@ -232,9 +232,9 @@ class OpenAnnotationSetStorageService {
 			}
 				
 			// TODO remove before release
-			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-			RDFDataMgr.write(outputStream, creationDataset, RDFLanguages.JSONLD);
-			println outputStream.toString();
+//			ByteArrayOutputStream outputStream2 = new ByteArrayOutputStream();
+//			RDFDataMgr.write(outputStream2, creationDataset, RDFLanguages.JSONLD);
+//			println outputStream2.toString();
 			
 			jenaVirtuosoStoreService.storeDataset(apiKey, creationDataset);
 			return creationDataset;
@@ -309,7 +309,7 @@ class OpenAnnotationSetStorageService {
 					
 					Dataset existingSet = jenaVirtuosoStoreService.retrieveGraph(apiKey, annotationSetGraphName);
 					if(existingSet!=null) {
-						log.info("[" + apiKey + "] Old Annotaiton Set version detected.");
+						log.info("[" + apiKey + "] Old Annotation Set version detected.");
 						
 						Set<Resource> existingAnnotationUris = new HashSet<Resource>();
 						int existingAnnotationCounter = openAnnotationUtilsService.detectAnnotationsInNamedGraph(apiKey, existingSet, new HashSet<Resource>(), new HashSet<Resource>(), existingAnnotationUris, null)
@@ -353,7 +353,7 @@ class OpenAnnotationSetStorageService {
 									annotationModel.add(ResourceFactory.createResource(oldNewAnnotationUriMapping.get(newAnnotationResource)),
 										statement.getPredicate(), statement.getObject());
 								}
-								
+
 								annotationModel.removeAll(ResourceFactory.createResource(oldNewAnnotationUriMapping.get(newAnnotationResource)), ResourceFactory.createProperty(PAV.PAV_PREVIOUS_VERSION), null);
 								annotationModel.add(
 									ResourceFactory.createResource(oldNewAnnotationUriMapping.get(newAnnotationResource)),
@@ -383,8 +383,7 @@ class OpenAnnotationSetStorageService {
 							annotationModel.add(s.getSubject(), ResourceFactory.createProperty(AnnotopiaVocabulary.ANNOTATIONS),
 								ResourceFactory.createResource(oldNewAnnotationUriMapping.get(s.getObject())));
 						}
-						
-						
+
 						// Last saved on
 						annotationModel.removeAll(ResourceFactory.createResource(annotationSetUri), ResourceFactory.createProperty(PAV.PAV_LAST_UPDATED_ON), null);
 						annotationModel.add(ResourceFactory.createResource(annotationSetUri), ResourceFactory.createProperty(PAV.PAV_LAST_UPDATED_ON),
@@ -421,33 +420,10 @@ class OpenAnnotationSetStorageService {
 //								ResourceFactory.createPlainLiteral(dateFormat.format(new Date())));
 //						}
 						
-					
-//						println "----------1 " + annotationSetGraphName
-//						ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-//						RDFDataMgr.write(outputStream, existingSet, RDFLanguages.JSONLD);
-//						println outputStream.toString();
-						
-	//					Model newDefaultModel = existingSet.getNamedModel(annotationSetGraphName);
-	//					
-	//					println "----------2 " + annotationSetGraphName
-	//					ByteArrayOutputStream outputStream2 = new ByteArrayOutputStream();
-	//					RDFDataMgr.write(outputStream2, newDefaultModel, RDFLanguages.JSONLD);
-	//					println outputStream2.toString();
 						
 						Dataset updateDataset = DatasetFactory.createMem();
-						
-						
-						
-						updateDataset.addNamedModel(annotationSetGraphName, annotationModel);
-						//updateDataset.addNamedModel(annotationSetGraphName, inMemoryDataset.getDefaultModel());
-						
-//						println "----------3 " + annotationSetGraphName
-//						ByteArrayOutputStream outputStream3 = new ByteArrayOutputStream();
-//						RDFDataMgr.write(outputStream3, updateDataset, RDFLanguages.JSONLD);
-//						println outputStream3.toString();
-						
-						//jenaVirtuosoStoreService.updateDataset(apiKey, updateDataset);
-						
+						updateDataset.addNamedModel(annotationSetGraphName, annotationModel);						
+						jenaVirtuosoStoreService.updateDataset(apiKey, updateDataset);						
 						return updateDataset;
 					} else {
 						log.info("[" + apiKey + "] Old version of Annotation sets graphs not found... request rejected (should be a POST?).");
