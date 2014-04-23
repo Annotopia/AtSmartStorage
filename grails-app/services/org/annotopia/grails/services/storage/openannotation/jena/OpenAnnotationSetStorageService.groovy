@@ -325,6 +325,9 @@ class OpenAnnotationSetStorageService {
 									log.info("[" + apiKey + "] Checking if existing annotation changed.");
 									
 									boolean hasChanged = openAnnotationSetsUtilsService.isAnnotationChanged(apiKey, inMemoryDataset, newAnnotationResource.getURI());
+									// Remove hasChanged property
+									annotationModel.removeAll(newAnnotationResource, ResourceFactory.createProperty("hasChanged"), null);
+									
 									if(hasChanged) {
 										annotationModel.removeAll(newAnnotationResource, ResourceFactory.createProperty(PAV.PAV_PREVIOUS_VERSION), null);
 										annotationModel.add(
