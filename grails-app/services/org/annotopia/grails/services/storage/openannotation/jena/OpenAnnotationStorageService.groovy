@@ -129,7 +129,7 @@ class OpenAnnotationStorageService {
 	 * @param dataset		The Dataset with the annotation content
 	 * @return The Dataset with the saved (persisted) content. 
 	 */
-	public Dataset saveAnnotationDataset(String apiKey, Long startTime, Dataset dataset) {
+	public Dataset saveAnnotationDataset(String apiKey, Long startTime, Boolean incGph, Dataset dataset) {
 		
 //		def addCreationDetails = { model, resource ->
 //			model.add(resource, ResourceFactory.createProperty("http://purl.org/pav/createdAt"), ResourceFactory.createPlainLiteral(dateFormat.format(new Date())));
@@ -208,7 +208,8 @@ class OpenAnnotationStorageService {
 			
 			Dataset storedDataset = DatasetFactory.createMem();
 			storedDataset.addNamedModel(graphUri, dataset.getDefaultModel());
-			return storedDataset;
+			if(incGph) return creationDataset;
+			else return storedDataset;
 		} else if(detectedAnnotationGraphsCounter>0) {
 			// If multiple graphs are detected, the logic is different as there can be one 
 		    // or more graphs as bodies. 
@@ -330,7 +331,9 @@ class OpenAnnotationStorageService {
 			
 			
 			jenaVirtuosoStoreService.storeDataset(apiKey, creationDataset);
-			return storedDataset;
+			
+			if(incGph) return creationDataset;
+			else return storedDataset;
 		} else {
 			// Annotation Set not found
 			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -342,7 +345,7 @@ class OpenAnnotationStorageService {
 		}
 	}
 	
-	public Dataset updateAnnotationDataset(apiKey, startTime, Dataset dataset) {
+	public Dataset updateAnnotationDataset(apiKey, startTime, Boolean incGph,  Dataset dataset) {
 		
 //		def addUpdateDetails = { model, resource ->
 //			model.add(resource, ResourceFactory.createProperty("http://purl.org/pav/lastUpdatedOn"),
@@ -378,6 +381,7 @@ class OpenAnnotationStorageService {
 		
 		String content;
 		if(detectedAnnotationGraphsCounter>0) {
+			println '******** ';
 			// Query Specific Resources
 			Set<Resource> specificResourcesUris = new HashSet<Resource>();
 			int totalDetectedSpecificResources = openAnnotationUtilsService
@@ -399,8 +403,11 @@ class OpenAnnotationStorageService {
 			
 			jenaVirtuosoStoreService.updateDataset(apiKey, workingDataset);
 			
-			return workingDataset;
+			if(incGph) return workingDataset;
+			else return workingDataset;
 		} else if(defaultGraphDetected) {
+			log.trace("[" + apiKey + "] Default graph detected.");
+			
 			String annotationUri;
 			annotationUris.each{ annotationUri = it }
 			
@@ -440,7 +447,10 @@ class OpenAnnotationStorageService {
 					Model newDefaultModel = dataset.getDefaultModel();
 					Dataset updateDataset = DatasetFactory.createMem();
 					updateDataset.addNamedModel(graphName, newDefaultModel);
-
+					
+					Dataset storedDataset = DatasetFactory.createMem();
+					storedDataset.addNamedModel(graphName, newDefaultModel);
+					
 					// Find metadata graph			
 					def annotationGraphUri;
 					storedAnnotationDataset.listNames().each { annotationGraphUri = it }
@@ -457,7 +467,8 @@ class OpenAnnotationStorageService {
 					
 					jenaVirtuosoStoreService.updateDataset(apiKey, updateDataset);
 					
-					return updateDataset;
+					if(incGph) return updateDataset;
+					else return storedDataset;
 				} else {
 					// Annotation not found
 					log.info("[" + apiKey + "] Annotation not found " + content);
