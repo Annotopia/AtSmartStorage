@@ -169,6 +169,7 @@ class OpenAnnotationStorageService {
 		
 		String content; 
 		if(defaultGraphDetected) {
+			log.trace("[" + apiKey + "] Default graph detected.");
 			// If the content is expressed in the default graph, it is necessary 
 			// to swap blank nodes and temporary URIs with persistent URIs
 			// NOTE: This is supporting right now a single body
@@ -204,7 +205,10 @@ class OpenAnnotationStorageService {
 			metaModel.add(graphResource, ResourceFactory.createProperty("http://purl.org/annotopia#annotationcount"), ResourceFactory.createPlainLiteral("1"));
 			
 			jenaVirtuosoStoreService.storeDataset(apiKey, creationDataset);
-			return creationDataset;
+			
+			Dataset storedDataset = DatasetFactory.createMem();
+			storedDataset.addNamedModel(graphUri, dataset.getDefaultModel());
+			return storedDataset;
 		} else if(detectedAnnotationGraphsCounter>0) {
 			// If multiple graphs are detected, the logic is different as there can be one 
 		    // or more graphs as bodies. 
@@ -227,6 +231,7 @@ class OpenAnnotationStorageService {
 				
 			Dataset workingDataset = dataset;
 			Dataset creationDataset = DatasetFactory.createMem();
+			Dataset storedDataset = DatasetFactory.createMem();
 			
 			// This is iterating over multiple annotation graphs.
 			// NOTE: only one iteration as only one annotation graph is currently accepted
@@ -252,6 +257,8 @@ class OpenAnnotationStorageService {
 				// Annotation graphs identifier
 				def newAnnotationGraphUri = getGraphUri();
 				creationDataset.addNamedModel(newAnnotationGraphUri, workingDataset.getNamedModel(annotationGraphUri.toString()));
+				storedDataset.addNamedModel(newAnnotationGraphUri, workingDataset.getNamedModel(annotationGraphUri.toString()));
+				
 				// Annotation graphs metadata
 				Model newAnnotationGraphMetadataModel = 
 					graphMetadataService.getAnnotationGraphCreationMetadata(apiKey, creationDataset, newAnnotationGraphUri);
@@ -268,6 +275,7 @@ class OpenAnnotationStorageService {
 						Resource bodyGraphUri = bodiesGraphsUrisIterator.next();
 						def newBodyGraphUri = getGraphUri();
 						creationDataset.addNamedModel(newBodyGraphUri, workingDataset.getNamedModel(bodyGraphUri.toString()));
+						storedDataset.addNamedModel(newBodyGraphUri, workingDataset.getNamedModel(bodyGraphUri.toString()));
 						oldNewBodyUriMapping.put(bodyGraphUri.toString(), newBodyGraphUri);
 						
 						// Bodies graphs metadata
@@ -320,8 +328,9 @@ class OpenAnnotationStorageService {
 //			RDFDataMgr.write(outputStream, creationDataset, RDFLanguages.JSONLD);
 //			println outputStream.toString();
 			
+			
 			jenaVirtuosoStoreService.storeDataset(apiKey, creationDataset);
-			return creationDataset;
+			return storedDataset;
 		} else {
 			// Annotation Set not found
 			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -579,9 +588,6 @@ class OpenAnnotationStorageService {
 		statements.each {
 			if(!originalSubjects.containsKey(it.getSubject())) {
 				log.info("[" + apiKey + "] Minting URI for content " + it.getSubject());
-//				def uuid = org.annotopia.grails.services.storage.utils.UUID.uuid();
-//				def nUri = 'http://' + grailsApplication.config.grails.server.host + ':' +
-//								grailsApplication.config.grails.server.port.http + '/s/' + uriType + '/' + uuid;
 				def newResource = ResourceFactory.createResource(mintUri(uriType));
 				originalSubjects.put(it.getSubject(), newResource)
 			}
