@@ -311,7 +311,7 @@ class OpenAnnotationController extends BaseController {
 			
 			try {
 				if(savedAnnotation!=null) { 					
-					renderSavedNamedGraphsDataset(apiKey, startTime, outCmd, response, savedAnnotation);
+					renderSavedNamedGraphsDataset(apiKey, startTime, outCmd, 'saved', response, savedAnnotation);
 				} else {
 					// Annotation Set not found
 					def message = "Null Dataset returned from annotation saving. Something went terribly wrong";
@@ -394,7 +394,7 @@ class OpenAnnotationController extends BaseController {
 			
 			try {
 				if(updatedAnnotation!=null) {
-					renderSavedNamedGraphsDataset(apiKey, startTime, outCmd, response, updatedAnnotation);
+					renderSavedNamedGraphsDataset(apiKey, startTime, outCmd, 'updated', response, updatedAnnotation);
 				} else {
 					// Dataset returned null
 					def message = "Null Dataset returned from annotation updating. Something went terribly wrong";
@@ -536,7 +536,7 @@ class OpenAnnotationController extends BaseController {
 		}
 	}
 	
-	private void renderSavedNamedGraphsDataset(def apiKey, long startTime, String outCmd, HttpServletResponse response, Dataset dataset) {
+	private void renderSavedNamedGraphsDataset(def apiKey, long startTime, String outCmd, String status, HttpServletResponse response, Dataset dataset) {
 		response.contentType = "text/json;charset=UTF-8"
 		
 		// Count graphs
@@ -547,31 +547,43 @@ class OpenAnnotationController extends BaseController {
 			iterator.next();
 		}
 		
+		if(sizeDataset>1 && outCmd=='frame') {
+			log.warn("[" + apiKey + "] Invalid options, framing does not currently support Named Graphs");
+			def message = 'Invalid options, framing does not currently support Named Graphs';
+			render(status: 401, text: returnMessage(apiKey, "rejected", message, startTime),
+				contentType: "text/json", encoding: "UTF-8");
+			return;
+		}
+		
+		Dataset datasetToRender = DatasetFactory.createMem();
+		if(sizeDataset==1) datasetToRender.setDefaultModel(dataset.getNamedModel(dataset.listNames().next()));
+		else datasetToRender = dataset;
+		
 		def summaryPrefix = '"duration": "' + (System.currentTimeMillis()-startTime) + 'ms","graphs":"' + sizeDataset +  '",' + '"item":[';
-		response.outputStream << '{"status":"saved", "result": {' + summaryPrefix
+		response.outputStream << '{"status":"' + status + '", "result": {' + summaryPrefix
 		
 		Object contextJson = null;
 		if(outCmd=='none') {
-			RDFDataMgr.write(response.outputStream, dataset, RDFLanguages.JSONLD);
+			RDFDataMgr.write(response.outputStream, datasetToRender, RDFLanguages.JSONLD);
 		} else {
 			if(contextJson==null) {
 				if(outCmd=='context') {
 					contextJson = JSONUtils.fromInputStream(callExternalUrl(apiKey, OA_CONTEXT));
-				} else if(outCmd=='frame') {
+				} else if(sizeDataset==1 && outCmd=='frame') {
 					contextJson = JSONUtils.fromInputStream(callExternalUrl(apiKey,OA_FRAME));
 				}
 			}
 		
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
-			RDFDataMgr.write(baos, dataset, RDFLanguages.JSONLD);
+			RDFDataMgr.write(baos, datasetToRender, RDFLanguages.JSONLD);
 			
 			if(outCmd=='context') {
 				Object compact = JsonLdProcessor.compact(JSONUtils.fromString(baos.toString()), contextJson, new JsonLdOptions());
 				response.outputStream << JSONUtils.toPrettyString(compact)
-			}  else if(outCmd=='frame') {
+			} else if(sizeDataset==1 && outCmd=='frame') {
 				Object framed =  JsonLdProcessor.frame(JSONUtils.fromString(baos.toString()), contextJson, new JsonLdOptions());
 				response.outputStream << JSONUtils.toPrettyString(framed)
-			}
+			} 
 		}
 		response.outputStream << ']}}'
 		response.outputStream.flush()
