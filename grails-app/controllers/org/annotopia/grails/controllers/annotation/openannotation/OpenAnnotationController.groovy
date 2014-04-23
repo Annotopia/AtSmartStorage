@@ -314,7 +314,7 @@ class OpenAnnotationController extends BaseController {
 					renderSavedNamedGraphsDataset(apiKey, startTime, outCmd, response, savedAnnotation);
 				} else {
 					// Annotation Set not found
-					def message = 'Annotation has not been saved';
+					def message = "Null Dataset returned from annotation saving. Something went terribly wrong";
 					render(status: 500, text: returnMessage(apiKey, "notfound", message, startTime), contentType: "text/json", encoding: "UTF-8");
 					return;
 				}
@@ -397,7 +397,7 @@ class OpenAnnotationController extends BaseController {
 					renderSavedNamedGraphsDataset(apiKey, startTime, outCmd, response, updatedAnnotation);
 				} else {
 					// Dataset returned null
-					def message = "Null Dataset. Something went terribly wrong";
+					def message = "Null Dataset returned from annotation updating. Something went terribly wrong";
 					render(status: 500, text: returnMessage(apiKey, "exception", message, startTime), contentType: "text/json", encoding: "UTF-8");
 				}
 			} catch(Exception ex) {
@@ -418,9 +418,7 @@ class OpenAnnotationController extends BaseController {
 	
 	def validate = {
 		long startTime = System.currentTimeMillis();
-		
-		log.info 'validating....'
-		
+
 		// Verifying the API key
 		def apiKey = request.JSON.apiKey;
 		if(!apiKeyAuthenticationService.isApiKeyValid(request.getRemoteAddr(), apiKey)) {

@@ -20,15 +20,20 @@
  */
 package org.annotopia.groovy.service.store
 
-import java.io.InputStream;
-import java.text.SimpleDateFormat;
-
 import grails.converters.JSON
+import groovy.sql.DataSet
+
+import java.text.SimpleDateFormat
 
 import javax.servlet.http.HttpServletRequest
 
+import org.apache.jena.riot.RDFDataMgr
+import org.apache.jena.riot.RDFLanguages
+
 /**
- * Basic 
+ * Basic methods for storage controllers.
+ * 
+ * Note: the references to grailsApplication and log work because of inheritance with the actual controller.
  * 
  * @author Paolo Ciccarese <paolo.ciccarese@gmail.com>
  */
@@ -99,5 +104,11 @@ class BaseController {
 		log.info("[" + apiKey + "] " + message);
 		return JSON.parse('{"status":"' + status + '","message":"' + message +
 			'","duration": "' + (System.currentTimeMillis()-startTime) + 'ms", ' + '}');
+	}
+	
+	public String getDatasetAsString(DataSet dataset) {
+		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+		RDFDataMgr.write(outputStream, dataset, RDFLanguages.JSONLD);
+		return outputStream.toString();
 	}
 }
