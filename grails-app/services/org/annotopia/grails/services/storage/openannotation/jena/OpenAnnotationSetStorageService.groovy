@@ -133,17 +133,17 @@ class OpenAnnotationSetStorageService {
 		if(defaultGraphDetected) {
 			log.trace("[" + apiKey + "] Default graph detected.");
 			// Annotation Set
-			Resource annotationSetUri = openAnnotationStorageService.identifiableURI(apiKey, inMemoryDataset.getDefaultModel(),
+			Resource annotationSetUri = openAnnotationStorageService.persistURI(apiKey, inMemoryDataset.getDefaultModel(),
 				ResourceFactory.createProperty(RDF.RDF_TYPE),
 				ResourceFactory.createResource(AnnotopiaVocabulary.ANNOTATION_SET), "annotationset");
 
 			// Specific Resource identifier
-			openAnnotationStorageService.identifiableURIs(apiKey, inMemoryDataset.getDefaultModel(),
+			openAnnotationStorageService.persistURIs(apiKey, inMemoryDataset.getDefaultModel(),
 				ResourceFactory.createProperty(RDF.RDF_TYPE),
 				ResourceFactory.createResource(OA.SPECIFIC_RESOURCE), "resource");
 
 			// Embedded content (as RDF) identifier
-			openAnnotationStorageService.identifiableURIs(apiKey, inMemoryDataset.getDefaultModel(),
+			openAnnotationStorageService.persistURIs(apiKey, inMemoryDataset.getDefaultModel(),
 				ResourceFactory.createProperty(RDF.RDF_TYPE),
 				ResourceFactory.createResource(OA.CONTEXT_AS_TEXT), "content");
 
@@ -228,11 +228,11 @@ class OpenAnnotationSetStorageService {
 			def graphResource = ResourceFactory.createResource(graphUri);
 			Model metaModel = graphMetadataService.getAnnotationSetGraphCreationMetadata(apiKey, creationDataset, graphUri);
 			oldNewAnnotationUriMapping.values().each { annotationUri ->
-				metaModel.add(graphResource, ResourceFactory.createProperty(AnnotopiaVocabulary.ANNOTATION),
+				metaModel.add(graphResource, ResourceFactory.createProperty(AnnotopiaVocabulary.GRAPH_ANNOTATION),
 					 ResourceFactory.createPlainLiteral(annotationUri));
 			}
 			if(oldNewAnnotationUriMapping.values().size()>0) {
-				metaModel.add(graphResource, ResourceFactory.createProperty(AnnotopiaVocabulary.ANNOTATION_COUNT),
+				metaModel.add(graphResource, ResourceFactory.createProperty(AnnotopiaVocabulary.GRAPH_ANNOTATION_COUNT),
 					ResourceFactory.createPlainLiteral(""+oldNewAnnotationUriMapping.values().size()));
 			}
 

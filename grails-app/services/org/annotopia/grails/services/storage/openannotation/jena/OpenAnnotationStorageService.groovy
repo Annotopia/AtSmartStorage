@@ -135,11 +135,6 @@ class OpenAnnotationStorageService {
 	 */
 	public Dataset saveAnnotationDataset(String apiKey, Long startTime, Boolean incGph, Dataset dataset) {
 		
-//		def addCreationDetails = { model, resource ->
-//			model.add(resource, ResourceFactory.createProperty("http://purl.org/pav/createdAt"), ResourceFactory.createPlainLiteral(dateFormat.format(new Date())));
-//			model.add(resource, ResourceFactory.createProperty("http://purl.org/pav/lastUpdatedOn"), ResourceFactory.createPlainLiteral(dateFormat.format(new Date())));
-//		}
-		
 		// Registry of the URIs of the annotations.
 		// Note: The method currently supports the saving of one annotation at a time
 		Set<Resource> annotationUris = new HashSet<Resource>();
@@ -179,17 +174,17 @@ class OpenAnnotationStorageService {
 			// NOTE: This is supporting right now a single body
 			
 			// Annotation identifier
-			Resource annotation = identifiableURI(apiKey, dataset.getDefaultModel(),
+			Resource annotation = persistURI(apiKey, dataset.getDefaultModel(),
 				ResourceFactory.createProperty(RDF.RDF_TYPE),
 				ResourceFactory.createResource(OA.ANNOTATION), "annotation");
 			
 			// Specific Resource identifier
-			identifiableURIs(apiKey, dataset.getDefaultModel(),
+			persistURIs(apiKey, dataset.getDefaultModel(),
 				ResourceFactory.createProperty(RDF.RDF_TYPE),
 				ResourceFactory.createResource(OA.SPECIFIC_RESOURCE), "resource");
 
 			// Embedded content (as RDF) identifier
-			identifiableURIs(apiKey, dataset.getDefaultModel(),
+			persistURIs(apiKey, dataset.getDefaultModel(),
 				ResourceFactory.createProperty(RDF.RDF_TYPE),
 				ResourceFactory.createResource(OA.CONTEXT_AS_TEXT), "content");
 			
@@ -205,8 +200,8 @@ class OpenAnnotationStorageService {
 			// Creation of the metadata for the Graph wrapper
 			def graphResource = ResourceFactory.createResource(graphUri);
 			Model metaModel = graphMetadataService.getAnnotationGraphCreationMetadata(apiKey, creationDataset, graphUri);
-			metaModel.add(graphResource, ResourceFactory.createProperty("http://purl.org/annotopia#annotation"), ResourceFactory.createPlainLiteral(annotation.toString()));
-			metaModel.add(graphResource, ResourceFactory.createProperty("http://purl.org/annotopia#annotationcount"), ResourceFactory.createPlainLiteral("1"));
+			metaModel.add(graphResource, ResourceFactory.createProperty(AnnotopiaVocabulary.ANNOTATION), ResourceFactory.createPlainLiteral(annotation.toString()));
+			metaModel.add(graphResource, ResourceFactory.createProperty(AnnotopiaVocabulary.ANNOTATION_COUNT), ResourceFactory.createPlainLiteral("1"));
 			
 			jenaVirtuosoStoreService.storeDataset(apiKey, creationDataset);
 			
@@ -245,17 +240,17 @@ class OpenAnnotationStorageService {
 				Resource annotationGraphUri = annotationsGraphsUrisIterator.next();
 				
 				// Annotation identifier
-				Resource annotation = identifiableURI(apiKey, workingDataset.getNamedModel(annotationGraphUri.toString()),
+				Resource annotation = persistURI(apiKey, workingDataset.getNamedModel(annotationGraphUri.toString()),
 					ResourceFactory.createProperty(RDF.RDF_TYPE),
 					ResourceFactory.createResource(OA.ANNOTATION), "annotation");
 				
 				// Specific Resource identifier
-				identifiableURIs(apiKey, workingDataset.getNamedModel(annotationGraphUri.toString()),
+				persistURIs(apiKey, workingDataset.getNamedModel(annotationGraphUri.toString()),
 					ResourceFactory.createProperty(RDF.RDF_TYPE),
 					ResourceFactory.createResource(OA.SPECIFIC_RESOURCE), "resource");
 				
 				// Embedded content (as RDF) identifier
-				identifiableURIs(apiKey, workingDataset.getNamedModel(annotationGraphUri.toString()),
+				persistURIs(apiKey, workingDataset.getNamedModel(annotationGraphUri.toString()),
 					ResourceFactory.createProperty(RDF.RDF_TYPE),
 					ResourceFactory.createResource(OA.CONTEXT_AS_TEXT), "content");
 				
@@ -267,6 +262,8 @@ class OpenAnnotationStorageService {
 				// Annotation graphs metadata
 				Model newAnnotationGraphMetadataModel = 
 					graphMetadataService.getAnnotationGraphCreationMetadata(apiKey, creationDataset, newAnnotationGraphUri);
+				newAnnotationGraphMetadataModel.add(ResourceFactory.createResource(newAnnotationGraphUri), ResourceFactory.createProperty(AnnotopiaVocabulary.ANNOTATION), ResourceFactory.createPlainLiteral(annotation.toString()));
+				newAnnotationGraphMetadataModel.add(ResourceFactory.createResource(newAnnotationGraphUri), ResourceFactory.createProperty(AnnotopiaVocabulary.ANNOTATION_COUNT), ResourceFactory.createPlainLiteral("1"));
 				newAnnotationGraphMetadataModel.add(
 					ResourceFactory.createResource(newAnnotationGraphUri), 
 					ResourceFactory.createProperty(PAV.PAV_PREVIOUS_VERSION), 
@@ -328,12 +325,6 @@ class OpenAnnotationStorageService {
 					}
 				}
 			}
-						
-//			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-//			RDFDataMgr.write(outputStream, creationDataset, RDFLanguages.JSONLD);
-//			println outputStream.toString();
-			
-			
 			jenaVirtuosoStoreService.storeDataset(apiKey, creationDataset);
 			
 			if(incGph) return creationDataset;
@@ -350,11 +341,6 @@ class OpenAnnotationStorageService {
 	}
 	
 	public Dataset updateAnnotationDataset(apiKey, startTime, Boolean incGph,  Dataset dataset) {
-		
-//		def addUpdateDetails = { model, resource ->
-//			model.add(resource, ResourceFactory.createProperty("http://purl.org/pav/lastUpdatedOn"),
-//				ResourceFactory.createPlainLiteral(dateFormat.format(new Date())));
-//		}
 		
 		// Detect all named graphs
 		Set<Resource> graphsUris = jenaUtilsService.detectNamedGraphs(apiKey, dataset);
@@ -395,9 +381,7 @@ class OpenAnnotationStorageService {
 			// Query Content As Text
 			Set<Resource> embeddedTextualBodiesUris = new HashSet<Resource>();
 			int totalEmbeddedTextualBodies = openAnnotationUtilsService
-				.detectContextAsTextInNamedGraphs(apiKey, dataset, embeddedTextualBodiesUris);
-				
-			
+				.detectContextAsTextInNamedGraphs(apiKey, dataset, embeddedTextualBodiesUris);		
 			
 			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 			RDFDataMgr.write(outputStream, dataset, RDFLanguages.JSONLD);
@@ -463,10 +447,8 @@ class OpenAnnotationStorageService {
 					Model metaModel = jenaVirtuosoStoreService.retrieveGraphMetadata(apiKey, annotationGraphUri, grailsApplication.config.annotopia.storage.uri.graph.provenance);
 					graphMetadataService.getAnnotationGraphUpdateMetadata(apiKey, metaModel, annotationGraphUri);					
 					updateDataset.addNamedModel(grailsApplication.config.annotopia.storage.uri.graph.provenance, metaModel);
-					
-					ByteArrayOutputStream outputStream3 = new ByteArrayOutputStream();
-					RDFDataMgr.write(outputStream3, updateDataset, RDFLanguages.JSONLD);
-					println outputStream3.toString();
+
+					println jenaUtilsService.getDatasetAsString(updateDataset);
 					
 					jenaVirtuosoStoreService.updateGraphMetadata(apiKey, metaModel, annotationGraphUri, grailsApplication.config.annotopia.storage.uri.graph.provenance)
 					
@@ -525,24 +507,33 @@ class OpenAnnotationStorageService {
 		return mintUri("annotation");
 	}
 
-	private String identifiableURIs(String apiKey, String content, Set<Resource> uris, String uriType) {
-		String toReturn = content;
-		uris.each { uri ->
-			def newUri = mintUri(uriType);			
-							
-			log.info("[" + apiKey + "] Minting URIs (1) " + uriType + " " + uri.toString() + " -> " + newUri);
-			if(uri.isAnon()) {
-				println 'blank ' + uri.getId();
-				toReturn = content.replaceAll(Pattern.quote("\"@id\" : \"" + uri + "\""),
-					"\"@id\" : \"" + newUri + "\"" + ",\"http://purl.org/pav/previousVersion\" : \"blank\"");
-			} else
-			toReturn = content.replaceAll(Pattern.quote("\"@id\" : \"" + uri + "\""),
-				"\"@id\" : \"" + newUri + "\"" + ",\"http://purl.org/pav/previousVersion\" : \"" + uri.toString() + "\"");
-		}
-		return toReturn;
-	}
+//	private String identifiableURIs(String apiKey, String content, Set<Resource> uris, String uriType) {
+//		String toReturn = content;
+//		uris.each { uri ->
+//			def newUri = mintUri(uriType);			
+//							
+//			log.info("[" + apiKey + "] Minting multiple URIs (1) " + uriType + " " + uri.toString() + " -> " + newUri);
+//			if(uri.isAnon()) {
+//				println 'blank ' + uri.getId();
+//				toReturn = content.replaceAll(Pattern.quote("\"@id\" : \"" + uri + "\""),
+//					"\"@id\" : \"" + newUri + "\"" + ",\"http://purl.org/pav/previousVersion\" : \"blank\"");
+//			} else
+//			toReturn = content.replaceAll(Pattern.quote("\"@id\" : \"" + uri + "\""),
+//				"\"@id\" : \"" + newUri + "\"" + ",\"http://purl.org/pav/previousVersion\" : \"" + uri.toString() + "\"");
+//		}
+//		return toReturn;
+//	}
 	
-	private Resource identifiableURI(String apiKey, Model model, Property property, Resource resource, String uriType) {
+	/**
+	 * Persist a URI (when only one resource is allowed)
+	 * @param apiKey	The apiKey of who issued the request
+	 * @param model		The model to act upon
+	 * @param property	The property for matching statements property
+	 * @param resource	The resource for matching statements object
+	 * @param uriType	The type of the resource the URI is identifying
+	 * @return The new resource (persisted)
+	 */
+	private Resource persistURI(String apiKey, Model model, Property property, Resource resource, String uriType) {
 		
 		log.info("[" + apiKey + "] Minting single URI (2) " + uriType + " " + resource.toString());
 		
@@ -550,21 +541,24 @@ class OpenAnnotationStorageService {
 
 		List<Statement> updatedStatements = new ArrayList<Statement>();
 		
+		int counter = 0;
 		def originalSubject;
 		StmtIterator statements = model.listStatements(null, property, resource);
-		statements.each {
-			originalSubject =  it.getSubject()
+		for(def statement : statements) {
+			counter++;
+			originalSubject =  statement.getSubject()
 		}
+		if(counter>1)  log.warn("[" + apiKey + "] Attempt to mint multiple URI on a single URI request")
+		
 		if(originalSubject==null) {
 			log.info("[" + apiKey + "] No " + uriType + " " + resource.toString() + " found.");
 			return;
 		} else {		
 			// Update all the statements with the resource as subject
-			updateStatementsWithResourceAsSubject(model, updatedStatements, newResource, originalSubject)
-			
+			updateStatementsWithResourceAsSubject(model, updatedStatements, newResource, originalSubject)	
 			// Update all the statements with the resource as object
 			updateStatementsWithResourceAsObject(model, updatedStatements, newResource, originalSubject)
-
+			
 			// Add the updated statements to the model
 			updatedStatements.each { model.add(it); }
 			
@@ -575,8 +569,15 @@ class OpenAnnotationStorageService {
 		}
 	}
 	
-	// Supports for multiple URIs
-	private identifiableURIs(String apiKey, Model model, Property property, Resource resource, String uriType) {
+	/**
+	 * Persists multiple URIs.
+	 * @param apiKey	The apiKey of who issued the request
+	 * @param model		The model to act upon
+	 * @param property	The property for matching statements property
+	 * @param resource	The resource for matching statements object
+	 * @param uriType	The type of the resource the URI is identifying
+	 */
+	private void persistURIs(String apiKey, Model model, Property property, Resource resource, String uriType) {
 		
 		log.info("[" + apiKey + "] Minting multiple URIs (3) " + uriType + " " + resource.toString());
 		

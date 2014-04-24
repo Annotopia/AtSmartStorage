@@ -20,6 +20,11 @@
  */
 package org.annotopia.grails.services.storage.utils.jena
 
+import groovy.sql.DataSet
+
+import org.apache.jena.riot.RDFDataMgr
+import org.apache.jena.riot.RDFLanguages
+
 import com.hp.hpl.jena.query.Dataset
 import com.hp.hpl.jena.query.Query
 import com.hp.hpl.jena.query.QueryExecution
@@ -55,5 +60,16 @@ class JenaUtilsService {
 		}
 		log.info("[" + apiKey + "] Named Graphs detected " + graphsUris.size());
 		graphsUris
+	}
+	
+	/**
+	 * Returns a String representation in JSON-LD format of a Dataset
+	 * @param dataset	The Dataset to serialize
+	 * @return The serialization of the Dataset
+	 */
+	public String getDatasetAsString(DataSet dataset) {
+		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+		RDFDataMgr.write(outputStream, dataset, RDFLanguages.JSONLD);
+		return outputStream.toString();
 	}
 }
