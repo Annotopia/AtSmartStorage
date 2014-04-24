@@ -49,6 +49,8 @@ class OpenAnnotationController extends BaseController {
 	String OA_CONTEXT = "https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/OAContext.json";
 	String OA_FRAME = "https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/OAFrame.json";
 	
+	private final RESPONSE_CONTENT_TYPE = "application/json;charset=UTF-8";
+	
 	// outCmd (output command) constants
 	private final OUTCMD_NONE = "none";
 	private final OUTCMD_FRAME = "frame";
@@ -89,7 +91,7 @@ class OpenAnnotationController extends BaseController {
 		if(params.outCmd!=null) outCmd = params.outCmd;
 		def incGph = (request.JSON.incGph!=null)?request.JSON.incGph:INCGPH_NO;
 		if(params.incGph!=null) incGph = params.incGph;
-		if(outCmd==OUTCMD_FRAME && incGph=='true') {
+		if(outCmd==OUTCMD_FRAME && incGph==INCGPH_YES) {
 			log.warn("[" + apiKey + "] Invalid options, framing does not currently support Named Graphs");
 			def message = 'Invalid options, framing does not currently support Named Graphs';
 			render(status: 401, text: returnMessage(apiKey, "rejected", message, startTime),
@@ -145,7 +147,7 @@ class OpenAnnotationController extends BaseController {
 					'"items":[';
 					
 			Object contextJson = null;
-			response.contentType = "application/json;charset=UTF-8"	
+			response.contentType = RESPONSE_CONTENT_TYPE	
 			if(annotationGraphs!=null) {
 				response.outputStream << '{"status":"results", "result": {' + summaryPrefix	
 				boolean firstStreamed = false // To add the commas between items
@@ -206,7 +208,7 @@ class OpenAnnotationController extends BaseController {
 		else {
 			Dataset graphs =  openAnnotationVirtuosoService.retrieveAnnotation(apiKey, getCurrentUrl(request));
 			
-			response.contentType = "application/json;charset=UTF-8"
+			response.contentType = RESPONSE_CONTENT_TYPE
 			
 			Object contextJson = null;
 			if(graphs!=null && graphs.listNames().hasNext()) {
@@ -214,7 +216,6 @@ class OpenAnnotationController extends BaseController {
 				if(outCmd==OUTCMD_NONE) { 
 					if(incGph==INCGPH_NO) {
 						Model m = graphs.getNamedModel(graphs.listNames().next());
-						println "*** " + m;
 						RDFDataMgr.write(response.outputStream, m, RDFLanguages.JSONLD);		
 					} else {
 						RDFDataMgr.write(response.outputStream, graphs, RDFLanguages.JSONLD);
@@ -279,7 +280,7 @@ class OpenAnnotationController extends BaseController {
 		if(params.outCmd!=null) outCmd = params.outCmd;		
 		def incGph = (request.JSON.incGph!=null)?request.JSON.incGph:INCGPH_NO;
 		if(params.incGph!=null) incGph = params.incGph;
-		if(outCmd==OUTCMD_FRAME && incGph=='true') {
+		if(outCmd==OUTCMD_FRAME && incGph==INCGPH_YES) {
 			def message = "Invalid options outCmd=='frame' && incGph=='true', framing does not currently support Named Graphs";
 			log.warn("[" + apiKey + "] " + message);
 			render(status: 401, text: returnMessage(apiKey, "rejected", message, startTime),
@@ -365,7 +366,7 @@ class OpenAnnotationController extends BaseController {
 		if(params.outCmd!=null) outCmd = params.outCmd;
 		def incGph = (request.JSON.incGph!=null)?request.JSON.incGph:INCGPH_NO;
 		if(params.incGph!=null) incGph = params.incGph;
-		if(outCmd==OUTCMD_FRAME && incGph=='true') {
+		if(outCmd==OUTCMD_FRAME && incGph==INCGPH_YES) {
 			log.warn("[" + apiKey + "] Invalid options, framing does not currently support Named Graphs");
 			def message = 'Invalid options, framing does not currently support Named Graphs';
 			render(status: 401, text: returnMessage(apiKey, "rejected", message, startTime),
@@ -546,7 +547,7 @@ class OpenAnnotationController extends BaseController {
 	}
 	
 	private void renderSavedNamedGraphsDataset(def apiKey, long startTime, String outCmd, String status, HttpServletResponse response, Dataset dataset) {
-		response.contentType = "text/json;charset=UTF-8"
+		response.contentType = RESPONSE_CONTENT_TYPE
 		
 		// Count graphs
 		int sizeDataset = 0;
