@@ -55,6 +55,10 @@ class OpenAnnotationStorageService {
 
 	SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ")
 	
+	// incGph (Include graph) constants
+	private final INCGPH_YES = "true";
+	private final INCGPH_NO = "false";
+	
 	def jenaUtilsService
 	def grailsApplication
 	def graphMetadataService
@@ -110,7 +114,7 @@ class OpenAnnotationStorageService {
 					}
 				}
 				
-				if(incGph=='true') {
+				if(incGph==INCGPH_YES) {
 					Model m = jenaVirtuosoStoreService.retrieveGraphMetadata(apiKey, graphName, grailsApplication.config.annotopia.storage.uri.graph.provenance);
 					if(m!=null) ds.setDefaultModel(m);
 				}
@@ -194,7 +198,7 @@ class OpenAnnotationStorageService {
 			
 			// Minting of the URI for the Named Graph that will wrap the
 			// default graph
-			def graphUri = getGraphUri();
+			def graphUri = mintGraphUri();
 			Dataset creationDataset = DatasetFactory.createMem();
 			creationDataset.addNamedModel(graphUri, dataset.getDefaultModel());
 			
@@ -246,7 +250,7 @@ class OpenAnnotationStorageService {
 					ResourceFactory.createResource(OA.ANNOTATION), "annotation");
 				
 				// Specific Resource identifier
-				identifiableURI(apiKey, workingDataset.getNamedModel(annotationGraphUri.toString()),
+				identifiableURIs(apiKey, workingDataset.getNamedModel(annotationGraphUri.toString()),
 					ResourceFactory.createProperty(RDF.RDF_TYPE),
 					ResourceFactory.createResource(OA.SPECIFIC_RESOURCE), "resource");
 				
@@ -256,7 +260,7 @@ class OpenAnnotationStorageService {
 					ResourceFactory.createResource(OA.CONTEXT_AS_TEXT), "content");
 				
 				// Annotation graphs identifier
-				def newAnnotationGraphUri = getGraphUri();
+				def newAnnotationGraphUri = mintGraphUri();
 				creationDataset.addNamedModel(newAnnotationGraphUri, workingDataset.getNamedModel(annotationGraphUri.toString()));
 				storedDataset.addNamedModel(newAnnotationGraphUri, workingDataset.getNamedModel(annotationGraphUri.toString()));
 				
@@ -274,7 +278,7 @@ class OpenAnnotationStorageService {
 					while(bodiesGraphsUrisIterator.hasNext()) {						
 						// Bodies graphs identifiers
 						Resource bodyGraphUri = bodiesGraphsUrisIterator.next();
-						def newBodyGraphUri = getGraphUri();
+						def newBodyGraphUri = mintGraphUri();
 						creationDataset.addNamedModel(newBodyGraphUri, workingDataset.getNamedModel(bodyGraphUri.toString()));
 						storedDataset.addNamedModel(newBodyGraphUri, workingDataset.getNamedModel(bodyGraphUri.toString()));
 						oldNewBodyUriMapping.put(bodyGraphUri.toString(), newBodyGraphUri);
@@ -381,7 +385,8 @@ class OpenAnnotationStorageService {
 		
 		String content;
 		if(detectedAnnotationGraphsCounter>0) {
-			println '******** ';
+			log.trace("[" + apiKey + "] Named graphs detected.");
+			
 			// Query Specific Resources
 			Set<Resource> specificResourcesUris = new HashSet<Resource>();
 			int totalDetectedSpecificResources = openAnnotationUtilsService
@@ -499,32 +504,30 @@ class OpenAnnotationStorageService {
 	 */
 	public String mintUri(uriType) {
 		return 'http://' + 
-				grailsApplication.config.grails.server.host + ':' +
-				grailsApplication.config.grails.server.port.http + '/s/' + uriType + '/' + 
-				org.annotopia.grails.services.storage.utils.UUID.uuid();
+			grailsApplication.config.grails.server.host + ':' +
+			grailsApplication.config.grails.server.port.http + '/s/' + uriType + '/' + 
+			org.annotopia.grails.services.storage.utils.UUID.uuid();
 	}
 	
-	public String getGraphUri() {
+	/**
+	 * Mints a URI of type graph
+	 * @return The newly minted graph URI
+	 */
+	public String mintGraphUri() {
 		return mintUri("graph");
 	}
 	
-	public String getAnnotationUri() {
+	/**
+	 * Mints a URI of type annotation
+	 * @return The newly minted annotation URI
+	 */
+	public String mintAnnotationUri() {
 		return mintUri("annotation");
 	}
-	
-//	public String getAnnotationUri() {
-//		return 'http://' + grailsApplication.config.grails.server.host + ':' +
-//			grailsApplication.config.grails.server.port.http + '/s/annotation/' +
-//			org.annotopia.grails.services.storage.utils.UUID.uuid();
-//	}
-	
+
 	private String identifiableURIs(String apiKey, String content, Set<Resource> uris, String uriType) {
 		String toReturn = content;
 		uris.each { uri ->
-//			def uuid = org.annotopia.grails.services.storage.utils.UUID.uuid();
-//			def nUri = 'http://' + grailsApplication.config.grails.server.host + ':' +
-//							grailsApplication.config.grails.server.port.http + '/s/' + uriType + '/' + uuid;
-
 			def newUri = mintUri(uriType);			
 							
 			log.info("[" + apiKey + "] Minting URIs (1) " + uriType + " " + uri.toString() + " -> " + newUri);
@@ -543,25 +546,20 @@ class OpenAnnotationStorageService {
 		
 		log.info("[" + apiKey + "] Minting URIs (2) " + uriType + " " + resource.toString());
 		
-//		def uuid = org.annotopia.grails.services.storage.utils.UUID.uuid();
-//		def nUri = 'http://' + grailsApplication.config.grails.server.host + ':' +
-//						grailsApplication.config.grails.server.port.http + '/s/' + uriType + '/' + uuid;
-		
 		def newResource = ResourceFactory.createResource(mintUri(uriType));
-		
 
 		def originalSubject;
 		List<Statement> s = new ArrayList<Statement>();
 		StmtIterator statements = model.listStatements(null, property, resource);
 		statements.each {
 			originalSubject =  it.getSubject()
-			StmtIterator statements2 = model.listStatements(it.getSubject(), null, null);
+			StmtIterator statements2 = model.listStatements(originalSubject, null, null);
 			statements2 .each { its ->
 				s.add(model.createStatement(newResource, its.getPredicate(), its.getObject()));
 			}
 		}
 		if(originalSubject==null) {
-			log.info("[" + apiKey + "] Skipping URI " + uriType + " " + resource.toString());
+			log.info("[" + apiKey + "] No " + uriType + " " + resource.toString() + " found.");
 			return;
 		}
 		model.removeAll(originalSubject, null, null);
@@ -574,17 +572,8 @@ class OpenAnnotationStorageService {
 			
 		s.each { model.add(it); }
 		
-		model.removeAll(newResource, ResourceFactory.createProperty(PAV.PAV_PREVIOUS_VERSION), null);
-		if(!originalSubject.isAnon()) {
-			model.add(model.createStatement(newResource,
-				ResourceFactory.createProperty(PAV.PAV_PREVIOUS_VERSION),
-				ResourceFactory.createPlainLiteral(originalSubject.toString())
-				));
-		} else
-			model.add(model.createStatement(newResource,
-				ResourceFactory.createProperty(PAV.PAV_PREVIOUS_VERSION),
-				ResourceFactory.createPlainLiteral("blank")
-				));
+		// Updating the 'previous version' info
+		updatePreviousVersionInfo(model, newResource, originalSubject);
 			
 		newResource;
 	}
@@ -594,51 +583,69 @@ class OpenAnnotationStorageService {
 		
 		log.info("[" + apiKey + "] Minting URIs (3) " + uriType + " " + resource.toString());
 		
-		HashMap<Resource, Resource> originalSubjects = new HashSet<Resource, Resource>();
+		HashMap<Resource, Resource> originalToNewSubjects = new HashSet<Resource, Resource>();
 		StmtIterator statements = model.listStatements(null, property, resource);
 		statements.each {
-			if(!originalSubjects.containsKey(it.getSubject())) {
+			if(!originalToNewSubjects.containsKey(it.getSubject())) {
 				log.info("[" + apiKey + "] Minting URI for content " + it.getSubject());
 				def newResource = ResourceFactory.createResource(mintUri(uriType));
-				originalSubjects.put(it.getSubject(), newResource)
+				originalToNewSubjects.put(it.getSubject(), newResource)
 			}
 		}
 		
-		List<Statement> s = new ArrayList<Statement>();
-		originalSubjects.keySet().each { subject ->
-			StmtIterator statements2 = model.listStatements(subject, null, null);
-			statements2 .each { its ->
-				s.add(model.createStatement(originalSubjects.get(subject), its.getPredicate(), its.getObject()));
+		if(originalToNewSubjects.size()==0) {
+			log.info("[" + apiKey + "] No " + uriType + " " + resource.toString() + " found.");
+			return;
+		} else {
+			List<Statement> s = new ArrayList<Statement>();
+			originalToNewSubjects.keySet().each { originalSubject ->
+				StmtIterator statements2 = model.listStatements(originalSubject, null, null);
+				statements2 .each { its ->
+					s.add(model.createStatement(originalToNewSubjects.get(originalSubject), its.getPredicate(), its.getObject()));
+				}
 			}
-		}
-		originalSubjects.keySet().each { subject ->
-			model.removeAll(subject, null, null);
-		}
+			originalToNewSubjects.keySet().each { originalSubject ->
+				model.removeAll(originalSubject, null, null);
+			}
+		
+			originalToNewSubjects.keySet().each { originalSubject ->
+				StmtIterator statements3 = model.listStatements(null, null, originalSubject);
+				statements3.each { its2 ->
+					s.add(model.createStatement(its2.getSubject(), its2.getPredicate(), originalToNewSubjects.get(originalSubject)));
+				}
+			}
+			originalToNewSubjects.keySet().each { originalSubject ->
+				model.removeAll(null, null, originalSubject);
+			}
+				
+			s.each { model.add(it); }
 	
-		originalSubjects.keySet().each { subject ->
-			StmtIterator statements3 = model.listStatements(null, null, subject);
-			statements3.each { its2 ->
-				s.add(model.createStatement(its2.getSubject(), its2.getPredicate(), originalSubjects.get(subject)));
+			// Updating the 'previous version' info
+			originalToNewSubjects.keySet().each { originalSubject ->
+				updatePreviousVersionInfo(model, originalToNewSubjects.get(originalSubject), originalSubject);
 			}
-		}
-		originalSubjects.keySet().each { subject ->
-			model.removeAll(null, null, subject);
-		}
-			
-		s.each { model.add(it); }
-		
-		originalSubjects.keySet().each { subject ->
-			model.removeAll(subject, ResourceFactory.createProperty(PAV.PAV_PREVIOUS_VERSION), null);
-			if(!subject.isAnon()) {
-				model.add(model.createStatement(originalSubjects.get(subject),
-					ResourceFactory.createProperty(PAV.PAV_PREVIOUS_VERSION),
-					ResourceFactory.createPlainLiteral(subject.toString())
-					));
-			} else
-				model.add(model.createStatement(originalSubjects.get(subject),
-					ResourceFactory.createProperty(PAV.PAV_PREVIOUS_VERSION),
-					ResourceFactory.createPlainLiteral("blank")
-					));
+		} 
+	}
+	
+	/**
+	 * Updates the "previous version" info. If the original resource did not have a URI, the
+	 * previous version is marked as 'blank'.
+	 * @param model				The model to act upon
+	 * @param newSubject		The new URI identifying the resource
+	 * @param originalSubject	The previous URI identifying the resource
+	 */
+	private void updatePreviousVersionInfo(Model model, Resource newSubject, Resource originalSubject) {
+		model.removeAll(newSubject, ResourceFactory.createProperty(PAV.PAV_PREVIOUS_VERSION), null);
+		if(!originalSubject.isAnon()) {
+			model.add(model.createStatement(newSubject,
+				ResourceFactory.createProperty(PAV.PAV_PREVIOUS_VERSION),
+				ResourceFactory.createPlainLiteral(originalSubject.toString())
+				));
+		} else {
+			model.add(model.createStatement(newSubject,
+				ResourceFactory.createProperty(PAV.PAV_PREVIOUS_VERSION),
+				ResourceFactory.createPlainLiteral("blank")
+				));
 		}
 	}
 }
