@@ -548,37 +548,23 @@ class OpenAnnotationStorageService {
 		
 		def newResource = ResourceFactory.createResource(mintUri(uriType));
 
-		// Update all the statements with the resource as subject
-		
 		List<Statement> updatedStatements = new ArrayList<Statement>();
 		
 		def originalSubject;
 		StmtIterator statements = model.listStatements(null, property, resource);
 		statements.each {
 			originalSubject =  it.getSubject()
-//			StmtIterator statements2 = model.lis  tStatements(originalSubject, null, null);
-//			statements2 .each { its ->
-//				updatedStatements.add(model.createStatement(newResource, its.getPredicate(), its.getObject()));
-//			}
 		}
 		if(originalSubject==null) {
 			log.info("[" + apiKey + "] No " + uriType + " " + resource.toString() + " found.");
 			return;
-		} else {
-			//model.removeAll(originalSubject, null, null);
-		
+		} else {		
 			// Update all the statements with the resource as subject
 			updateStatementsWithResourceAsSubject(model, updatedStatements, newResource, originalSubject)
 			
 			// Update all the statements with the resource as object
 			updateStatementsWithResourceAsObject(model, updatedStatements, newResource, originalSubject)
-			
-	//		StmtIterator statements3 = model.listStatements(null, null, originalSubject);
-	//		statements3.each { its2 ->
-	//			updatedStatements.add(model.createStatement(its2.getSubject(), its2.getPredicate(), newResource));
-	//		}
-	//		model.removeAll(null, null, originalSubject);
-				
+
 			// Add the updated statements to the model
 			updatedStatements.each { model.add(it); }
 			
@@ -611,36 +597,13 @@ class OpenAnnotationStorageService {
 		} else {
 			List<Statement> updatedStatements = new ArrayList<Statement>();
 			
-			// Update all the statements with the resource as subject
 			originalToNewSubjects.keySet().each { originalSubject ->
+				// Update all the statements with the resource as subject
 				updateStatementsWithResourceAsSubject(model, updatedStatements, originalToNewSubjects.get(originalSubject), originalSubject)
-			}
-			
-//			originalToNewSubjects.keySet().each { originalSubject ->
-//				StmtIterator statements2 = model.listStatements(originalSubject, null, null);
-//				statements2 .each { its ->
-//					updatedStatements.add(model.createStatement(originalToNewSubjects.get(originalSubject), its.getPredicate(), its.getObject()));
-//				}
-//			}
-//			originalToNewSubjects.keySet().each { originalSubject ->
-//				model.removeAll(originalSubject, null, null);
-//			}
-		
-			// Update all the statements with the resource as object
-			originalToNewSubjects.keySet().each { originalSubject ->
+				// Update all the statements with the resource as object
 				updateStatementsWithResourceAsObject(model, updatedStatements, originalToNewSubjects.get(originalSubject), originalSubject)
 			}
 			
-//			originalToNewSubjects.keySet().each { originalSubject ->
-//				StmtIterator statements3 = model.listStatements(null, null, originalSubject);
-//				statements3.each { its2 ->
-//					updatedStatements.add(model.createStatement(its2.getSubject(), its2.getPredicate(), originalToNewSubjects.get(originalSubject)));
-//				}
-//			}
-//			originalToNewSubjects.keySet().each { originalSubject ->
-//				model.removeAll(null, null, originalSubject);
-//			}
-				
 			// Add the updated statements to the model
 			updatedStatements.each { model.add(it); }
 	
