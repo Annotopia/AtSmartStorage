@@ -152,7 +152,7 @@ class OpenAnnotationSetStorageService {
 			while(annotationUrisIterator.hasNext()) {
 				// Bodies graphs identifiers
 				Resource annotation = annotationUrisIterator.next();
-				String newAnnotationUri = openAnnotationStorageService.getAnnotationUri();
+				String newAnnotationUri = openAnnotationStorageService.mintAnnotationUri();
 				oldNewAnnotationUriMapping.put(annotation, newAnnotationUri);
 			}
 			
@@ -217,7 +217,7 @@ class OpenAnnotationSetStorageService {
 			
 			// Minting of the URI for the Named Graph that will wrap the
 			// default graph
-			def graphUri = openAnnotationStorageService.getGraphUri();
+			def graphUri = openAnnotationStorageService.mintGraphUri();
 			Dataset creationDataset = DatasetFactory.createMem();
 			creationDataset.addNamedModel(graphUri, inMemoryDataset.getDefaultModel());
 			
@@ -348,7 +348,7 @@ class OpenAnnotationSetStorageService {
 							}
 							if(!found) {
 								log.info("[" + apiKey + "] Found new annotation " + newAnnotationResource.getURI());
-								oldNewAnnotationUriMapping.put(newAnnotationResource, openAnnotationStorageService.getAnnotationUri());
+								oldNewAnnotationUriMapping.put(newAnnotationResource, openAnnotationStorageService.mintAnnotationUri());
 								
 								StmtIterator statements = annotationModel.listStatements(newAnnotationResource, null, null);
 								List<Statement> statementsToRemove = new ArrayList<Statement>();
