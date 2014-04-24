@@ -49,6 +49,15 @@ class OpenAnnotationController extends BaseController {
 	String OA_CONTEXT = "https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/OAContext.json";
 	String OA_FRAME = "https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/OAFrame.json";
 	
+	// outCmd (output command) constants
+	private final OUTCMD_NONE = "none";
+	private final OUTCMD_FRAME = "frame";
+	private final OUTCMD_CONTEXT = "context";
+	
+	// incGph (Include graph) constants
+	private final INCGPH_YES = "true";
+	private final INCGPH_NO = "false";
+	
 	def openAnnotationVirtuosoService;
 	def annotationJenaStorageService;
 	def openAnnotationStorageService
@@ -76,11 +85,11 @@ class OpenAnnotationController extends BaseController {
 		}
 		
 		// Response format parametrization and constraints
-		def outCmd = (request.JSON.outCmd!=null)?request.JSON.outCmd:"none";
+		def outCmd = (request.JSON.outCmd!=null)?request.JSON.outCmd:OUTCMD_NONE;
 		if(params.outCmd!=null) outCmd = params.outCmd;
-		def incGph = (request.JSON.incGph!=null)?request.JSON.incGph:"false";
+		def incGph = (request.JSON.incGph!=null)?request.JSON.incGph:INCGPH_NO;
 		if(params.incGph!=null) incGph = params.incGph;
-		if(outCmd=='frame' && incGph=='true') {
+		if(outCmd==OUTCMD_FRAME && incGph=='true') {
 			log.warn("[" + apiKey + "] Invalid options, framing does not currently support Named Graphs");
 			def message = 'Invalid options, framing does not currently support Named Graphs';
 			render(status: 401, text: returnMessage(apiKey, "rejected", message, startTime),
@@ -142,8 +151,8 @@ class OpenAnnotationController extends BaseController {
 				boolean firstStreamed = false // To add the commas between items
 				annotationGraphs.each { annotationGraph ->
 					if(firstStreamed) response.outputStream << ','
-					if(outCmd=='none') {
-						if(incGph=='false') {
+					if(outCmd==OUTCMD_NONE) {
+						if(incGph==INCGPH_NO) {
 							if(annotationGraph.listNames().hasNext()) {
 								Model m = annotationGraph.getNamedModel(annotationGraph.listNames().next());
 								RDFDataMgr.write(response.outputStream, m.getGraph(), RDFLanguages.JSONLD);
@@ -154,15 +163,15 @@ class OpenAnnotationController extends BaseController {
 					} else {
 						// This serializes with and according to the context
 						if(contextJson==null) {
-							if(outCmd=='context') {
+							if(outCmd==OUTCMD_CONTEXT) {
 								contextJson = JSONUtils.fromInputStream(callExternalUrl(apiKey, OA_CONTEXT));
-							} else if(outCmd=='frame') {
+							} else if(outCmd==OUTCMD_FRAME) {
 								contextJson = JSONUtils.fromInputStream(callExternalUrl(apiKey, OA_FRAME));						
 							}
 						}
 
 						ByteArrayOutputStream baos = new ByteArrayOutputStream();
-						if(incGph=='false') {
+						if(incGph==INCGPH_NO) {
 							if(annotationGraph.listNames().hasNext()) {
 								Model m = annotationGraph.getNamedModel(annotationGraph.listNames().next());
 								RDFDataMgr.write(baos, m.getGraph(), RDFLanguages.JSONLD);
@@ -171,10 +180,10 @@ class OpenAnnotationController extends BaseController {
 							RDFDataMgr.write(baos, annotationGraph, RDFLanguages.JSONLD);
 						}
 						
-						if(outCmd=='context') {
+						if(outCmd==OUTCMD_CONTEXT) {
 							Object compact = JsonLdProcessor.compact(JSONUtils.fromString(baos.toString()), contextJson,  new JsonLdOptions());
 							response.outputStream << JSONUtils.toPrettyString(compact)
-						}  else if(outCmd=='frame') {
+						}  else if(outCmd==OUTCMD_FRAME) {
 							Object framed =  JsonLdProcessor.frame(JSONUtils.fromString(baos.toString()),contextJson, new JsonLdOptions());
 							response.outputStream << JSONUtils.toPrettyString(framed)
 						}
@@ -202,8 +211,8 @@ class OpenAnnotationController extends BaseController {
 			Object contextJson = null;
 			if(graphs!=null && graphs.listNames().hasNext()) {
 						
-				if(outCmd=='none') { 
-					if(incGph=='false') {
+				if(outCmd==OUTCMD_NONE) { 
+					if(incGph==INCGPH_NO) {
 						Model m = graphs.getNamedModel(graphs.listNames().next());
 						println "*** " + m;
 						RDFDataMgr.write(response.outputStream, m, RDFLanguages.JSONLD);		
@@ -212,25 +221,25 @@ class OpenAnnotationController extends BaseController {
 					}
 				} else {
 					if(contextJson==null) {
-						if(outCmd=='context') {
+						if(outCmd==OUTCMD_CONTEXT) {
 							contextJson = JSONUtils.fromInputStream(callExternalUrl(apiKey, OA_CONTEXT));
-						} else if(outCmd=='frame') {
+						} else if(outCmd==OUTCMD_FRAME) {
 							contextJson = JSONUtils.fromInputStream(callExternalUrl(apiKey,OA_FRAME));						
 						}
 					}
 				
 					ByteArrayOutputStream baos = new ByteArrayOutputStream();
-					if(incGph=='false') {			
+					if(incGph==INCGPH_NO) {			
 						Model m = graphs.getNamedModel(graphs.listNames().next());
 						RDFDataMgr.write(baos, m.getGraph(), RDFLanguages.JSONLD);			
 					} else {
 						RDFDataMgr.write(baos, graphs, RDFLanguages.JSONLD);
 					}
 					
-					if(outCmd=='context') {
+					if(outCmd==OUTCMD_CONTEXT) {
 						Object compact = JsonLdProcessor.compact(JSONUtils.fromString(baos.toString()), contextJson, new JsonLdOptions());
 						response.outputStream << JSONUtils.toPrettyString(compact)
-					}  else if(outCmd=='frame') {
+					}  else if(outCmd==OUTCMD_FRAME) {
 						Object framed =  JsonLdProcessor.frame(JSONUtils.fromString(baos.toString()),contextJson, new JsonLdOptions());
 						response.outputStream << JSONUtils.toPrettyString(framed)
 					}
@@ -266,11 +275,11 @@ class OpenAnnotationController extends BaseController {
 		}
 		
 		// Parsing the incoming parameters
-		def outCmd = (request.JSON.outCmd!=null)?request.JSON.outCmd:"none";
+		def outCmd = (request.JSON.outCmd!=null)?request.JSON.outCmd:OUTCMD_NONE;
 		if(params.outCmd!=null) outCmd = params.outCmd;		
-		def incGph = (request.JSON.incGph!=null)?request.JSON.incGph:"false";
+		def incGph = (request.JSON.incGph!=null)?request.JSON.incGph:INCGPH_NO;
 		if(params.incGph!=null) incGph = params.incGph;
-		if(outCmd=='frame' && incGph=='true') {
+		if(outCmd==OUTCMD_FRAME && incGph=='true') {
 			def message = "Invalid options outCmd=='frame' && incGph=='true', framing does not currently support Named Graphs";
 			log.warn("[" + apiKey + "] " + message);
 			render(status: 401, text: returnMessage(apiKey, "rejected", message, startTime),
@@ -352,11 +361,11 @@ class OpenAnnotationController extends BaseController {
 			invalidApiKey(request.getRemoteAddr()); return;
 		}
 		
-		def outCmd = (request.JSON.outCmd!=null)?request.JSON.outCmd:"none";
+		def outCmd = (request.JSON.outCmd!=null)?request.JSON.outCmd:OUTCMD_NONE;
 		if(params.outCmd!=null) outCmd = params.outCmd;
-		def incGph = (request.JSON.incGph!=null)?request.JSON.incGph:"false";
+		def incGph = (request.JSON.incGph!=null)?request.JSON.incGph:INCGPH_NO;
 		if(params.incGph!=null) incGph = params.incGph;
-		if(outCmd=='frame' && incGph=='true') {
+		if(outCmd==OUTCMD_FRAME && incGph=='true') {
 			log.warn("[" + apiKey + "] Invalid options, framing does not currently support Named Graphs");
 			def message = 'Invalid options, framing does not currently support Named Graphs';
 			render(status: 401, text: returnMessage(apiKey, "rejected", message, startTime),
@@ -547,7 +556,7 @@ class OpenAnnotationController extends BaseController {
 			iterator.next();
 		}
 		
-		if(sizeDataset>1 && outCmd=='frame') {
+		if(sizeDataset>1 && outCmd==OUTCMD_FRAME) {
 			log.warn("[" + apiKey + "] Invalid options, framing does not currently support Named Graphs");
 			def message = 'Invalid options, framing does not currently support Named Graphs';
 			render(status: 401, text: returnMessage(apiKey, "rejected", message, startTime),
@@ -563,13 +572,13 @@ class OpenAnnotationController extends BaseController {
 		response.outputStream << '{"status":"' + status + '", "result": {' + summaryPrefix
 		
 		Object contextJson = null;
-		if(outCmd=='none') {
+		if(outCmd==OUTCMD_NONE) {
 			RDFDataMgr.write(response.outputStream, datasetToRender, RDFLanguages.JSONLD);
 		} else {
 			if(contextJson==null) {
-				if(outCmd=='context') {
+				if(outCmd==OUTCMD_CONTEXT) {
 					contextJson = JSONUtils.fromInputStream(callExternalUrl(apiKey, OA_CONTEXT));
-				} else if(sizeDataset==1 && outCmd=='frame') {
+				} else if(sizeDataset==1 && outCmd==OUTCMD_FRAME) {
 					contextJson = JSONUtils.fromInputStream(callExternalUrl(apiKey,OA_FRAME));
 				}
 			}
@@ -577,10 +586,10 @@ class OpenAnnotationController extends BaseController {
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
 			RDFDataMgr.write(baos, datasetToRender, RDFLanguages.JSONLD);
 			
-			if(outCmd=='context') {
+			if(outCmd==OUTCMD_CONTEXT) {
 				Object compact = JsonLdProcessor.compact(JSONUtils.fromString(baos.toString()), contextJson, new JsonLdOptions());
 				response.outputStream << JSONUtils.toPrettyString(compact)
-			} else if(sizeDataset==1 && outCmd=='frame') {
+			} else if(sizeDataset==1 && outCmd==OUTCMD_FRAME) {
 				Object framed =  JsonLdProcessor.frame(JSONUtils.fromString(baos.toString()), contextJson, new JsonLdOptions());
 				response.outputStream << JSONUtils.toPrettyString(framed)
 			} 
