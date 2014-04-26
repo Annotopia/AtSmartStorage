@@ -30,6 +30,8 @@ import javax.servlet.http.HttpServletRequest
 import org.apache.jena.riot.RDFDataMgr
 import org.apache.jena.riot.RDFLanguages
 
+import com.hp.hpl.jena.rdf.model.Model
+
 /**
  * Basic methods for storage controllers.
  * 
@@ -109,6 +111,12 @@ class BaseController {
 	public String getDatasetAsString(DataSet dataset) {
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 		RDFDataMgr.write(outputStream, dataset, RDFLanguages.JSONLD);
+		return outputStream.toString();
+	}
+	
+	public String getDatasetAsString(Model model) {
+		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+		RDFDataMgr.write(outputStream, model, RDFLanguages.JSONLD);
 		return outputStream.toString();
 	}
 }
