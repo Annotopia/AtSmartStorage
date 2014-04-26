@@ -18,7 +18,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.annotopia.grails.services.storage.openannotation.jena
+package org.annotopia.grails.services.storage.jena.openannotation
 
 import grails.converters.JSON
 import groovy.lang.Closure;

@@ -18,7 +18,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.annotopia.grails.services.storage.openannotation.jena
+package org.annotopia.grails.services.storage.jena.openannotation
 
 import grails.converters.JSON
 
@@ -448,7 +448,7 @@ class OpenAnnotationStorageService {
 					graphMetadataService.getAnnotationGraphUpdateMetadata(apiKey, metaModel, annotationGraphUri);					
 					updateDataset.addNamedModel(grailsApplication.config.annotopia.storage.uri.graph.provenance, metaModel);
 
-					println jenaUtilsService.getDatasetAsString(updateDataset);
+					//println jenaUtilsService.getDatasetAsString(updateDataset);
 					
 					jenaVirtuosoStoreService.updateGraphMetadata(apiKey, metaModel, annotationGraphUri, grailsApplication.config.annotopia.storage.uri.graph.provenance)
 					
