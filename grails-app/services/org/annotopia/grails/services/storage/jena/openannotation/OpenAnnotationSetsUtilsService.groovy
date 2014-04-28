@@ -178,19 +178,7 @@ class OpenAnnotationSetsUtilsService {
 
 		Object contextJson = JSONUtils.fromInputStream(callExternalUrl(apiKey, AT_FRAME));
 		Map<String, Object> framed =  JsonLdProcessor.frame(JSONUtils.fromString(baos.toString()), contextJson, new JsonLdOptions());
-		
-		
-//		String set = JSONUtils.toString(framed)
-//
-//		println '------------ ' + set;
-//		println 'size-------- ' + set.length();
-//		
-//		def jsonSet = JSON.parse(set);
-//		println '0----------- ' + JSONUtils.toString(jsonSet)
-//		println '0----------- ' + JSONUtils.toString(jsonSet).length()
-		
-		
-		
+
 		def annGraphUris = [];
 		Dataset annotationGraphs = DatasetFactory.createMem();
 		for(int i=0; i<framed.get("@graph").getAt(0).getAt("annotations").size(); i++) {
@@ -224,55 +212,7 @@ class OpenAnnotationSetsUtilsService {
 		Model model = ModelFactory.createDefaultModel();
 		RDFDataMgr.read(model, new ByteArrayInputStream(JSONUtils.toString(isolatedSet).getBytes("UTF-8")), RDFLanguages.JSONLD);
 		annotationGraphs.addNamedModel(setGraphUri, model);
-		
-//		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-//		RDFDataMgr.write(outputStream, model, RDFLanguages.JSONLD);
-//		println "Set: " + outputStream.toString();
-		
-		annotationGraphs
-		
-		/*
-		annotationGraphs.listNames().each {
-			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-			RDFDataMgr.write(outputStream, annotationGraphs.getNamedModel(it), RDFLanguages.JSONLD);
-			println "Annotation: " + outputStream.toString();
-		}
-		*/
-		
-		
-		
-//		Map<Resource, Resource> annotationSetUris = new HashMap<Resource, Resource>();
-//		
-//		String QUERY = "PREFIX oa:   <http://www.w3.org/ns/oa#> SELECT ?s ?p ?o WHERE { GRAPH ?g { ?s a oa:Annotation . ?s ?p ?o. }}"
-//		log.trace("[" + apiKey + "] Query: " + QUERY);
-//		
-//		int annotationsCounter = 0;
-//		QueryExecution queryExecution  = QueryExecutionFactory.create (QueryFactory.create(QUERY), annotationSet);
-//		ResultSet rAnnotationsInDefaultGraph = queryExecution.execSelect();
-//		println 'yoloy'
-//		while (rAnnotationsInDefaultGraph.hasNext()) {
-//			annotationsCounter++;
-//			Model annotationModel = ModelFactory.createDefaultModel();
-//			QuerySolution annotationSolution = rAnnotationsInDefaultGraph.nextSolution();
-//			Resource annUri = annotationSolution.getResource("s");
-//			Property predicate = (Property) annotationSolution.get("p");
-//			Resource object = annotationSolution.getResource("o");
-//			
-//			annotationModel.add(annUri, predicate, object);
-//			
-//			
-//			detectAllBodiesTriples(apiKey, annUri, annotationSet, annotationModel);
-//			// Create a Model with all the Annotation things
-//			// Add annotatedBy to the model
-//			// Add bodies
-//			// Add targets
-//			
-//			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-//			RDFDataMgr.write(outputStream, annotationModel, RDFLanguages.JSONLD);
-//			println outputStream.toString();
-//		}
-		
-		
+		annotationGraphs	
 	}
 	
 	private void detectAllBodiesTriples(String apiKey, Resource annotationResource, Dataset annotationSet, Model model) {

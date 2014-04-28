@@ -331,7 +331,6 @@ class AnnotationIntegratedController extends BaseController {
 		if(set!=null) {	
 			Dataset savedAnnotationSet;
 			try {
-				println set.toString();
 				savedAnnotationSet = annotationIntegratedStorageService.saveAnnotationSet(apiKey, startTime, Boolean.parseBoolean(incGph), set.toString()); 
 			} catch(StoreServiceException exception) {
 				render(status: exception.status, text: exception.text, contentType: exception.contentType, encoding: exception.encoding);

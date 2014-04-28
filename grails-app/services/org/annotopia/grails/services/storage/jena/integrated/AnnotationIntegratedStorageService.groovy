@@ -23,7 +23,6 @@ package org.annotopia.grails.services.storage.jena.integrated
 import grails.converters.JSON
 
 import java.text.SimpleDateFormat
-import java.util.Set;
 
 import org.annotopia.grails.vocabularies.AnnotopiaVocabulary
 import org.annotopia.grails.vocabularies.OA
@@ -33,8 +32,13 @@ import org.annotopia.groovy.service.store.StoreServiceException
 import org.apache.jena.riot.RDFDataMgr
 import org.apache.jena.riot.RDFLanguages
 
+import virtuoso.jena.driver.VirtGraph
+import virtuoso.jena.driver.VirtuosoQueryExecution
+import virtuoso.jena.driver.VirtuosoQueryExecutionFactory
+
 import com.hp.hpl.jena.query.Dataset
 import com.hp.hpl.jena.query.DatasetFactory
+import com.hp.hpl.jena.query.QueryFactory
 import com.hp.hpl.jena.rdf.model.Model
 import com.hp.hpl.jena.rdf.model.Resource
 import com.hp.hpl.jena.rdf.model.ResourceFactory
@@ -57,36 +61,8 @@ class AnnotationIntegratedStorageService {
 	def openAnnotationStorageService
 	def openAnnotationSetsUtilsService
 	
-	public listAnnotation(apiKey, max, offset, tgtUrl, tgtFgt, tgtExt, tgtIds, incGph) {
-		log.info '[' + apiKey + '] List integrated annotations ' +
-			' max:' + max +
-			' offset:' + offset +
-			' incGph:' + incGph +
-			' tgtUrl:' + tgtUrl +
-			' tgtFgt:' + tgtFgt;
-		retrieveAnnotation(apiKey, max, offset, tgtUrl, tgtFgt, incGph);
-	}
-	
-	public Set<Dataset> retrieveAnnotation(apiKey, max, offset, tgtUrl, tgtFgt, incGph) {
-		log.info '[' + apiKey + '] Retrieving integrated annotations';
-	
-		Set<Dataset> datasets = new HashSet<Dataset>();
-		Set<String> graphNames = openAnnotationVirtuosoService.retrieveAnnotationSetsGraphsNames(apiKey, max, offset, tgtUrl, tgtFgt);
-		if(graphNames!=null) {
-			graphNames.each { graphName ->
-				Dataset ds = jenaVirtuosoStoreService.retrieveGraph(apiKey, graphName);
-				if(incGph=='true') {
-					Model m = jenaVirtuosoStoreService.retrieveGraphMetadata(apiKey, graphName, grailsApplication.config.annotopia.storage.uri.graph.provenance);
-					if(m!=null) ds.setDefaultModel(m);
-				}
-				if(ds!=null) datasets.add(ds);
-			}
-		}
-		return datasets;
-	}
-	
 	public listAnnotationSets(apiKey, max, offset, tgtUrl, tgtFgt, tgtExt, tgtIds, incGph) {
-		log.info '[' + apiKey + '] List integrated annotations ' +
+		log.info '[' + apiKey + '] List integrated annotation sets ' +
 			' max:' + max +
 			' offset:' + offset +
 			' incGph:' + incGph +
@@ -96,13 +72,15 @@ class AnnotationIntegratedStorageService {
 	}
 	
 	public Set<Dataset> retrieveAnnotationSets(apiKey, max, offset, tgtUrl, tgtFgt, incGph) {
-		log.info '[' + apiKey + '] Retrieving integrated annotations';
+		log.info '[' + apiKey + '] Retrieving integrated annotation sets';
 	
 		Set<Dataset> datasets = new HashSet<Dataset>();
-		Set<String> graphNames = openAnnotationVirtuosoService.retrieveAnnotationSetsGraphsNames(apiKey, max, offset, tgtUrl, tgtFgt);
+		Set<String> graphNames = retrieveAnnotationSetsGraphsNames(apiKey, max, offset, tgtUrl, tgtFgt);
+		println '+++++ ' + graphNames.size();
 		if(graphNames!=null) {
 			graphNames.each { graphName ->
-				Dataset ds = jenaVirtuosoStoreService.retrieveGraph(apiKey, graphName);
+				println '+++++ ' + graphName
+				Dataset ds = retrieveAnnotationSetGraph(apiKey, graphName);
 				if(incGph=='true') {
 					Model m = jenaVirtuosoStoreService.retrieveGraphMetadata(apiKey, graphName, grailsApplication.config.annotopia.storage.uri.graph.provenance);
 					if(m!=null) ds.setDefaultModel(m);
@@ -111,6 +89,40 @@ class AnnotationIntegratedStorageService {
 			}
 		}
 		return datasets;
+	}
+	
+	public Dataset retrieveAnnotationSetGraph(String apiKey, String graphUri) {
+		log.info '[' + apiKey + '] Retrieving graph: ' + graphUri;
+		
+		VirtGraph set = new VirtGraph (graphUri,
+			grailsApplication.config.annotopia.storage.triplestore.host,
+			grailsApplication.config.annotopia.storage.triplestore.user,
+			grailsApplication.config.annotopia.storage.triplestore.pass);
+		
+		String queryString = "CONSTRUCT { ?s ?p ?o . } FROM <" + graphUri + ">" +
+			" WHERE { ?s ?p ?o . }";
+		log.trace '[' + apiKey + '] ' + queryString
+		
+		try {
+			VirtuosoQueryExecution vqe = VirtuosoQueryExecutionFactory.create (QueryFactory.create(queryString), set);
+			Model model = vqe.execConstruct();
+			if(model!=null && !model.empty) {
+				Dataset dataset = DatasetFactory.createMem();
+				dataset.addNamedModel(graphUri, model);
+				
+				// Find the annotation graphs and insert them in the Model
+				
+				
+				return dataset;
+			} else {
+				// TODO Raise exception?
+				log.warn('[' + apiKey + '] Requested graph not found: ' + graphUri);
+				return null;
+			}
+		} catch (Exception e) {
+			log.error(e.getMessage());
+			return null;
+		}
 	}
 	
 	/*
@@ -150,11 +162,13 @@ class AnnotationIntegratedStorageService {
 			"SELECT DISTINCT ?g WHERE { GRAPH ?g { ?s a at:AnnotationSet }} LIMIT " + max + " OFFSET " + offset;
 		if(tgtUrl!=null) {
 			queryString = "PREFIX oa: <http://www.w3.org/ns/oa#> PREFIX at:  <http://purl.org/annotopia#> " +
-				"SELECT DISTINCT ?g1  WHERE { GRAPH ?g1 { ?s a at:AnnotationSet . ?s at:annotations ?g2 .} GRAPH ?g2 { ?a oa:hasTarget <" + tgtUrl + "> } " +
+				"SELECT DISTINCT ?g  WHERE { GRAPH ?g { ?s a at:AnnotationSet . ?s at:annotations ?g2 .} GRAPH ?g2 {{ ?a oa:hasTarget <" + tgtUrl + "> } " +
 				" UNION {?a <http://www.w3.org/ns/oa#hasTarget> ?t. ?t <http://www.w3.org/ns/oa#hasSource> <" + tgtUrl + "> }}}" ;
 		}
 		
 		Set<String> graphs = jenaVirtuosoStoreService.retrieveGraphsNames(apiKey, queryString);
+		println '0000000 ' + graphs.size();
+		graphs.each { println it}
 		graphs
 	}
 	
