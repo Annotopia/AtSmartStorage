@@ -23,6 +23,7 @@ package org.annotopia.grails.services.storage.jena.integrated
 import grails.converters.JSON
 
 import java.text.SimpleDateFormat
+import java.util.Set;
 
 import org.annotopia.grails.vocabularies.AnnotopiaVocabulary
 import org.annotopia.grails.vocabularies.OA
@@ -84,10 +85,77 @@ class AnnotationIntegratedStorageService {
 		return datasets;
 	}
 	
-	public Dataset retrieveAnnotationSet(apiKey, uri) {
-		log.info '[' + apiKey + '] Retrieving annotation sets ' + uri;
+	public listAnnotationSets(apiKey, max, offset, tgtUrl, tgtFgt, tgtExt, tgtIds, incGph) {
+		log.info '[' + apiKey + '] List integrated annotations ' +
+			' max:' + max +
+			' offset:' + offset +
+			' incGph:' + incGph +
+			' tgtUrl:' + tgtUrl +
+			' tgtFgt:' + tgtFgt;
+		retrieveAnnotationSets(apiKey, max, offset, tgtUrl, tgtFgt, incGph);
+	}
+	
+	public Set<Dataset> retrieveAnnotationSets(apiKey, max, offset, tgtUrl, tgtFgt, incGph) {
+		log.info '[' + apiKey + '] Retrieving integrated annotations';
+	
+		Set<Dataset> datasets = new HashSet<Dataset>();
+		Set<String> graphNames = openAnnotationVirtuosoService.retrieveAnnotationSetsGraphsNames(apiKey, max, offset, tgtUrl, tgtFgt);
+		if(graphNames!=null) {
+			graphNames.each { graphName ->
+				Dataset ds = jenaVirtuosoStoreService.retrieveGraph(apiKey, graphName);
+				if(incGph=='true') {
+					Model m = jenaVirtuosoStoreService.retrieveGraphMetadata(apiKey, graphName, grailsApplication.config.annotopia.storage.uri.graph.provenance);
+					if(m!=null) ds.setDefaultModel(m);
+				}
+				if(ds!=null) datasets.add(ds);
+			}
+		}
+		return datasets;
+	}
+	
+	/*
+	PREFIX oa:<http://www.w3.org/ns/oa#> PREFIX at:<http://purl.org/annotopia#> SELECT (COUNT(DISTINCT ?g1)) WHERE {
+	GRAPH ?g1 { ?s a at:AnnotationSet . ?s at:annotations ?g2 .}
+	GRAPH ?gg {
+	   { ?a oa:hasTarget <http://paolociccarese.info> }
+	   UNION
+	   {?a <http://www.w3.org/ns/oa#hasTarget> ?t. ?t <http://www.w3.org/ns/oa#hasSource> <http://paolociccarese.info> }
+	}}
+	*/
+	
+	public int countAnnotationSetGraphs(apiKey, tgtUrl, tgtFgt) {
+		String queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> PREFIX at:<http://purl.org/annotopia#> " +
+			"SELECT (COUNT(DISTINCT ?g1) AS ?total) WHERE { GRAPH ?g1 { ?s a at:AnnotationSet }}";
+		if(tgtUrl!=null && tgtFgt=="false") {
+			queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> PREFIX at:<http://purl.org/annotopia#> " +
+				"SELECT (COUNT(DISTINCT ?g1) AS ?total) WHERE { GRAPH ?g1 { ?s a at:AnnotationSet . ?s at:annotations ?g2 .} GRAPH ?g2 { ?a oa:hasTarget <" + tgtUrl + "> }}";
+		} else if(tgtUrl!=null && tgtFgt=="true") {
+			queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> PREFIX at:<http://purl.org/annotopia#> " +
+				"SELECT (COUNT(DISTINCT ?g1) AS ?total) WHERE { GRAPH ?g1 { ?s a at:AnnotationSet . ?s at:annotations ?g2 .} GRAPH ?g2 {{ ?a oa:hasTarget <" + tgtUrl + "> } " +
+				" UNION {?a <http://www.w3.org/ns/oa#hasTarget> ?t. ?t <http://www.w3.org/ns/oa#hasSource> <" + tgtUrl + "> }}}" ;
+		}
+			
+		int totalCount = jenaVirtuosoStoreService.count(apiKey, queryString);
+		log.info('[' + apiKey + '] Total accessible Annotation Set Graphs: ' + totalCount);
+		totalCount;
+	}
+	
+	public Set<String> retrieveAnnotationSetsGraphsNames(apiKey, max, offset, tgtUrl, tgtFgt) {
+		log.info  '[' + apiKey + '] Retrieving annotation sets graphs names ' +
+			' max:' + max +
+			' offset:' + offset +
+			' tgtUrl:' + tgtUrl;
+			
+		String queryString = "PREFIX at: <http://purl.org/annotopia#> " +
+			"SELECT DISTINCT ?g WHERE { GRAPH ?g { ?s a at:AnnotationSet }} LIMIT " + max + " OFFSET " + offset;
+		if(tgtUrl!=null) {
+			queryString = "PREFIX oa: <http://www.w3.org/ns/oa#> PREFIX at:  <http://purl.org/annotopia#> " +
+				"SELECT DISTINCT ?g1  WHERE { GRAPH ?g1 { ?s a at:AnnotationSet . ?s at:annotations ?g2 .} GRAPH ?g2 { ?a oa:hasTarget <" + tgtUrl + "> } " +
+				" UNION {?a <http://www.w3.org/ns/oa#hasTarget> ?t. ?t <http://www.w3.org/ns/oa#hasSource> <" + tgtUrl + "> }}}" ;
+		}
 		
-		
+		Set<String> graphs = jenaVirtuosoStoreService.retrieveGraphsNames(apiKey, queryString);
+		graphs
 	}
 	
 	public Dataset saveAnnotationSet(String apiKey, Long startTime, Boolean incGph, String set) {

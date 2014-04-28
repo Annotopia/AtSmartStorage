@@ -47,6 +47,7 @@ class AnnotationIntegratedController extends BaseController {
 
 	String AT_CONTEXT = "https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/AnnotopiaContext.json";
 	String AT_FRAME = "https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/AnnotopiaFrame.json";
+	String AT_FRAME_LIGHT = "https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/AnnotopiaFrameLight.json";
 	
 	def grailsApplication;
 	def jenaVirtuosoStoreService;
@@ -91,105 +92,105 @@ class AnnotationIntegratedController extends BaseController {
 		
 		// GET of a list of annotations
 		if(params.id==null) {
-//			// Pagination
-//			def max = (request.JSON.max!=null)?request.JSON.max:"10";
-//			if(params.max!=null) max = params.max;
-//			def offset = (request.JSON.offset!=null)?request.JSON.offset:"0";
-//			if(params.offset!=null) offset = params.offset;
-//			
-//			// Target filters
-//			def tgtUrl = request.JSON.tgtUrl
-//			if(params.tgtUrl!=null) tgtUrl = params.tgtUrl;
-//			def tgtFgt = (request.JSON.tgtFgt!=null)?request.JSON.tgtFgt:"true"; 
-//			if(params.tgtFgt!=null) tgtFgt = params.tgtFgt;
-//			
-//			// Currently unusued, planned
-//			def tgtExt = request.JSON.tgtExt
-//			def tgtIds = request.JSON.tgtIds
-//			def flavor = request.JSON.flavor
-//			
-//			log.info("[" + apiKey + "] List >>" +
-//				" max:" + max + " offset:" + offset +
-//				((tgtUrl!=null) ? (" tgtUrl:" + tgtUrl):"") +
-//				((tgtFgt!=null) ? (" tgtFgt:" + tgtFgt):"") +
-//				((tgtExt!=null) ? (" tgtExt:" + tgtExt):"") +
-//				((tgtIds!=null) ? (" tgtIds:" + tgtIds):"") +
-//				((flavor!=null) ? (" flavor:" + flavor):"") +
-//				((outCmd!=null) ? (" outCmd:" + outCmd):"") +
-//				((incGph!=null) ? (" incGph:" + incGph):""));
-//			
-//			int annotationSetsTotal = openAnnotationVirtuosoService.countAnnotationSetGraphs(apiKey, tgtUrl, tgtFgt);
-//			int annotationSetsPages = (annotationSetsTotal/Integer.parseInt(max));
-//			if(annotationSetsTotal>0 && Integer.parseInt(offset)>0 && Integer.parseInt(offset)>=annotationSetsPages) {
-//				def message = 'The requested page ' + offset +
-//					' does not exist, the page index limit is ' + (annotationSetsPages==0?"0":(annotationSetsPages-1));
-//				render(status: 401, text: returnMessage(apiKey, "rejected", message, startTime),
-//					contentType: "text/json", encoding: "UTF-8");
-//				return;
-//			}
-//			
-//			Set<Dataset> annotationSets = openAnnotationSetStorageService.listAnnotationSets(apiKey, max, offset, tgtUrl, tgtFgt, tgtExt, tgtIds, incGph);
-//			def summaryPrefix = '"total":"' + annotationSetsTotal + '", ' +
-//					'"pages":"' + annotationSetsPages + '", ' +
-//					'"duration": "' + (System.currentTimeMillis()-startTime) + 'ms", ' +
-//					'"offset": "' + offset + '", ' +
-//					'"max": "' + max + '", ' +
-//					'"sets":[';
-//					
-//			Object contextJson = null;
-//			if(annotationSets!=null) {
-//				response.outputStream << '{"status":"results", "result": {' + summaryPrefix
-//				boolean firstStreamed = false // To add the commas between items
-//				annotationSets.each { annotationSet ->
-//					if(firstStreamed) response.outputStream << ','
-//					if(outCmd=='none') {
-//						if(incGph=='false') {
-//							if(annotationSet.listNames().hasNext()) {
-//								Model m = annotationSet.getNamedModel(annotationSet.listNames().next());
-//								RDFDataMgr.write(response.outputStream, m.getGraph(), RDFLanguages.JSONLD);
-//							}
-//						} else {
-//							RDFDataMgr.write(response.outputStream, annotationSet, RDFLanguages.JSONLD);
-//						}
-//					} else {
-//						// This serializes with and according to the context
-//						if(contextJson==null) {
-//							if(outCmd=='context') {
-//								contextJson = JSONUtils.fromInputStream(callExternalUrl(apiKey, AT_CONTEXT));
-//							} else if(outCmd=='frame') {
-//								contextJson = JSONUtils.fromInputStream(callExternalUrl(apiKey, AT_FRAME));
-//							}
-//						}
-//
-//						ByteArrayOutputStream baos = new ByteArrayOutputStream();
-//						if(incGph=='false') {
-//							if(annotationSet.listNames().hasNext()) {
-//								Model m = annotationSet.getNamedModel(annotationSet.listNames().next());
-//								RDFDataMgr.write(baos, m.getGraph(), RDFLanguages.JSONLD);
-//							}
-//						} else {
-//							RDFDataMgr.write(baos, annotationSet, RDFLanguages.JSONLD);
-//						}
-//						
-//						if(outCmd=='context') {
-//							Object compact = JsonLdProcessor.compact(JSONUtils.fromString(baos.toString()), contextJson,  new JsonLdOptions());
-//							response.outputStream << JSONUtils.toPrettyString(compact)
-//						}  else if(outCmd=='frame') {
-//							Object framed =  JsonLdProcessor.frame(JSONUtils.fromString(baos.toString()),contextJson, new JsonLdOptions());
-//							response.outputStream << JSONUtils.toPrettyString(framed)
-//						}
-//					}
-//					firstStreamed = true;
-//				}
-//			} else {
-//				// No Annotation Sets found with the specified criteria
-//				log.info("[" + apiKey + "] No Annotation sets found with the specified criteria");			
-//				response.outputStream << '{"status":"nocontent","message":"No results with the chosen criteria" , "result": {' + summaryPrefix
-//			}
-//			
-//					
-//			response.outputStream <<  ']}}';
-//			response.outputStream.flush()
+			// Pagination
+			def max = (request.JSON.max!=null)?request.JSON.max:"10";
+			if(params.max!=null) max = params.max;
+			def offset = (request.JSON.offset!=null)?request.JSON.offset:"0";
+			if(params.offset!=null) offset = params.offset;
+			
+			// Target filters
+			def tgtUrl = request.JSON.tgtUrl
+			if(params.tgtUrl!=null) tgtUrl = params.tgtUrl;
+			def tgtFgt = (request.JSON.tgtFgt!=null)?request.JSON.tgtFgt:"true"; 
+			if(params.tgtFgt!=null) tgtFgt = params.tgtFgt;
+			
+			// Currently unusued, planned
+			def tgtExt = request.JSON.tgtExt
+			def tgtIds = request.JSON.tgtIds
+			def flavor = request.JSON.flavor
+			
+			log.info("[" + apiKey + "] List >>" +
+				" max:" + max + " offset:" + offset +
+				((tgtUrl!=null) ? (" tgtUrl:" + tgtUrl):"") +
+				((tgtFgt!=null) ? (" tgtFgt:" + tgtFgt):"") +
+				((tgtExt!=null) ? (" tgtExt:" + tgtExt):"") +
+				((tgtIds!=null) ? (" tgtIds:" + tgtIds):"") +
+				((flavor!=null) ? (" flavor:" + flavor):"") +
+				((outCmd!=null) ? (" outCmd:" + outCmd):"") +
+				((incGph!=null) ? (" incGph:" + incGph):""));
+			
+			int annotationSetsTotal = annotationIntegratedStorageService.countAnnotationSetGraphs(apiKey, tgtUrl, tgtFgt);
+			int annotationSetsPages = (annotationSetsTotal/Integer.parseInt(max));
+			if(annotationSetsTotal>0 && Integer.parseInt(offset)>0 && Integer.parseInt(offset)>=annotationSetsPages) {
+				def message = 'The requested page ' + offset +
+					' does not exist, the page index limit is ' + (annotationSetsPages==0?"0":(annotationSetsPages-1));
+				render(status: 401, text: returnMessage(apiKey, "rejected", message, startTime),
+					contentType: "text/json", encoding: "UTF-8");
+				return;
+			}
+		
+			Set<Dataset> annotationSets = annotationIntegratedStorageService.listAnnotationSets(apiKey, max, offset, tgtUrl, tgtFgt, tgtExt, tgtIds, incGph);
+			def summaryPrefix = '"total":"' + annotationSetsTotal + '", ' +
+					'"pages":"' + annotationSetsPages + '", ' +
+					'"duration": "' + (System.currentTimeMillis()-startTime) + 'ms", ' +
+					'"offset": "' + offset + '", ' +
+					'"max": "' + max + '", ' +
+					'"sets":[';
+					
+			Object contextJson = null;
+			if(annotationSets!=null) {
+				response.outputStream << '{"status":"results", "result": {' + summaryPrefix
+				boolean firstStreamed = false // To add the commas between items
+				annotationSets.each { annotationSet ->
+					if(firstStreamed) response.outputStream << ','
+					if(outCmd=='none') {
+						if(incGph=='false') {
+							if(annotationSet.listNames().hasNext()) {
+								Model m = annotationSet.getNamedModel(annotationSet.listNames().next());
+								RDFDataMgr.write(response.outputStream, m.getGraph(), RDFLanguages.JSONLD);
+							}
+						} else {
+							RDFDataMgr.write(response.outputStream, annotationSet, RDFLanguages.JSONLD);
+						}
+					} else {
+						// This serializes with and according to the context
+						if(contextJson==null) {
+							if(outCmd=='context') {
+								contextJson = JSONUtils.fromInputStream(callExternalUrl(apiKey, AT_CONTEXT));
+							} else if(outCmd=='frame') {
+								contextJson = JSONUtils.fromInputStream(callExternalUrl(apiKey, AT_FRAME_LIGHT));
+							}
+						}
+
+						ByteArrayOutputStream baos = new ByteArrayOutputStream();
+						if(incGph=='false') {
+							if(annotationSet.listNames().hasNext()) {
+								Model m = annotationSet.getNamedModel(annotationSet.listNames().next());
+								RDFDataMgr.write(baos, m.getGraph(), RDFLanguages.JSONLD);
+							}
+						} else {
+							RDFDataMgr.write(baos, annotationSet, RDFLanguages.JSONLD);
+						}
+						
+						if(outCmd=='context') {
+							Object compact = JsonLdProcessor.compact(JSONUtils.fromString(baos.toString()), contextJson,  new JsonLdOptions());
+							response.outputStream << JSONUtils.toPrettyString(compact)
+						}  else if(outCmd=='frame') {
+							Object framed =  JsonLdProcessor.frame(JSONUtils.fromString(baos.toString()), contextJson, new JsonLdOptions());
+							response.outputStream << JSONUtils.toPrettyString(framed)
+						}
+					}
+					firstStreamed = true;
+				}
+			} else {
+				// No Annotation Sets found with the specified criteria
+				log.info("[" + apiKey + "] No Annotation sets found with the specified criteria");			
+				response.outputStream << '{"status":"nocontent","message":"No results with the chosen criteria" , "result": {' + summaryPrefix
+			}
+			
+					
+			response.outputStream <<  ']}}';
+			response.outputStream.flush()
 		}
 		// GET of the annotation set identified by the current url
 		// Note that the content that is returned might not be the bare Annotation

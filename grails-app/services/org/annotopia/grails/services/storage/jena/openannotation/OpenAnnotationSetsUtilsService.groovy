@@ -177,36 +177,45 @@ class OpenAnnotationSetsUtilsService {
 		RDFDataMgr.write(baos, datasetToRender, RDFLanguages.JSONLD);
 
 		Object contextJson = JSONUtils.fromInputStream(callExternalUrl(apiKey, AT_FRAME));
-		Object framed =  JsonLdProcessor.frame(JSONUtils.fromString(baos.toString()), contextJson, new JsonLdOptions());
-		String set = JSONUtils.toString(framed)
-
-		def jsonSet = JSON.parse(set);
-				
-		def annGraphUris = [];
+		Map<String, Object> framed =  JsonLdProcessor.frame(JSONUtils.fromString(baos.toString()), contextJson, new JsonLdOptions());
 		
+		
+//		String set = JSONUtils.toString(framed)
+//
+//		println '------------ ' + set;
+//		println 'size-------- ' + set.length();
+//		
+//		def jsonSet = JSON.parse(set);
+//		println '0----------- ' + JSONUtils.toString(jsonSet)
+//		println '0----------- ' + JSONUtils.toString(jsonSet).length()
+		
+		
+		
+		def annGraphUris = [];
 		Dataset annotationGraphs = DatasetFactory.createMem();
-		for(int i=0; i<jsonSet['@graph'][0].annotations.length(); i++) {
-			def annotation = jsonSet['@graph'][0].annotations.get(i);
-			annotation.put("@context", "https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/AnnotopiaContext.json");
+		for(int i=0; i<framed.get("@graph").getAt(0).getAt("annotations").size(); i++) {
 			
+			
+			def annotation = framed.get("@graph").getAt(0).getAt("annotations").get(i);
+			annotation.put("@context", "https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/AnnotopiaContext.json");
+
 			String graphUri = mintGraphUri();
 			annGraphUris.add(graphUri);
 			Model model = ModelFactory.createDefaultModel();
+			
 			RDFDataMgr.read(model, new ByteArrayInputStream(JSONUtils.toString(annotation).getBytes("UTF-8")), RDFLanguages.JSONLD);
 			annotationGraphs.addNamedModel(graphUri, model);
-			
-			
-			
-			println 'inside: ' + JSONUtils.toString(jsonSet['@graph'][0]);
 		}
-		
-		jsonSet['@graph'][0].annotations.clear();
+			
+		framed.get("@graph").getAt(0).getAt("annotations").clear();
 		
 		annGraphUris.each { annGraphUri ->
-			jsonSet['@graph'][0].annotations.add(annGraphUri)
+			framed.get("@graph").getAt(0).getAt("annotations").add(annGraphUri)
 		}
 
-		def isolatedSet = jsonSet['@graph'][0];
+		
+		
+		def isolatedSet = framed.get("@graph").getAt(0);
 		isolatedSet.put("@context", "https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/AnnotopiaContext.json");
 		String setGraphUri = mintGraphUri();
 		
