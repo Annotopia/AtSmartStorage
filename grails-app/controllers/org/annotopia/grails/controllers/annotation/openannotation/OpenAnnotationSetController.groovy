@@ -287,7 +287,6 @@ class OpenAnnotationSetController extends BaseController {
 		if(set!=null) {	
 			Dataset savedAnnotationSet;
 			try {
-				println set.toString();
 				savedAnnotationSet = openAnnotationSetStorageService.saveAnnotationSet(apiKey, startTime, Boolean.parseBoolean(incGph), set.toString()); 
 			} catch(StoreServiceException exception) {
 				render(status: exception.status, text: exception.text, contentType: exception.contentType, encoding: exception.encoding);
@@ -395,46 +394,47 @@ class OpenAnnotationSetController extends BaseController {
 				return;
 			}
 			
-			Object contextJson = null;
 			if(updatedAnnotationSet!=null) {
 				
 //				ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 //				RDFDataMgr.write(outputStream, updatedAnnotationSet, RDFLanguages.JSONLD);
 //				println outputStream.toString();
 //				
-				if(outCmd=='none') {
-					if(incGph=='false') {
-						Model m = updatedAnnotationSet.getNamedModel(updatedAnnotationSet.listNames().next());
-						RDFDataMgr.write(response.outputStream, m, RDFLanguages.JSONLD);
-					} else {
-						RDFDataMgr.write(response.outputStream, updatedAnnotationSet, RDFLanguages.JSONLD);
-					}
-				} else {
-					if(contextJson==null) {
-						if(outCmd=='context') {
-							contextJson = JSONUtils.fromInputStream(callExternalUrl(apiKey, AT_CONTEXT));
-						} else if(outCmd=='frame') {
-							contextJson = JSONUtils.fromInputStream(callExternalUrl(apiKey, AT_FRAME));
-						}
-					}
+				renderSavedNamedGraphsDataset(apiKey, startTime, outCmd, 'updated', response, updatedAnnotationSet);
 				
-					ByteArrayOutputStream baos = new ByteArrayOutputStream();
-					if(incGph=='false') {
-						Model m = updatedAnnotationSet.getNamedModel(updatedAnnotationSet.listNames().next());
-						RDFDataMgr.write(baos, m.getGraph(), RDFLanguages.JSONLD);
-					} else {
-						RDFDataMgr.write(baos, updatedAnnotationSet, RDFLanguages.JSONLD);
-					}
-					
-					if(outCmd=='context') {
-						Object compact = JsonLdProcessor.compact(JSONUtils.fromString(baos.toString()), contextJson,  new JsonLdOptions());
-						response.outputStream << JSONUtils.toPrettyString(compact)
-					}  else if(outCmd=='frame') {
-						Object framed =  JsonLdProcessor.frame(JSONUtils.fromString(baos.toString()), contextJson, new JsonLdOptions());
-						response.outputStream << JSONUtils.toPrettyString(framed)
-					}
-				}
-				response.outputStream.flush()
+//				if(outCmd=='none') {
+//					if(incGph=='false') {
+//						Model m = updatedAnnotationSet.getNamedModel(updatedAnnotationSet.listNames().next());
+//						RDFDataMgr.write(response.outputStream, m, RDFLanguages.JSONLD);
+//					} else {
+//						RDFDataMgr.write(response.outputStream, updatedAnnotationSet, RDFLanguages.JSONLD);
+//					}
+//				} else {
+//					if(contextJson==null) {
+//						if(outCmd=='context') {
+//							contextJson = JSONUtils.fromInputStream(callExternalUrl(apiKey, AT_CONTEXT));
+//						} else if(outCmd=='frame') {
+//							contextJson = JSONUtils.fromInputStream(callExternalUrl(apiKey, AT_FRAME));
+//						}
+//					}
+//				
+//					ByteArrayOutputStream baos = new ByteArrayOutputStream();
+//					if(incGph=='false') {
+//						Model m = updatedAnnotationSet.getNamedModel(updatedAnnotationSet.listNames().next());
+//						RDFDataMgr.write(baos, m.getGraph(), RDFLanguages.JSONLD);
+//					} else {
+//						RDFDataMgr.write(baos, updatedAnnotationSet, RDFLanguages.JSONLD);
+//					}
+//					
+//					if(outCmd=='context') {
+//						Object compact = JsonLdProcessor.compact(JSONUtils.fromString(baos.toString()), contextJson,  new JsonLdOptions());
+//						response.outputStream << JSONUtils.toPrettyString(compact)
+//					}  else if(outCmd=='frame') {
+//						Object framed =  JsonLdProcessor.frame(JSONUtils.fromString(baos.toString()), contextJson, new JsonLdOptions());
+//						response.outputStream << JSONUtils.toPrettyString(framed)
+//					}
+//				}
+//				response.outputStream.flush()
 			} else {
 				// Dataset returned null
 				def message = "Null Annotation Set Dataset. Something went terribly wrong";
