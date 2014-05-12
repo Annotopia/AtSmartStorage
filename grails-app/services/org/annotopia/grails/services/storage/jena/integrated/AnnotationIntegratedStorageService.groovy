@@ -173,16 +173,7 @@ class AnnotationIntegratedStorageService {
 	}
 	
 	public Dataset saveAnnotationSet(String apiKey, Long startTime, Boolean incGph, String set) {
-		
-//		JSONElement jsonInput = JSON.parse(set);
-//		if(jsonInput instanceof JSONObject) {
-//			JSONObject jsonSet = (JSONObject)jsonInput;
-//			println jsonSet.get("annotations").length()
-//			for(int i=0; i<jsonSet.get("annotations").length(); i++) {
-//				println jsonSet.get("annotations").get(i)
-//			}
-//		}
-		
+
 		// Reads the inputs in a dataset
 		Dataset inMemoryDataset = DatasetFactory.createMem();
 		try {
@@ -232,6 +223,7 @@ class AnnotationIntegratedStorageService {
 				ResourceFactory.createProperty(RDF.RDF_TYPE),
 				ResourceFactory.createResource(AnnotopiaVocabulary.ANNOTATION_SET), "annotationset");
 
+			// Annotations
 			// Specific Resource identifier
 			openAnnotationStorageService.persistURIs(apiKey, inMemoryDataset.getDefaultModel(),
 				ResourceFactory.createProperty(RDF.RDF_TYPE),
@@ -254,6 +246,7 @@ class AnnotationIntegratedStorageService {
 			// Update Bodies graphs URIs
 			Model annotationModel = inMemoryDataset.getDefaultModel();
 			oldNewAnnotationUriMapping.keySet().each { oldAnnotation ->
+				// Update annotation URi when subject
 				StmtIterator statements = annotationModel.listStatements(oldAnnotation, null, null);
 				List<Statement> statementsToRemove = new ArrayList<Statement>();
 				statements.each { statementsToRemove.add(it)}
@@ -277,6 +270,8 @@ class AnnotationIntegratedStorageService {
 			}
 			
 			// TODO make sure there is only one set
+			
+			// Update annotation URi when objects
 			List<Statement> statementsToRemove = new ArrayList<Statement>();
 			StmtIterator statements = annotationModel.listStatements(null,
 				ResourceFactory.createProperty(RDF.RDF_TYPE),
@@ -292,8 +287,7 @@ class AnnotationIntegratedStorageService {
 					Statement s = stats.nextStatement();
 					statementsToRemove.add(s);
 				}
-			}
-			
+			}		
 			statementsToRemove.each { s ->
 				annotationModel.remove(s);
 				annotationModel.add(s.getSubject(), ResourceFactory.createProperty(AnnotopiaVocabulary.ANNOTATIONS),
@@ -336,12 +330,89 @@ class AnnotationIntegratedStorageService {
 			jenaVirtuosoStoreService.storeDataset(apiKey, annotationGraphs);
 			storedDataset
 		}
+	}
+	
+	public Dataset updateAnnotationSet(String apiKey, Long startTime, Boolean incGph, String set) {
+		
+		// Reads the inputs in a dataset
+		Dataset inMemoryDataset = DatasetFactory.createMem();
+		try {
+			RDFDataMgr.read(inMemoryDataset, new ByteArrayInputStream(set.getBytes("UTF-8")), RDFLanguages.JSONLD);
+		} catch (Exception ex) {
+			log.info("[" + apiKey + "] Annotation set cannot be read... request rejected.");
+			def json = JSON.parse('{"status":"invalidcontent" ,"message":"Annotation set cannot be read"' +
+				',"duration": "' + (System.currentTimeMillis()-startTime) + 'ms", ' + '}');
+			throw new StoreServiceException(500, json, "text/json", "UTF-8");
+		}
+		
+		// Registry of the URIs of the annotations.
+		// Note: The method currently supports the saving of one annotation at a time
+		Set<Resource> annotationUris = new HashSet<Resource>();
+		
+		// Registry of all named graphs in the transaction
+		Set<Resource> graphsUris = jenaUtilsService.detectNamedGraphs(apiKey, inMemoryDataset);
+		
+		// Detection of default graph
+		int annotationsInDefaultGraphsCounter = openAnnotationUtilsService.detectAnnotationsInDefaultGraph(apiKey, inMemoryDataset, annotationUris, null)
+		boolean defaultGraphDetected = (annotationsInDefaultGraphsCounter>0);
+		
+		// Query for graphs containing annotation
+		// See: https://www.mail-archive.com/wikidata-l@lists.wikimedia.org/msg00370.html
+		Set<Resource> annotationsGraphsUris = new HashSet<Resource>();
+		int detectedAnnotationGraphsCounter = openAnnotationUtilsService.detectAnnotationsInNamedGraph(
+			apiKey, inMemoryDataset, graphsUris, annotationsGraphsUris, annotationUris, null)
+		
+		// Enforcing the limit to one annotation per transaction
+		if(defaultGraphDetected && detectedAnnotationGraphsCounter>0) {
+			log.info("[" + apiKey + "] Mixed Annotation content detected... request rejected.");
+			def json = JSON.parse('{"status":"nocontent" ,"message":"The request carries a mix of Annotations and Annotation Graphs"' +
+				',"duration": "' + (System.currentTimeMillis()-startTime) + 'ms", ' + '}');
+			throw new StoreServiceException(200, json, "text/json", "UTF-8");
+		} else if(detectedAnnotationGraphsCounter>1 || graphsUris.size()>2) {
+			// Annotation Set not found
+			log.info("[" + apiKey + "] Multiple Annotation graphs detected... request rejected.");
+			def json = JSON.parse('{"status":"nocontent" ,"message":"The request carries multiple Annotations or Annotation Graphs"' +
+				',"duration": "' + (System.currentTimeMillis()-startTime) + 'ms", ' + '}');
+			throw new StoreServiceException(200, json, "text/json", "UTF-8");
+		}
+		
+		if(defaultGraphDetected) {
+			log.trace("[" + apiKey + "] Default graph detected.");
 			
-//			
-//			//jenaVirtuosoStoreService.storeDataset(apiKey, creationDataset);
-//			
-//			if(incGph) return creationDataset;
-//			else return storedDataset;
-//		}
+			Set<Resource> annotationSetUris = new HashSet<Resource>();
+			int annotationsSetsUrisInDefaultGraphsCounter =
+				openAnnotationSetsUtilsService.detectAnnotationSetUriInDefaultGraph(apiKey, inMemoryDataset, annotationSetUris, null);
+
+			if(annotationsSetsUrisInDefaultGraphsCounter==0) {
+				log.info("[" + apiKey + "] No Annotation set detected... request rejected.");
+				def json = JSON.parse('{"status":"nocontent" ,"message":"The request does not carry Annotation Sets."' +
+					',"duration": "' + (System.currentTimeMillis()-startTime) + 'ms", ' + '}');
+				throw new StoreServiceException(200, json, "text/json", "UTF-8");
+			} else if(annotationsSetsUrisInDefaultGraphsCounter==1) {
+				
+				String annotationSetUri = annotationSetUris.iterator().next();
+				
+				// Retrieve the graph name from the storage
+				String QUERY = "PREFIX at: <http://purl.org/annotopia#> SELECT DISTINCT ?s ?g WHERE { GRAPH ?g { <" + annotationSetUri + "> a at:AnnotationSet . }}"
+				Set<String> annotationSetsGraphNames = jenaVirtuosoStoreService.retrieveGraphsNames(apiKey, QUERY);
+				
+				if(annotationSetsGraphNames.size()==1) {
+
+				// TODO
+				} else {
+					log.info("[" + apiKey + "] Multiple Annotation sets graphs detected... request rejected.");
+					def json = JSON.parse('{"status":"rejected" ,"message":"The request carries multiple Annotation Sets graphs."' +
+						',"duration": "' + (System.currentTimeMillis()-startTime) + 'ms", ' + '}');
+					throw new StoreServiceException(200, json, "text/json", "UTF-8");
+				}	
+			} else {
+				log.info("[" + apiKey + "] Multiple Annotation sets detected... request rejected.");
+				def json = JSON.parse('{"status":"rejected" ,"message":"The request carries multiple Annotation Sets."' +
+					',"duration": "' + (System.currentTimeMillis()-startTime) + 'ms", ' + '}');
+				throw new StoreServiceException(200, json, "text/json", "UTF-8");
+			}
+		}
+		
+		inMemoryDataset
 	}
 }
