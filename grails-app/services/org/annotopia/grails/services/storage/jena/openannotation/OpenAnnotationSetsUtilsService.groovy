@@ -181,28 +181,39 @@ class OpenAnnotationSetsUtilsService {
 
 		def annGraphUris = [];
 		Dataset annotationGraphs = DatasetFactory.createMem();
-		for(int i=0; i<framed.get("@graph").getAt(0).getAt("annotations").size(); i++) {
-			
-			
-			def annotation = framed.get("@graph").getAt(0).getAt("annotations").get(i);
+		
+		if(framed.get("@graph").getAt(0).getAt("annotations") instanceof java.util.ArrayList) {
+			for(int i=0; i<framed.get("@graph").getAt(0).getAt("annotations").size(); i++) {
+	
+				def annotation = framed.get("@graph").getAt(0).getAt("annotations").get(i);
+				annotation.put("@context", "https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/AnnotopiaContext.json");
+	
+				String graphUri = mintGraphUri();
+				annGraphUris.add(graphUri);
+				Model model = ModelFactory.createDefaultModel();
+				
+				RDFDataMgr.read(model, new ByteArrayInputStream(JSONUtils.toString(annotation).getBytes("UTF-8")), RDFLanguages.JSONLD);
+				annotationGraphs.addNamedModel(graphUri, model);
+				framed.get("@graph").getAt(0).getAt("annotations").clear();
+			}
+		} else {
+			def annotation = framed.get("@graph").getAt(0).getAt("annotations");
 			annotation.put("@context", "https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/AnnotopiaContext.json");
-
+	
 			String graphUri = mintGraphUri();
 			annGraphUris.add(graphUri);
 			Model model = ModelFactory.createDefaultModel();
 			
 			RDFDataMgr.read(model, new ByteArrayInputStream(JSONUtils.toString(annotation).getBytes("UTF-8")), RDFLanguages.JSONLD);
 			annotationGraphs.addNamedModel(graphUri, model);
+			framed.get("@graph").getAt(0).remove("annotations");
+			framed.get("@graph").getAt(0).put("annotations", new ArrayList())
 		}
-			
-		framed.get("@graph").getAt(0).getAt("annotations").clear();
-		
+					
 		annGraphUris.each { annGraphUri ->
 			framed.get("@graph").getAt(0).getAt("annotations").add(annGraphUri)
 		}
-
-		
-		
+	
 		def isolatedSet = framed.get("@graph").getAt(0);
 		isolatedSet.put("@context", "https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/AnnotopiaContext.json");
 		String setGraphUri = mintGraphUri();
