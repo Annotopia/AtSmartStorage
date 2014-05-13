@@ -62,7 +62,8 @@ class OpenAnnotationUtilsService {
 			if(closure!=null)  closure(dataset.getDefaultModel(), annUri);
 		}
 		
-		if(annotationsInDefaultGraphsCounter>0) log.info("[" + apiKey + "] Annotation in Default Graph detected");
+		if(annotationsInDefaultGraphsCounter>0) log.info("[" + apiKey + "] Annotation in Default Graph detected " +
+			annotationsInDefaultGraphsCounter);
 		else log.info("[" + apiKey + "] No Annotation in Default Graph detected");
 		annotationsInDefaultGraphsCounter
 	}

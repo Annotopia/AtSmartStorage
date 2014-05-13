@@ -160,8 +160,7 @@ class OpenAnnotationSetsUtilsService {
 	public Dataset splitAnnotationGraphs(apiKey, Dataset annotationSet) {
 		String AT_FRAME = "https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/AnnotopiaFrame.json";
 		log.info("[" + apiKey + "] Splitting of Annotation Sets Annotations into Named Graph...");
-		
-		
+			
 		// Count graphs
 		int sizeDataset = 0;
 		Iterator iterator = annotationSet.listNames();
