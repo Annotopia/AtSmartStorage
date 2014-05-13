@@ -95,6 +95,7 @@ class AnnotationIntegratedStorageService {
 		return datasets;
 	}
 	
+	// TODO is this a duplicate? It seems just retrieving a graph
 	public Dataset retrieveAnnotationSetGraph(String apiKey, String graphUri) {
 		log.info '[' + apiKey + '] Retrieving graph: ' + graphUri;
 		
@@ -579,6 +580,8 @@ class AnnotationIntegratedStorageService {
 					}
 					
 					datasetToRender.addNamedModel(gName, bareSetModel);
+					
+					jenaVirtuosoStoreService.updateDataset(apiKey, datasetToRender);
 					
 					ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 					RDFDataMgr.write(outputStream, datasetToRender, RDFLanguages.JSONLD);
