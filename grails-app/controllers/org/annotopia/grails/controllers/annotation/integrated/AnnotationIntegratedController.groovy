@@ -240,10 +240,6 @@ class AnnotationIntegratedController extends BaseController {
 				
 				Model setModel = graphs.getNamedModel(graphs.listNames().next());
 
-				
-				// Enabling CORS
-				//response.setHeader('Access-Control-Allow-Origin', '*')
-				//response.contentType = "application/json;charset=UTF-8"
 				if(outCmd=='none') {
 					if(incGph=='false') {
 						Model m = graphs.getNamedModel(graphs.listNames().next());
