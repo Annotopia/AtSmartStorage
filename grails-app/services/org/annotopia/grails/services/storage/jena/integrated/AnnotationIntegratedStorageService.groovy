@@ -489,6 +489,13 @@ class AnnotationIntegratedStorageService {
 					//Set<Model> annotationsModels = new HashSet<Model>();
 					Object json = JSONUtils.fromString(set);
 					JSONArray array = json.getAt("annotations");
+					
+					Model bareSetModel = ModelFactory.createDefaultModel()
+					Object bareSetJson = json;
+					bareSetJson.getAt("annotations").clear();
+					String annotationSetAsString = JSONUtils.toString(bareSetJson);
+					RDFDataMgr.read(bareSetModel, new ByteArrayInputStream(annotationSetAsString.getBytes("UTF-8")), RDFLanguages.JSONLD);
+					
 					for(int j=0; j<array.size(); j++) {
 						Model m = ModelFactory.createDefaultModel()
 			
@@ -555,40 +562,27 @@ class AnnotationIntegratedStorageService {
 						} 
 					}
 					
-					ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-					RDFDataMgr.write(outputStream, datasetToRender, RDFLanguages.JSONLD);
-					println outputStream.toString();
-					
 					// Set Last saved on
-					inMemoryDataset.getDefaultModel().removeAll(ResourceFactory.createResource(annotationSetUri), ResourceFactory.createProperty(PAV.PAV_LAST_UPDATED_ON), null);
-					inMemoryDataset.getDefaultModel().add(ResourceFactory.createResource(annotationSetUri), ResourceFactory.createProperty(PAV.PAV_LAST_UPDATED_ON),
+					bareSetModel.removeAll(ResourceFactory.createResource(annotationSetUri), ResourceFactory.createProperty(PAV.PAV_LAST_UPDATED_ON), null);
+					bareSetModel.add(ResourceFactory.createResource(annotationSetUri), ResourceFactory.createProperty(PAV.PAV_LAST_UPDATED_ON),
 						ResourceFactory.createPlainLiteral(dateFormat.format(new Date())));
 					
 					// Set Version
-					inMemoryDataset.getDefaultModel().removeAll(ResourceFactory.createResource(annotationSetUri), ResourceFactory.createProperty(PAV.PAV_VERSION), null);
-					inMemoryDataset.getDefaultModel().add(ResourceFactory.createResource(annotationSetUri), ResourceFactory.createProperty(PAV.PAV_VERSION),
+					bareSetModel.removeAll(ResourceFactory.createResource(annotationSetUri), ResourceFactory.createProperty(PAV.PAV_VERSION), null);
+					bareSetModel.add(ResourceFactory.createResource(annotationSetUri), ResourceFactory.createProperty(PAV.PAV_VERSION),
 						ResourceFactory.createPlainLiteral("1"));
 					
-					List<Statement> statementsToRemove = new ArrayList<Statement>();
-					StmtIterator statements = annotationModel.listStatements(null,
-						ResourceFactory.createProperty(RDF.RDF_TYPE),
-						ResourceFactory.createResource(AnnotopiaVocabulary.ANNOTATION_SET));
-					if(statements.hasNext()) {
-						Statement annotationSetStatement = statements.nextStatement();
-						Resource annotationSet = annotationSetStatement.getSubject();
-						// Getting all the annotations of the set
-						StmtIterator stats = annotationModel.listStatements(annotationSet,
-							ResourceFactory.createProperty(AnnotopiaVocabulary.ANNOTATIONS), null);
-						while(stats.hasNext()) {
-							Statement s = stats.nextStatement();
-							statementsToRemove.add(s);
-						}
+					Iterator<String> iterator = datasetToRender.listNames();
+					while(iterator.hasNext()) {
+						bareSetModel.add(ResourceFactory.createResource(annotationSetUri), ResourceFactory.createProperty(AnnotopiaVocabulary.ANNOTATIONS),
+							ResourceFactory.createProperty(iterator.next()));
 					}
-					statementsToRemove.each { s ->
-						annotationModel.remove(s);
-						annotationModel.add(s.getSubject(), ResourceFactory.createProperty(AnnotopiaVocabulary.ANNOTATIONS),
-							ResourceFactory.createProperty(oldNewAnnotationUriMapping.get(s.getObject())));
-					}
+					
+					datasetToRender.addNamedModel(gName, bareSetModel);
+					
+					ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+					RDFDataMgr.write(outputStream, datasetToRender, RDFLanguages.JSONLD);
+					println outputStream.toString();
 					
 					// check if any of the PUT annotations has changed
 					// if it is changed
