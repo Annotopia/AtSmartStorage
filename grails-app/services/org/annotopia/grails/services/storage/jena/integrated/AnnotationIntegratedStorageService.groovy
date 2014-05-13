@@ -31,15 +31,19 @@ import org.annotopia.grails.vocabularies.RDF
 import org.annotopia.groovy.service.store.StoreServiceException
 import org.apache.jena.riot.RDFDataMgr
 import org.apache.jena.riot.RDFLanguages
+import org.codehaus.groovy.grails.web.json.JSONArray
 
 import virtuoso.jena.driver.VirtGraph
 import virtuoso.jena.driver.VirtuosoQueryExecution
 import virtuoso.jena.driver.VirtuosoQueryExecutionFactory
 
+import com.github.jsonldjava.utils.JSONUtils
 import com.hp.hpl.jena.query.Dataset
 import com.hp.hpl.jena.query.DatasetFactory
 import com.hp.hpl.jena.query.QueryFactory
 import com.hp.hpl.jena.rdf.model.Model
+import com.hp.hpl.jena.rdf.model.ModelFactory
+import com.hp.hpl.jena.rdf.model.ModelMaker
 import com.hp.hpl.jena.rdf.model.Resource
 import com.hp.hpl.jena.rdf.model.ResourceFactory
 import com.hp.hpl.jena.rdf.model.Statement
@@ -223,51 +227,56 @@ class AnnotationIntegratedStorageService {
 				ResourceFactory.createProperty(RDF.RDF_TYPE),
 				ResourceFactory.createResource(AnnotopiaVocabulary.ANNOTATION_SET), "annotationset");
 
-			// Annotations
-			// Specific Resource identifier
-			openAnnotationStorageService.persistURIs(apiKey, inMemoryDataset.getDefaultModel(),
-				ResourceFactory.createProperty(RDF.RDF_TYPE),
-				ResourceFactory.createResource(OA.SPECIFIC_RESOURCE), "resource");
-
-			// Embedded content (as RDF) identifier
-			openAnnotationStorageService.persistURIs(apiKey, inMemoryDataset.getDefaultModel(),
-				ResourceFactory.createProperty(RDF.RDF_TYPE),
-				ResourceFactory.createResource(OA.CONTEXT_AS_TEXT), "content");
-
-			HashMap<Resource, String> oldNewAnnotationUriMapping = new HashMap<Resource, String>();
-			Iterator<Resource> annotationUrisIterator = annotationUris.iterator();
-			while(annotationUrisIterator.hasNext()) {
-				// Bodies graphs identifiers
-				Resource annotation = annotationUrisIterator.next();
-				String newAnnotationUri = openAnnotationStorageService.mintAnnotationUri();
-				oldNewAnnotationUriMapping.put(annotation, newAnnotationUri);
-			}
-			
-			// Update Bodies graphs URIs
 			Model annotationModel = inMemoryDataset.getDefaultModel();
-			oldNewAnnotationUriMapping.keySet().each { oldAnnotation ->
-				// Update annotation URi when subject
-				StmtIterator statements = annotationModel.listStatements(oldAnnotation, null, null);
-				List<Statement> statementsToRemove = new ArrayList<Statement>();
-				statements.each { statementsToRemove.add(it)}
-				statementsToRemove.each { statement ->
-					annotationModel.remove(statement);
-					annotationModel.add(ResourceFactory.createResource(oldNewAnnotationUriMapping.get(oldAnnotation)),
-						statement.getPredicate(), statement.getObject());
-				}
-				
-				annotationModel.removeAll(ResourceFactory.createResource(oldNewAnnotationUriMapping.get(oldAnnotation)), ResourceFactory.createProperty(PAV.PAV_PREVIOUS_VERSION), null);
-				annotationModel.add(
-					ResourceFactory.createResource(oldNewAnnotationUriMapping.get(oldAnnotation)),
-					ResourceFactory.createProperty(PAV.PAV_PREVIOUS_VERSION),
-					ResourceFactory.createPlainLiteral(oldAnnotation.toString()));
-				
-				annotationModel.removeAll(ResourceFactory.createResource(oldNewAnnotationUriMapping.get(oldAnnotation)), ResourceFactory.createProperty(PAV.PAV_LAST_UPDATED_ON), null);
-				annotationModel.add(
-					ResourceFactory.createResource(oldNewAnnotationUriMapping.get(oldAnnotation)),
-					ResourceFactory.createProperty(PAV.PAV_LAST_UPDATED_ON),
-					ResourceFactory.createPlainLiteral(dateFormat.format(new Date())));
-			}
+			HashMap<Resource, String> oldNewAnnotationUriMapping = new HashMap<Resource, String>();
+			
+			persistNewAnnotation(apiKey, annotationUris, annotationModel, oldNewAnnotationUriMapping);
+			
+//			// Annotations
+//			// Specific Resource identifier
+//			openAnnotationStorageService.persistURIs(apiKey, inMemoryDataset.getDefaultModel(),
+//				ResourceFactory.createProperty(RDF.RDF_TYPE),
+//				ResourceFactory.createResource(OA.SPECIFIC_RESOURCE), "resource");
+//
+//			// Embedded content (as RDF) identifier
+//			openAnnotationStorageService.persistURIs(apiKey, inMemoryDataset.getDefaultModel(),
+//				ResourceFactory.createProperty(RDF.RDF_TYPE),
+//				ResourceFactory.createResource(OA.CONTEXT_AS_TEXT), "content");
+//
+//			HashMap<Resource, String> oldNewAnnotationUriMapping = new HashMap<Resource, String>();
+//			Iterator<Resource> annotationUrisIterator = annotationUris.iterator();
+//			while(annotationUrisIterator.hasNext()) {
+//				// Bodies graphs identifiers
+//				Resource annotation = annotationUrisIterator.next();
+//				String newAnnotationUri = openAnnotationStorageService.mintAnnotationUri();
+//				oldNewAnnotationUriMapping.put(annotation, newAnnotationUri);
+//			}
+//			
+//			// Update Bodies graphs URIs
+//			Model annotationModel = inMemoryDataset.getDefaultModel();
+//			oldNewAnnotationUriMapping.keySet().each { oldAnnotation ->
+//				// Update annotation URi when subject
+//				StmtIterator statements = annotationModel.listStatements(oldAnnotation, null, null);
+//				List<Statement> statementsToRemove = new ArrayList<Statement>();
+//				statements.each { statementsToRemove.add(it)}
+//				statementsToRemove.each { statement ->
+//					annotationModel.remove(statement);
+//					annotationModel.add(ResourceFactory.createResource(oldNewAnnotationUriMapping.get(oldAnnotation)),
+//						statement.getPredicate(), statement.getObject());
+//				}
+//				
+//				annotationModel.removeAll(ResourceFactory.createResource(oldNewAnnotationUriMapping.get(oldAnnotation)), ResourceFactory.createProperty(PAV.PAV_PREVIOUS_VERSION), null);
+//				annotationModel.add(
+//					ResourceFactory.createResource(oldNewAnnotationUriMapping.get(oldAnnotation)),
+//					ResourceFactory.createProperty(PAV.PAV_PREVIOUS_VERSION),
+//					ResourceFactory.createPlainLiteral(oldAnnotation.toString()));
+//				
+//				annotationModel.removeAll(ResourceFactory.createResource(oldNewAnnotationUriMapping.get(oldAnnotation)), ResourceFactory.createProperty(PAV.PAV_LAST_UPDATED_ON), null);
+//				annotationModel.add(
+//					ResourceFactory.createResource(oldNewAnnotationUriMapping.get(oldAnnotation)),
+//					ResourceFactory.createProperty(PAV.PAV_LAST_UPDATED_ON),
+//					ResourceFactory.createPlainLiteral(dateFormat.format(new Date())));
+//			}
 			
 			// TODO make sure there is only one set
 			
@@ -332,6 +341,53 @@ class AnnotationIntegratedStorageService {
 		}
 	}
 	
+	private void persistNewAnnotation(def apiKey, def annotationUris, Model annotationModel, HashMap<Resource, String> oldNewAnnotationUriMapping) {
+		// Annotations
+		// Specific Resource identifier
+		openAnnotationStorageService.persistURIs(apiKey, annotationModel,
+			ResourceFactory.createProperty(RDF.RDF_TYPE),
+			ResourceFactory.createResource(OA.SPECIFIC_RESOURCE), "resource");
+
+		// Embedded content (as RDF) identifier
+		openAnnotationStorageService.persistURIs(apiKey, annotationModel,
+			ResourceFactory.createProperty(RDF.RDF_TYPE),
+			ResourceFactory.createResource(OA.CONTEXT_AS_TEXT), "content");
+
+		//HashMap<Resource, String> oldNewAnnotationUriMapping = new HashMap<Resource, String>();
+		Iterator<Resource> annotationUrisIterator = annotationUris.iterator();
+		while(annotationUrisIterator.hasNext()) {
+			// Bodies graphs identifiers
+			Resource annotation = annotationUrisIterator.next();
+			String newAnnotationUri = openAnnotationStorageService.mintAnnotationUri();
+			oldNewAnnotationUriMapping.put(annotation, newAnnotationUri);
+		}
+		
+		// Update Bodies graphs URIs
+		oldNewAnnotationUriMapping.keySet().each { oldAnnotation ->
+			// Update annotation URi when subject
+			StmtIterator statements = annotationModel.listStatements(oldAnnotation, null, null);
+			List<Statement> statementsToRemove = new ArrayList<Statement>();
+			statements.each { statementsToRemove.add(it)}
+			statementsToRemove.each { statement ->
+				annotationModel.remove(statement);
+				annotationModel.add(ResourceFactory.createResource(oldNewAnnotationUriMapping.get(oldAnnotation)),
+					statement.getPredicate(), statement.getObject());
+			}
+			
+			annotationModel.removeAll(ResourceFactory.createResource(oldNewAnnotationUriMapping.get(oldAnnotation)), ResourceFactory.createProperty(PAV.PAV_PREVIOUS_VERSION), null);
+			annotationModel.add(
+				ResourceFactory.createResource(oldNewAnnotationUriMapping.get(oldAnnotation)),
+				ResourceFactory.createProperty(PAV.PAV_PREVIOUS_VERSION),
+				ResourceFactory.createPlainLiteral(oldAnnotation.toString()));
+			
+			annotationModel.removeAll(ResourceFactory.createResource(oldNewAnnotationUriMapping.get(oldAnnotation)), ResourceFactory.createProperty(PAV.PAV_LAST_UPDATED_ON), null);
+			annotationModel.add(
+				ResourceFactory.createResource(oldNewAnnotationUriMapping.get(oldAnnotation)),
+				ResourceFactory.createProperty(PAV.PAV_LAST_UPDATED_ON),
+				ResourceFactory.createPlainLiteral(dateFormat.format(new Date())));
+		}
+	}
+	
 	public Dataset updateAnnotationSet(String apiKey, Long startTime, Boolean incGph, String set) {
 		
 		// Reads the inputs in a dataset
@@ -355,7 +411,7 @@ class AnnotationIntegratedStorageService {
 		// Detection of default graph
 		int annotationsInDefaultGraphsCounter = openAnnotationUtilsService.detectAnnotationsInDefaultGraph(apiKey, inMemoryDataset, annotationUris, null)
 		boolean defaultGraphDetected = (annotationsInDefaultGraphsCounter>0);
-		
+
 		// Query for graphs containing annotation
 		// See: https://www.mail-archive.com/wikidata-l@lists.wikimedia.org/msg00370.html
 		Set<Resource> annotationsGraphsUris = new HashSet<Resource>();
@@ -379,6 +435,9 @@ class AnnotationIntegratedStorageService {
 		if(defaultGraphDetected) {
 			log.trace("[" + apiKey + "] Default graph detected.");
 			
+			Model annotationModel = inMemoryDataset.getDefaultModel();
+			HashMap<Resource, String> oldNewAnnotationUriMapping = new HashMap<Resource, String>();
+			
 			Set<Resource> annotationSetUris = new HashSet<Resource>();
 			int annotationsSetsUrisInDefaultGraphsCounter =
 				openAnnotationSetsUtilsService.detectAnnotationSetUriInDefaultGraph(apiKey, inMemoryDataset, annotationSetUris, null);
@@ -390,6 +449,8 @@ class AnnotationIntegratedStorageService {
 				throw new StoreServiceException(200, json, "text/json", "UTF-8");
 			} else if(annotationsSetsUrisInDefaultGraphsCounter==1) {
 				
+				Dataset datasetToRender = DatasetFactory.createMem();
+			
 				String annotationSetUri = annotationSetUris.iterator().next();
 				
 				// Retrieve the graph name from the storage
@@ -397,7 +458,143 @@ class AnnotationIntegratedStorageService {
 				Set<String> annotationSetsGraphNames = jenaVirtuosoStoreService.retrieveGraphsNames(apiKey, QUERY);
 				
 				if(annotationSetsGraphNames.size()==1) {
+					log.info("[" + apiKey + "] found Annotation Set graph " + annotationSetsGraphNames);
+					def gName = annotationSetsGraphNames.iterator().next();
+				
+					def annotationGraphs = [] as List;
+					Dataset annotationSetGraph = jenaVirtuosoStoreService.retrieveGraph(apiKey, gName);
+					Model defModel = annotationSetGraph.getNamedModel(gName);
+					StmtIterator sIt = defModel.listStatements(null, ResourceFactory.createProperty(AnnotopiaVocabulary.ANNOTATIONS), null);
+					while(sIt.hasNext()) {
+						annotationGraphs.add(sIt.nextStatement().getObject().asResource().getURI());
+					}
+					
+					def annotationGraphToModelMap = [:]
+					def annotationToAnnotationGraphMap = [:]
+					annotationGraphs.each { nGraph ->
+						def gg = jenaVirtuosoStoreService.retrieveGraph(apiKey, nGraph);
+						StmtIterator sIt1 = gg.getNamedModel(nGraph).listStatements(null, 
+							ResourceFactory.createProperty(RDF.RDF_TYPE), ResourceFactory.createResource(OA.ANNOTATION));
+						if(sIt1.hasNext()) {
+							def uri = sIt1.nextStatement().getSubject().getURI();
+							annotationToAnnotationGraphMap.put(uri, nGraph);
+							annotationGraphToModelMap.put(nGraph, gg.getNamedModel(nGraph));
+						}
+					}
+					
+					// Split annotations out
+					def unchangedAnnotations = []
+					def annotationToModelMap = [:]
 
+					//Set<Model> annotationsModels = new HashSet<Model>();
+					Object json = JSONUtils.fromString(set);
+					JSONArray array = json.getAt("annotations");
+					for(int j=0; j<array.size(); j++) {
+						Model m = ModelFactory.createDefaultModel()
+			
+						def annotation = array.get(j);
+						annotation.put("@context", "https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/AnnotopiaContext.json");
+						
+						String annotationAsString = JSONUtils.toString(annotation);
+						
+						println annotationAsString
+						
+						RDFDataMgr.read(m, new ByteArrayInputStream(annotationAsString.getBytes("UTF-8")), RDFLanguages.JSONLD);
+						//annotationsModels.add(m)
+
+						def annotationUri;
+						StmtIterator annotationUriIterator = m.listStatements(null, 
+							ResourceFactory.createProperty(RDF.RDF_TYPE), ResourceFactory.createResource(OA.ANNOTATION));
+						if(annotationUriIterator.hasNext()) {
+							annotationUri = annotationUriIterator.nextStatement().getSubject().getURI();
+							annotationToModelMap.put(annotationUri, m);
+						}
+
+						StmtIterator annotationChangedIterator = m.listStatements(ResourceFactory.createResource(annotationUri),
+							ResourceFactory.createProperty(AnnotopiaVocabulary.HAS_CHANGED), null);
+						if(annotationChangedIterator.hasNext()) {
+							if(annotationChangedIterator.nextStatement().getObject().asLiteral().toString()=="true") {
+								// Annotation to save
+								println 'CHANGED ' + annotationUri
+								
+								m.removeAll(ResourceFactory.createResource(annotationUri), ResourceFactory.createProperty(AnnotopiaVocabulary.HAS_CHANGED), null);
+								
+								// Updating last saved on
+								m.removeAll(ResourceFactory.createResource(annotationUri), ResourceFactory.createProperty(PAV.PAV_LAST_UPDATED_ON), null);
+								m.add(
+									ResourceFactory.createResource(annotationUri),
+									ResourceFactory.createProperty(PAV.PAV_LAST_UPDATED_ON),
+									ResourceFactory.createPlainLiteral(dateFormat.format(new Date())));
+								
+								m.removeAll(ResourceFactory.createResource(annotationSetUri), ResourceFactory.createProperty(PAV.PAV_PREVIOUS_VERSION), null);
+								
+								if(!annotationToAnnotationGraphMap.containsKey(annotationUri)) {
+									// New annotation
+									println 'NEW ' + annotationUri
+									persistNewAnnotation(apiKey, annotationUris, m, oldNewAnnotationUriMapping);							
+									datasetToRender.addNamedModel(mintGraphUri(), m);
+									
+									//ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+									//RDFDataMgr.write(outputStream, m, RDFLanguages.JSONLD);
+									//println outputStream.toString();
+								} else {
+									println 'UPDATE ' + annotationUri
+									// Updated last saved on	
+									def lGraph = annotationToAnnotationGraphMap.containsKey(annotationUri);
+									datasetToRender.addNamedModel(lGraph, annotationGraphToModelMap.get(lGraph));
+								}		
+							} else {
+								// Annotation to ignore (graph is already in the storage, does not change)
+								println 'UNCHANGED ' + annotationUri
+								unchangedAnnotations.add(annotationUri);
+								m.removeAll(ResourceFactory.createResource(annotationUri), ResourceFactory.createProperty(AnnotopiaVocabulary.HAS_CHANGED), null);
+								m.removeAll(ResourceFactory.createResource(annotationSetUri), ResourceFactory.createProperty(PAV.PAV_PREVIOUS_VERSION), null);
+								
+								datasetToRender.addNamedModel(annotationToAnnotationGraphMap.get(annotationUri), m);
+							}
+						} 
+					}
+					
+					ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+					RDFDataMgr.write(outputStream, datasetToRender, RDFLanguages.JSONLD);
+					println outputStream.toString();
+					
+					// Set Last saved on
+					inMemoryDataset.getDefaultModel().removeAll(ResourceFactory.createResource(annotationSetUri), ResourceFactory.createProperty(PAV.PAV_LAST_UPDATED_ON), null);
+					inMemoryDataset.getDefaultModel().add(ResourceFactory.createResource(annotationSetUri), ResourceFactory.createProperty(PAV.PAV_LAST_UPDATED_ON),
+						ResourceFactory.createPlainLiteral(dateFormat.format(new Date())));
+					
+					// Set Version
+					inMemoryDataset.getDefaultModel().removeAll(ResourceFactory.createResource(annotationSetUri), ResourceFactory.createProperty(PAV.PAV_VERSION), null);
+					inMemoryDataset.getDefaultModel().add(ResourceFactory.createResource(annotationSetUri), ResourceFactory.createProperty(PAV.PAV_VERSION),
+						ResourceFactory.createPlainLiteral("1"));
+					
+					List<Statement> statementsToRemove = new ArrayList<Statement>();
+					StmtIterator statements = annotationModel.listStatements(null,
+						ResourceFactory.createProperty(RDF.RDF_TYPE),
+						ResourceFactory.createResource(AnnotopiaVocabulary.ANNOTATION_SET));
+					if(statements.hasNext()) {
+						Statement annotationSetStatement = statements.nextStatement();
+						Resource annotationSet = annotationSetStatement.getSubject();
+						// Getting all the annotations of the set
+						StmtIterator stats = annotationModel.listStatements(annotationSet,
+							ResourceFactory.createProperty(AnnotopiaVocabulary.ANNOTATIONS), null);
+						while(stats.hasNext()) {
+							Statement s = stats.nextStatement();
+							statementsToRemove.add(s);
+						}
+					}
+					statementsToRemove.each { s ->
+						annotationModel.remove(s);
+						annotationModel.add(s.getSubject(), ResourceFactory.createProperty(AnnotopiaVocabulary.ANNOTATIONS),
+							ResourceFactory.createProperty(oldNewAnnotationUriMapping.get(s.getObject())));
+					}
+					
+					// check if any of the PUT annotations has changed
+					// if it is changed
+					// - check if the gaph has to be replaced
+					// - or if it is a new annotation to store
+					
 				// TODO
 				} else {
 					log.info("[" + apiKey + "] Multiple Annotation sets graphs detected... request rejected.");
@@ -414,5 +611,25 @@ class AnnotationIntegratedStorageService {
 		}
 		
 		inMemoryDataset
+	}
+	
+	/**
+	 * Mints a URI that is shaped according to the passed type.
+	 * @param uriType	The type of the URI (graph, annotation, ...)
+	 * @return The minted URI
+	 */
+	public String mintUri(uriType) {
+		return 'http://' +
+			grailsApplication.config.grails.server.host + ':' +
+			grailsApplication.config.grails.server.port.http + '/s/' + uriType + '/' +
+			org.annotopia.grails.services.storage.utils.UUID.uuid();
+	}
+	
+	/**
+	 * Mints a URI of type graph
+	 * @return The newly minted graph URI
+	 */
+	public String mintGraphUri() {
+		return mintUri("graph");
 	}
 }
