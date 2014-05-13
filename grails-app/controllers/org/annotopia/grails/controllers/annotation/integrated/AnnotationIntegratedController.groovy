@@ -409,43 +409,45 @@ class AnnotationIntegratedController extends BaseController {
 //				RDFDataMgr.write(outputStream, updatedAnnotationSet, RDFLanguages.JSONLD);
 //				println outputStream.toString();
 				
-				if(outCmd=='none') {
-					if(incGph=='false') {
-						Model m = updatedAnnotationSet.getNamedModel(updatedAnnotationSet.listNames().next());
-						RDFDataMgr.write(response.outputStream, m, RDFLanguages.JSONLD);
-					} else {
-						RDFDataMgr.write(response.outputStream, updatedAnnotationSet, RDFLanguages.JSONLD);
-					}
-				} else {
-					if(contextJson==null) {
-						if(outCmd=='context') {
-							contextJson = JSONUtils.fromInputStream(callExternalUrl(apiKey, AT_CONTEXT));
-						} else if(outCmd=='frame') {
-							contextJson = JSONUtils.fromInputStream(callExternalUrl(apiKey, AT_FRAME));
-						}
-					}
+				renderSavedNamedGraphsDataset(apiKey, startTime, outCmd, 'saved', response, updatedAnnotationSet);
 				
-					ByteArrayOutputStream baos = new ByteArrayOutputStream();
-					if(incGph=='false') {
-						Model m = null;
-						if(updatedAnnotationSet.listNames().hasNext()) 
-							m = updatedAnnotationSet.getNamedModel(updatedAnnotationSet.listNames().next());
-						else
-							m = updatedAnnotationSet.getDefaultModel()
-						RDFDataMgr.write(baos, m.getGraph(), RDFLanguages.JSONLD);
-					} else {
-						RDFDataMgr.write(baos, updatedAnnotationSet, RDFLanguages.JSONLD);
-					}
-					
-					if(outCmd=='context') {
-						Object compact = JsonLdProcessor.compact(JSONUtils.fromString(baos.toString()), contextJson,  new JsonLdOptions());
-						response.outputStream << JSONUtils.toPrettyString(compact)
-					}  else if(outCmd=='frame') {
-						Object framed =  JsonLdProcessor.frame(JSONUtils.fromString(baos.toString()), contextJson, new JsonLdOptions());
-						response.outputStream << JSONUtils.toPrettyString(framed)
-					}
-				}
-				response.outputStream.flush()
+//				if(outCmd=='none') {
+//					if(incGph=='false') {
+//						Model m = updatedAnnotationSet.getNamedModel(updatedAnnotationSet.listNames().next());
+//						RDFDataMgr.write(response.outputStream, m, RDFLanguages.JSONLD);
+//					} else {
+//						RDFDataMgr.write(response.outputStream, updatedAnnotationSet, RDFLanguages.JSONLD);
+//					}
+//				} else {
+//					if(contextJson==null) {
+//						if(outCmd=='context') {
+//							contextJson = JSONUtils.fromInputStream(callExternalUrl(apiKey, AT_CONTEXT));
+//						} else if(outCmd=='frame') {
+//							contextJson = JSONUtils.fromInputStream(callExternalUrl(apiKey, AT_FRAME));
+//						}
+//					}
+//				
+//					ByteArrayOutputStream baos = new ByteArrayOutputStream();
+//					if(incGph=='false') {
+//						Model m = null;
+//						if(updatedAnnotationSet.listNames().hasNext()) 
+//							m = updatedAnnotationSet.getNamedModel(updatedAnnotationSet.listNames().next());
+//						else
+//							m = updatedAnnotationSet.getDefaultModel()
+//						RDFDataMgr.write(baos, m.getGraph(), RDFLanguages.JSONLD);
+//					} else {
+//						RDFDataMgr.write(baos, updatedAnnotationSet, RDFLanguages.JSONLD);
+//					}
+//					
+//					if(outCmd=='context') {
+//						Object compact = JsonLdProcessor.compact(JSONUtils.fromString(baos.toString()), contextJson,  new JsonLdOptions());
+//						response.outputStream << JSONUtils.toPrettyString(compact)
+//					}  else if(outCmd=='frame') {
+//						Object framed =  JsonLdProcessor.frame(JSONUtils.fromString(baos.toString()), contextJson, new JsonLdOptions());
+//						response.outputStream << JSONUtils.toPrettyString(framed)
+//					}
+//				}
+//				response.outputStream.flush()
 			} else {
 				// Dataset returned null
 				def message = "Null Annotation Set Dataset. Something went terribly wrong";
