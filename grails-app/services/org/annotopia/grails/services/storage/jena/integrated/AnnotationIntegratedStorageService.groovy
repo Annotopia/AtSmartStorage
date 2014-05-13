@@ -583,16 +583,46 @@ class AnnotationIntegratedStorageService {
 					
 					jenaVirtuosoStoreService.updateDataset(apiKey, datasetToRender);
 					
-					ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-					RDFDataMgr.write(outputStream, datasetToRender, RDFLanguages.JSONLD);
-					println outputStream.toString();
+//					ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+//					RDFDataMgr.write(outputStream, datasetToRender, RDFLanguages.JSONLD);
+//					println outputStream.toString();
 					
-					// check if any of the PUT annotations has changed
-					// if it is changed
-					// - check if the gaph has to be replaced
-					// - or if it is a new annotation to store
+					Dataset graphs =  openAnnotationVirtuosoService.retrieveAnnotationSet(apiKey, annotationSetUri);
 					
-				// TODO
+					if(graphs!=null && graphs.listNames().hasNext()) {
+						Set<Model> toAdd = new HashSet<Model>();
+						Set<Statement> statsToAdd = new HashSet<Statement>();
+						Set<Statement> toRemove = new HashSet<Statement>();
+						Model setModel = graphs.getNamedModel(graphs.listNames().next());
+						StmtIterator  iter = setModel.listStatements(null, ResourceFactory.createProperty(AnnotopiaVocabulary.ANNOTATIONS), null);
+						while(iter.hasNext()) {
+							Statement s = iter.next();
+							toRemove.add(s);
+							Dataset ds = jenaVirtuosoStoreService.retrieveGraph(apiKey, s.getObject().asResource().getURI());
+							if(ds!=null && ds.listNames().hasNext()) {
+								Model aModel = ds.getNamedModel(ds.listNames().next());
+								StmtIterator  iter2 = aModel.listStatements(null, ResourceFactory.createProperty(RDF.RDF_TYPE), ResourceFactory.createResource(OA.ANNOTATION));
+								if(iter2.hasNext()) {
+									toAdd.add(aModel);
+									//setModel.add(annotationModel);
+									statsToAdd.add(ResourceFactory.createStatement(s.getSubject(), ResourceFactory.createProperty(AnnotopiaVocabulary.ANNOTATIONS), iter2.next().getSubject()));
+								}
+							}
+						}
+						toRemove.each {
+							setModel.remove(it);
+						}
+						statsToAdd.each {
+							setModel.add(it);
+						}
+						toAdd.each {
+							setModel.add(it);
+						}
+					}
+					
+					return graphs
+					
+					// TODO response message
 				} else {
 					log.info("[" + apiKey + "] Multiple Annotation sets graphs detected... request rejected.");
 					def json = JSON.parse('{"status":"rejected" ,"message":"The request carries multiple Annotation Sets graphs."' +
