@@ -135,7 +135,7 @@ class OpenAnnotationSetsUtilsService {
 	 * @return The minted URI
 	 */
 	public String mintUri(uriType) {
-		return 'http://' +
+		return grailsApplication.config.grails.server.protocol + '://' + 
 			grailsApplication.config.grails.server.host + ':' +
 			grailsApplication.config.grails.server.port.http + '/s/' + uriType + '/' +
 			org.annotopia.grails.services.storage.utils.UUID.uuid();
