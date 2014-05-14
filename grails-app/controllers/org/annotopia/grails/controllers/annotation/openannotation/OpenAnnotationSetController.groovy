@@ -42,8 +42,8 @@ import com.hp.hpl.jena.rdf.model.Model
  */
 class OpenAnnotationSetController extends BaseController {
 
-	String AT_CONTEXT = "https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/AnnotopiaContext.json";
-	String AT_FRAME = "https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/AnnotopiaFrame.json";
+//	String AT_CONTEXT = "https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/AnnotopiaContext.json";
+//	String AT_FRAME = "https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/AnnotopiaFrame.json";
 	
 	def grailsApplication;
 	def apiKeyAuthenticationService;
@@ -149,9 +149,9 @@ class OpenAnnotationSetController extends BaseController {
 						// This serializes with and according to the context
 						if(contextJson==null) {
 							if(outCmd=='context') {
-								contextJson = JSONUtils.fromInputStream(callExternalUrl(apiKey, AT_CONTEXT));
+								contextJson = JSONUtils.fromInputStream(callExternalUrl(apiKey, grailsApplication.config.annotopia.jsonld.annotopia.context));
 							} else if(outCmd=='frame') {
-								contextJson = JSONUtils.fromInputStream(callExternalUrl(apiKey, AT_FRAME));
+								contextJson = JSONUtils.fromInputStream(callExternalUrl(apiKey, grailsApplication.config.annotopia.jsonld.annotopia.framing));
 							}
 						}
 
@@ -210,9 +210,9 @@ class OpenAnnotationSetController extends BaseController {
 				} else {				
 					if(contextJson==null) {
 						if(outCmd=='context') {
-							contextJson = JSONUtils.fromInputStream(callExternalUrl(apiKey, AT_CONTEXT));
+							contextJson = JSONUtils.fromInputStream(callExternalUrl(apiKey, grailsApplication.config.annotopia.jsonld.annotopia.context));
 						} else if(outCmd=='frame') {
-							contextJson = JSONUtils.fromInputStream(callExternalUrl(apiKey, AT_FRAME));
+							contextJson = JSONUtils.fromInputStream(callExternalUrl(apiKey, grailsApplication.config.annotopia.jsonld.annotopia.framing));
 						}
 					}
 				
@@ -308,9 +308,9 @@ class OpenAnnotationSetController extends BaseController {
 //				} else {
 //					if(contextJson==null) {
 //						if(outCmd=='context') {
-//							contextJson = JSONUtils.fromInputStream(callExternalUrl(apiKey, AT_CONTEXT));
+//							contextJson = JSONUtils.fromInputStream(callExternalUrl(apiKey, grailsApplication.config.annotopia.jsonld.annotopia.context));
 //						} else if(outCmd=='frame') {
-//							contextJson = JSONUtils.fromInputStream(callExternalUrl(apiKey, AT_FRAME));
+//							contextJson = JSONUtils.fromInputStream(callExternalUrl(apiKey, grailsApplication.config.annotopia.jsonld.annotopia.framing));
 //						}
 //					}
 //				
@@ -412,9 +412,9 @@ class OpenAnnotationSetController extends BaseController {
 //				} else {
 //					if(contextJson==null) {
 //						if(outCmd=='context') {
-//							contextJson = JSONUtils.fromInputStream(callExternalUrl(apiKey, AT_CONTEXT));
+//							contextJson = JSONUtils.fromInputStream(callExternalUrl(apiKey, grailsApplication.config.annotopia.jsonld.annotopia.context));
 //						} else if(outCmd=='frame') {
-//							contextJson = JSONUtils.fromInputStream(callExternalUrl(apiKey, AT_FRAME));
+//							contextJson = JSONUtils.fromInputStream(callExternalUrl(apiKey, grailsApplication.config.annotopia.jsonld.annotopia.framing));
 //						}
 //					}
 //				
@@ -479,9 +479,9 @@ class OpenAnnotationSetController extends BaseController {
 		} else {
 			if(contextJson==null) {
 				if(outCmd=='context') {
-					contextJson = JSONUtils.fromInputStream(callExternalUrl(apiKey, AT_CONTEXT));
+					contextJson = JSONUtils.fromInputStream(callExternalUrl(apiKey, grailsApplication.config.annotopia.jsonld.annotopia.context));
 				} else if(sizeDataset==1 && outCmd=='frame') {
-					contextJson = JSONUtils.fromInputStream(callExternalUrl(apiKey,AT_FRAME));
+					contextJson = JSONUtils.fromInputStream(callExternalUrl(apiKey,grailsApplication.config.annotopia.jsonld.annotopia.framing));
 				} 
 			}
 		

@@ -46,8 +46,8 @@ import com.hp.hpl.jena.rdf.model.Model
  */
 class OpenAnnotationController extends BaseController {
 
-	String OA_CONTEXT = "https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/OAContext.json";
-	String OA_FRAME = "https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/OAFrame.json";
+	//String OA_CONTEXT = "https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/OAContext.json";
+	//String OA_FRAME = "https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/OAFrame.json";
 	
 	private final RESPONSE_CONTENT_TYPE = "application/json;charset=UTF-8";
 	
@@ -166,9 +166,9 @@ class OpenAnnotationController extends BaseController {
 						// This serializes with and according to the context
 						if(contextJson==null) {
 							if(outCmd==OUTCMD_CONTEXT) {
-								contextJson = JSONUtils.fromInputStream(callExternalUrl(apiKey, OA_CONTEXT));
+								contextJson = JSONUtils.fromInputStream(callExternalUrl(apiKey, grailsApplication.config.annotopia.jsonld.openannotation.context));
 							} else if(outCmd==OUTCMD_FRAME) {
-								contextJson = JSONUtils.fromInputStream(callExternalUrl(apiKey, OA_FRAME));						
+								contextJson = JSONUtils.fromInputStream(callExternalUrl(apiKey, grailsApplication.config.annotopia.jsonld.openannotation.framing));						
 							}
 						}
 
@@ -223,9 +223,9 @@ class OpenAnnotationController extends BaseController {
 				} else {
 					if(contextJson==null) {
 						if(outCmd==OUTCMD_CONTEXT) {
-							contextJson = JSONUtils.fromInputStream(callExternalUrl(apiKey, OA_CONTEXT));
+							contextJson = JSONUtils.fromInputStream(callExternalUrl(apiKey, grailsApplication.config.annotopia.jsonld.openannotation.context));
 						} else if(outCmd==OUTCMD_FRAME) {
-							contextJson = JSONUtils.fromInputStream(callExternalUrl(apiKey,OA_FRAME));						
+							contextJson = JSONUtils.fromInputStream(callExternalUrl(apiKey,grailsApplication.config.annotopia.jsonld.openannotation.framing));						
 						}
 					}
 				
@@ -578,9 +578,9 @@ class OpenAnnotationController extends BaseController {
 		} else {
 			if(contextJson==null) {
 				if(outCmd==OUTCMD_CONTEXT) {
-					contextJson = JSONUtils.fromInputStream(callExternalUrl(apiKey, OA_CONTEXT));
+					contextJson = JSONUtils.fromInputStream(callExternalUrl(apiKey, grailsApplication.config.annotopia.jsonld.openannotation.context));
 				} else if(sizeDataset==1 && outCmd==OUTCMD_FRAME) {
-					contextJson = JSONUtils.fromInputStream(callExternalUrl(apiKey,OA_FRAME));
+					contextJson = JSONUtils.fromInputStream(callExternalUrl(apiKey, grailsApplication.config.annotopia.jsonld.openannotation.framing));
 				}
 			}
 		

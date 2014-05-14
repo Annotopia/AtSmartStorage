@@ -158,7 +158,7 @@ class OpenAnnotationSetsUtilsService {
 	}
 	
 	public Dataset splitAnnotationGraphs(apiKey, Dataset annotationSet) {
-		String AT_FRAME = "https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/AnnotopiaFrame.json";
+		String AT_FRAME = grailsApplication.config.annotopia.jsonld.annotopia.framing;
 		log.info("[" + apiKey + "] Splitting of Annotation Sets Annotations into Named Graph...");
 			
 		// Count graphs
@@ -185,7 +185,7 @@ class OpenAnnotationSetsUtilsService {
 			for(int i=0; i<framed.get("@graph").getAt(0).getAt("annotations").size(); i++) {
 	
 				def annotation = framed.get("@graph").getAt(0).getAt("annotations").get(i);
-				annotation.put("@context", "https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/AnnotopiaContext.json");
+				annotation.put("@context", grailsApplication.config.annotopia.jsonld.annotopia.context);
 	
 				String graphUri = mintGraphUri();
 				annGraphUris.add(graphUri);
@@ -197,7 +197,7 @@ class OpenAnnotationSetsUtilsService {
 			}
 		} else {
 			def annotation = framed.get("@graph").getAt(0).getAt("annotations");
-			annotation.put("@context", "https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/AnnotopiaContext.json");
+			annotation.put("@context", grailsApplication.config.annotopia.jsonld.annotopia.context);
 	
 			String graphUri = mintGraphUri();
 			annGraphUris.add(graphUri);
@@ -214,7 +214,7 @@ class OpenAnnotationSetsUtilsService {
 		}
 	
 		def isolatedSet = framed.get("@graph").getAt(0);
-		isolatedSet.put("@context", "https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/AnnotopiaContext.json");
+		isolatedSet.put("@context", grailsApplication.config.annotopia.jsonld.annotopia.context);
 		String setGraphUri = mintGraphUri();
 		
 		println JSONUtils.toString(isolatedSet)

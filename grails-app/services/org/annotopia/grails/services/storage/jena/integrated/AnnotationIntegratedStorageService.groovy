@@ -501,7 +501,7 @@ class AnnotationIntegratedStorageService {
 						Model m = ModelFactory.createDefaultModel()
 			
 						def annotation = array.get(j);
-						annotation.put("@context", "https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/AnnotopiaContext.json");
+						annotation.put("@context", grailsApplication.config.annotopia.jsonld.annotopia.context);
 						
 						String annotationAsString = JSONUtils.toString(annotation);
 						
