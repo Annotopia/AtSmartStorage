@@ -61,7 +61,9 @@ class BaseController {
 	 */
 	public String getCurrentUrl(HttpServletRequest request){
 		StringBuilder sb = new StringBuilder()
-		sb << request.getRequestURL().substring(0,request.getRequestURL().indexOf("/", 7))
+		int fromIndex = 7;
+		if(grailsApplication.config.grails.server.protocol.equals("https")) {fromIndex = 8;}
+		sb << request.getRequestURL().substring(0,request.getRequestURL().indexOf("/", fromIndex))
 		sb << request.getAttribute("javax.servlet.forward.request_uri")
 		if(request.getAttribute("javax.servlet.forward.query_string")){
 			sb << "?"
