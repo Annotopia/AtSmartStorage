@@ -39,7 +39,7 @@ class ApiKeyAuthenticationService {
 	 */
 	def isApiKeyValid(def ip, def apiKey) {
 		log.info("Validating API key [" + apiKey + "] on request from IP: " + ip);
-		// TODO Validate against real API Keys.
+		// Validation mockup for testing mode
 		boolean allowed = (
 			grailsApplication.config.annotopia.storage.testing.enabled=='true' &&
 			apiKey==grailsApplication.config.annotopia.storage.testing.apiKey
