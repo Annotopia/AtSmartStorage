@@ -32,26 +32,12 @@ grails.project.dependency.resolution = {
 		
 		runtime 'virtuoso:virtjdbc:4'
 		runtime 'virtuoso.sesame:virt_jena:2'
-		
-		/*
-		compile ("org.apache.jena:jena-core:2.11.0") {
-			excludes 'slf4j-api', 'xercesImpl'
-		}
-		compile ("org.apache.jena:jena-arq:2.11.0") 
-		*/
-		
+
 		compile ("org.apache.jena:jena-core:2.11.2-SNAPSHOT") {
 			excludes 'slf4j-api', 'xercesImpl'
 		}
 		compile ("org.apache.jena:jena-arq:2.11.2-SNAPSHOT")
-		
-		//compile ("com.github.jsonld-java:jsonld-java-jena:0.3-SNAPSHOT")
-		//compile ("com.github.jsonld-java:jsonld-java:0.3")
-		//compile ("com.github.jsonld-java:jsonld-java-jena:0.2.99-mygrid") 
-		/*{
-			excludes 'jsonld-java'
-		}*/
-		compile ("xml-apis:xml-apis:1.4.01") {
+		ile ("xml-apis:xml-apis:1.4.01") {
 			excludes 'xercesImpl'
 		}
 		test "org.spockframework:spock-grails-support:0.7-groovy-2.0"
