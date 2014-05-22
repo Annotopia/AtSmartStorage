@@ -22,7 +22,7 @@ package org.annotopia.grails.services.storage.authentication
 
 /**
  * This service manages access through API keys that are assigned to 
- * applications or users that want to make use of the Annotopia server.
+ * applications or users that want to make use of the Smart Storage.
  *
  * @author Paolo Ciccarese <paolo.ciccarese@gmail.com>
  */
