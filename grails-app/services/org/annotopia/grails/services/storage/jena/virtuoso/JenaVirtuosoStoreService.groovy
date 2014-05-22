@@ -249,7 +249,7 @@ class JenaVirtuosoStoreService implements ITripleStore {
 	}
 	
 	private printDebugData(def data) {
-		if (Environment.current == Environment.DEVELOPMENT &&
+		if (Environment.current == Environment.DEVELOPMENT && grailsApplication.config.annotopia.debug.storage.environment.trace.data &&
 				Boolean.parseBoolean(grailsApplication.config.annotopia.debug.storage.environment.trace.data)) {
 			println '-----START-DEVELOPMENT-DEBUG-DATA-----';
 			RDFDataMgr.write(System.out, data, RDFFormat.JSONLD);
