@@ -45,5 +45,7 @@ class SecretController {
 			println 'dropping annotation graph ' + graph
 			jenaVirtuosoStoreService.dropGraph("secret", graph);
 		}
+		
+		jenaVirtuosoStoreService.dropGraph("secret", "annotopia:graphs:provenance");
 	}
 }
