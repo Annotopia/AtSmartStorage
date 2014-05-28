@@ -32,7 +32,7 @@ import org.apache.jena.riot.RDFLanguages
 
 import com.github.jsonldjava.core.JsonLdOptions
 import com.github.jsonldjava.core.JsonLdProcessor
-import com.github.jsonldjava.utils.JSONUtils
+import com.github.jsonldjava.utils.JsonUtils
 import com.hp.hpl.jena.query.Dataset
 import com.hp.hpl.jena.query.DatasetFactory
 import com.hp.hpl.jena.rdf.model.Model
@@ -149,9 +149,9 @@ class OpenAnnotationSetController extends BaseController {
 						// This serializes with and according to the context
 						if(contextJson==null) {
 							if(outCmd=='context') {
-								contextJson = JSONUtils.fromInputStream(callExternalUrl(apiKey, grailsApplication.config.annotopia.jsonld.annotopia.context));
+								contextJson = JsonUtils.fromInputStream(callExternalUrl(apiKey, grailsApplication.config.annotopia.jsonld.annotopia.context));
 							} else if(outCmd=='frame') {
-								contextJson = JSONUtils.fromInputStream(callExternalUrl(apiKey, grailsApplication.config.annotopia.jsonld.annotopia.framing));
+								contextJson = JsonUtils.fromInputStream(callExternalUrl(apiKey, grailsApplication.config.annotopia.jsonld.annotopia.framing));
 							}
 						}
 
@@ -166,11 +166,11 @@ class OpenAnnotationSetController extends BaseController {
 						}
 						
 						if(outCmd=='context') {
-							Object compact = JsonLdProcessor.compact(JSONUtils.fromString(baos.toString()), contextJson,  new JsonLdOptions());
-							response.outputStream << JSONUtils.toPrettyString(compact)
+							Object compact = JsonLdProcessor.compact(JsonUtils.fromString(baos.toString()), contextJson,  new JsonLdOptions());
+							response.outputStream << JsonUtils.toPrettyString(compact)
 						}  else if(outCmd=='frame') {
-							Object framed =  JsonLdProcessor.frame(JSONUtils.fromString(baos.toString()),contextJson, new JsonLdOptions());
-							response.outputStream << JSONUtils.toPrettyString(framed)
+							Object framed =  JsonLdProcessor.frame(JsonUtils.fromString(baos.toString()),contextJson, new JsonLdOptions());
+							response.outputStream << JsonUtils.toPrettyString(framed)
 						}
 					}
 					firstStreamed = true;
@@ -210,9 +210,9 @@ class OpenAnnotationSetController extends BaseController {
 				} else {				
 					if(contextJson==null) {
 						if(outCmd=='context') {
-							contextJson = JSONUtils.fromInputStream(callExternalUrl(apiKey, grailsApplication.config.annotopia.jsonld.annotopia.context));
+							contextJson = JsonUtils.fromInputStream(callExternalUrl(apiKey, grailsApplication.config.annotopia.jsonld.annotopia.context));
 						} else if(outCmd=='frame') {
-							contextJson = JSONUtils.fromInputStream(callExternalUrl(apiKey, grailsApplication.config.annotopia.jsonld.annotopia.framing));
+							contextJson = JsonUtils.fromInputStream(callExternalUrl(apiKey, grailsApplication.config.annotopia.jsonld.annotopia.framing));
 						}
 					}
 				
@@ -225,11 +225,11 @@ class OpenAnnotationSetController extends BaseController {
 					}
 					
 					if(outCmd=='context') {
-						Object compact = JsonLdProcessor.compact(JSONUtils.fromString(baos.toString()), contextJson,  new JsonLdOptions());
-						response.outputStream << JSONUtils.toPrettyString(compact)
+						Object compact = JsonLdProcessor.compact(JsonUtils.fromString(baos.toString()), contextJson,  new JsonLdOptions());
+						response.outputStream << JsonUtils.toPrettyString(compact)
 					}  else if(outCmd=='frame') {
-						Object framed =  JsonLdProcessor.frame(JSONUtils.fromString(baos.toString()),contextJson, new JsonLdOptions());
-						response.outputStream << JSONUtils.toPrettyString(framed)
+						Object framed =  JsonLdProcessor.frame(JsonUtils.fromString(baos.toString()),contextJson, new JsonLdOptions());
+						response.outputStream << JsonUtils.toPrettyString(framed)
 					}
 				}
 				response.outputStream.flush()
@@ -308,9 +308,9 @@ class OpenAnnotationSetController extends BaseController {
 //				} else {
 //					if(contextJson==null) {
 //						if(outCmd=='context') {
-//							contextJson = JSONUtils.fromInputStream(callExternalUrl(apiKey, grailsApplication.config.annotopia.jsonld.annotopia.context));
+//							contextJson = JsonUtils.fromInputStream(callExternalUrl(apiKey, grailsApplication.config.annotopia.jsonld.annotopia.context));
 //						} else if(outCmd=='frame') {
-//							contextJson = JSONUtils.fromInputStream(callExternalUrl(apiKey, grailsApplication.config.annotopia.jsonld.annotopia.framing));
+//							contextJson = JsonUtils.fromInputStream(callExternalUrl(apiKey, grailsApplication.config.annotopia.jsonld.annotopia.framing));
 //						}
 //					}
 //				
@@ -323,11 +323,11 @@ class OpenAnnotationSetController extends BaseController {
 //					}
 //					
 //					if(outCmd=='context') {
-//						Object compact = JsonLdProcessor.compact(JSONUtils.fromString(baos.toString()), contextJson, new JsonLdOptions());
-//						response.outputStream << JSONUtils.toPrettyString(compact)
+//						Object compact = JsonLdProcessor.compact(JsonUtils.fromString(baos.toString()), contextJson, new JsonLdOptions());
+//						response.outputStream << JsonUtils.toPrettyString(compact)
 //					}  else if(outCmd=='frame') {
-//						Object framed =  JsonLdProcessor.frame(JSONUtils.fromString(baos.toString()), contextJson, new JsonLdOptions());
-//						response.outputStream << JSONUtils.toPrettyString(framed)
+//						Object framed =  JsonLdProcessor.frame(JsonUtils.fromString(baos.toString()), contextJson, new JsonLdOptions());
+//						response.outputStream << JsonUtils.toPrettyString(framed)
 //					}
 //				}
 //				response.outputStream.flush()
@@ -412,9 +412,9 @@ class OpenAnnotationSetController extends BaseController {
 //				} else {
 //					if(contextJson==null) {
 //						if(outCmd=='context') {
-//							contextJson = JSONUtils.fromInputStream(callExternalUrl(apiKey, grailsApplication.config.annotopia.jsonld.annotopia.context));
+//							contextJson = JsonUtils.fromInputStream(callExternalUrl(apiKey, grailsApplication.config.annotopia.jsonld.annotopia.context));
 //						} else if(outCmd=='frame') {
-//							contextJson = JSONUtils.fromInputStream(callExternalUrl(apiKey, grailsApplication.config.annotopia.jsonld.annotopia.framing));
+//							contextJson = JsonUtils.fromInputStream(callExternalUrl(apiKey, grailsApplication.config.annotopia.jsonld.annotopia.framing));
 //						}
 //					}
 //				
@@ -427,11 +427,11 @@ class OpenAnnotationSetController extends BaseController {
 //					}
 //					
 //					if(outCmd=='context') {
-//						Object compact = JsonLdProcessor.compact(JSONUtils.fromString(baos.toString()), contextJson,  new JsonLdOptions());
-//						response.outputStream << JSONUtils.toPrettyString(compact)
+//						Object compact = JsonLdProcessor.compact(JsonUtils.fromString(baos.toString()), contextJson,  new JsonLdOptions());
+//						response.outputStream << JsonUtils.toPrettyString(compact)
 //					}  else if(outCmd=='frame') {
-//						Object framed =  JsonLdProcessor.frame(JSONUtils.fromString(baos.toString()), contextJson, new JsonLdOptions());
-//						response.outputStream << JSONUtils.toPrettyString(framed)
+//						Object framed =  JsonLdProcessor.frame(JsonUtils.fromString(baos.toString()), contextJson, new JsonLdOptions());
+//						response.outputStream << JsonUtils.toPrettyString(framed)
 //					}
 //				}
 //				response.outputStream.flush()
@@ -479,9 +479,9 @@ class OpenAnnotationSetController extends BaseController {
 		} else {
 			if(contextJson==null) {
 				if(outCmd=='context') {
-					contextJson = JSONUtils.fromInputStream(callExternalUrl(apiKey, grailsApplication.config.annotopia.jsonld.annotopia.context));
+					contextJson = JsonUtils.fromInputStream(callExternalUrl(apiKey, grailsApplication.config.annotopia.jsonld.annotopia.context));
 				} else if(sizeDataset==1 && outCmd=='frame') {
-					contextJson = JSONUtils.fromInputStream(callExternalUrl(apiKey,grailsApplication.config.annotopia.jsonld.annotopia.framing));
+					contextJson = JsonUtils.fromInputStream(callExternalUrl(apiKey,grailsApplication.config.annotopia.jsonld.annotopia.framing));
 				} 
 			}
 		
@@ -489,11 +489,11 @@ class OpenAnnotationSetController extends BaseController {
 			RDFDataMgr.write(baos, datasetToRender, RDFLanguages.JSONLD);
 			
 			if(outCmd=='context') {
-				Object compact = JsonLdProcessor.compact(JSONUtils.fromString(baos.toString()), contextJson, new JsonLdOptions());
-				response.outputStream << JSONUtils.toPrettyString(compact)
+				Object compact = JsonLdProcessor.compact(JsonUtils.fromString(baos.toString()), contextJson, new JsonLdOptions());
+				response.outputStream << JsonUtils.toPrettyString(compact)
 			}  else if(sizeDataset==1 && outCmd=='frame') {
-				Object framed =  JsonLdProcessor.frame(JSONUtils.fromString(baos.toString()), contextJson, new JsonLdOptions());
-				response.outputStream << JSONUtils.toPrettyString(framed)
+				Object framed =  JsonLdProcessor.frame(JsonUtils.fromString(baos.toString()), contextJson, new JsonLdOptions());
+				response.outputStream << JsonUtils.toPrettyString(framed)
 			}
 		}
 		response.outputStream << ']}}'

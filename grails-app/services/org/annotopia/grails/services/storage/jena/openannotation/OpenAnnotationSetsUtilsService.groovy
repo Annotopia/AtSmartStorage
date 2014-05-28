@@ -27,7 +27,7 @@ import org.apache.jena.riot.RDFLanguages
 
 import com.github.jsonldjava.core.JsonLdOptions
 import com.github.jsonldjava.core.JsonLdProcessor
-import com.github.jsonldjava.utils.JSONUtils
+import com.github.jsonldjava.utils.JsonUtils
 import com.hp.hpl.jena.query.Dataset
 import com.hp.hpl.jena.query.DatasetFactory
 import com.hp.hpl.jena.query.QueryExecution
@@ -175,8 +175,8 @@ class OpenAnnotationSetsUtilsService {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		RDFDataMgr.write(baos, datasetToRender, RDFLanguages.JSONLD);
 
-		Object contextJson = JSONUtils.fromInputStream(callExternalUrl(apiKey, AT_FRAME));
-		Map<String, Object> framed =  JsonLdProcessor.frame(JSONUtils.fromString(baos.toString()), contextJson, new JsonLdOptions());
+		Object contextJson = JsonUtils.fromInputStream(callExternalUrl(apiKey, AT_FRAME));
+		Map<String, Object> framed =  JsonLdProcessor.frame(JsonUtils.fromString(baos.toString()), contextJson, new JsonLdOptions());
 
 		def annGraphUris = [];
 		Dataset annotationGraphs = DatasetFactory.createMem();
@@ -191,7 +191,7 @@ class OpenAnnotationSetsUtilsService {
 				annGraphUris.add(graphUri);
 				Model model = ModelFactory.createDefaultModel();
 				
-				RDFDataMgr.read(model, new ByteArrayInputStream(JSONUtils.toString(annotation).getBytes("UTF-8")), RDFLanguages.JSONLD);
+				RDFDataMgr.read(model, new ByteArrayInputStream(JsonUtils.toString(annotation).getBytes("UTF-8")), RDFLanguages.JSONLD);
 				annotationGraphs.addNamedModel(graphUri, model);
 				framed.get("@graph").getAt(0).getAt("annotations").clear();
 			}
@@ -203,7 +203,7 @@ class OpenAnnotationSetsUtilsService {
 			annGraphUris.add(graphUri);
 			Model model = ModelFactory.createDefaultModel();
 			
-			RDFDataMgr.read(model, new ByteArrayInputStream(JSONUtils.toString(annotation).getBytes("UTF-8")), RDFLanguages.JSONLD);
+			RDFDataMgr.read(model, new ByteArrayInputStream(JsonUtils.toString(annotation).getBytes("UTF-8")), RDFLanguages.JSONLD);
 			annotationGraphs.addNamedModel(graphUri, model);
 			framed.get("@graph").getAt(0).remove("annotations");
 			framed.get("@graph").getAt(0).put("annotations", new ArrayList())
@@ -217,10 +217,10 @@ class OpenAnnotationSetsUtilsService {
 		isolatedSet.put("@context", grailsApplication.config.annotopia.jsonld.annotopia.context);
 		String setGraphUri = mintGraphUri();
 		
-		println JSONUtils.toString(isolatedSet)
+		println JsonUtils.toString(isolatedSet)
 		
 		Model model = ModelFactory.createDefaultModel();
-		RDFDataMgr.read(model, new ByteArrayInputStream(JSONUtils.toString(isolatedSet).getBytes("UTF-8")), RDFLanguages.JSONLD);
+		RDFDataMgr.read(model, new ByteArrayInputStream(JsonUtils.toString(isolatedSet).getBytes("UTF-8")), RDFLanguages.JSONLD);
 		annotationGraphs.addNamedModel(setGraphUri, model);
 		annotationGraphs	
 	}

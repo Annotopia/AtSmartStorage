@@ -24,7 +24,7 @@ import org.apache.jena.riot.RDFDataMgr
 import org.apache.jena.riot.RDFLanguages
 import org.codehaus.groovy.grails.web.json.JSONObject
 
-import com.github.jsonldjava.utils.JSONUtils
+import com.github.jsonldjava.utils.JsonUtils
 import com.hp.hpl.jena.query.Dataset
 import com.hp.hpl.jena.query.DatasetFactory
 import com.hp.hpl.jena.query.Query
@@ -98,7 +98,7 @@ class OpenAnnotationValidationService {
 							
 							log.info("From file " + file.getAbsoluteFile());
 							InputStream inp = new FileInputStream(file);
-							validationRules = (List<Map<String, Object>>) JSONUtils.fromInputStream(inp, "UTF-8");
+							validationRules = (List<Map<String, Object>>) JsonUtils.fromInputStream(inp, "UTF-8");
 						}
 					} catch (IOException ex) {
 						HashMap<String,Object> errorResult = new HashMap<String, Object>();

@@ -37,7 +37,7 @@ import virtuoso.jena.driver.VirtGraph
 import virtuoso.jena.driver.VirtuosoQueryExecution
 import virtuoso.jena.driver.VirtuosoQueryExecutionFactory
 
-import com.github.jsonldjava.utils.JSONUtils
+import com.github.jsonldjava.utils.JsonUtils
 import com.hp.hpl.jena.query.Dataset
 import com.hp.hpl.jena.query.DatasetFactory
 import com.hp.hpl.jena.query.QueryFactory
@@ -488,13 +488,13 @@ class AnnotationIntegratedStorageService {
 					def annotationToModelMap = [:]
 
 					//Set<Model> annotationsModels = new HashSet<Model>();
-					Object json = JSONUtils.fromString(set);
+					Object json = JsonUtils.fromString(set);
 					JSONArray array = json.getAt("annotations");
 					
 					Model bareSetModel = ModelFactory.createDefaultModel()
 					Object bareSetJson = json;
 					bareSetJson.getAt("annotations").clear();
-					String annotationSetAsString = JSONUtils.toString(bareSetJson);
+					String annotationSetAsString = JsonUtils.toString(bareSetJson);
 					RDFDataMgr.read(bareSetModel, new ByteArrayInputStream(annotationSetAsString.getBytes("UTF-8")), RDFLanguages.JSONLD);
 					
 					for(int j=0; j<array.size(); j++) {
@@ -503,7 +503,7 @@ class AnnotationIntegratedStorageService {
 						def annotation = array.get(j);
 						annotation.put("@context", grailsApplication.config.annotopia.jsonld.annotopia.context);
 						
-						String annotationAsString = JSONUtils.toString(annotation);
+						String annotationAsString = JsonUtils.toString(annotation);
 						
 						println annotationAsString
 						
