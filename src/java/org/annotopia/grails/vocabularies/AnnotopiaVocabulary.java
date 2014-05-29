@@ -47,4 +47,6 @@ public interface AnnotopiaVocabulary {
 	public static final String GRAPH_ANNOTATION_COUNT   = "http://purl.org/annotopia#graphannotationcount";
 	
 	public static final String HAS_CHANGED         		= "http://purl.org/annotopia#hasChanged";
+	
+	public static final String PERMISSIONS         		= "http://purl.org/annotopia#permissions";
 }

@@ -13,6 +13,8 @@
 	    "prov": "http://www.w3.org/ns/prov#",
 	    "trig": "http://www.w3.org/2004/03/trix/rdfg-1/",
 	    "xsd": "http://www.w3.org/2001/XMLSchema#",
+	    "xxx": "http://purl.org/annotopia#",
+	     
 	    "hasBody" :      {"@type":"@id", "@id" : "oa:hasBody"},
 	    "hasTarget" :    {"@type":"@id", "@id" : "oa:hasTarget"},
 	    "hasSource" :    {"@type":"@id", "@id" : "oa:hasSource"},
@@ -45,7 +47,8 @@
 	    "label" :        "rdfs:label",
 	    "name" :         "foaf:name",
 	    "mbox" :         "foaf:mbox",
-	    "styleClass" :   "oa:styleClass"
+	    "styleClass" :   "oa:styleClass",
+	    "permissions" :  "xxx:permissions"
   },
   "@type": "oa:Annotation",
   "hasBody": {
