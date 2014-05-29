@@ -62,6 +62,8 @@
 	    
 	    "targets"		: "at:targets",
 	    "hasChanged"    : "at:hasChanged",
-	    "annotations" 	: {"@type":"@id", "@id" : "at:annotations"}
+	    "annotations" 	: {"@type":"@id", "@id" : "at:annotations"},
+	    
+	    "permissions"	: "at:permissions"
     }
 }
