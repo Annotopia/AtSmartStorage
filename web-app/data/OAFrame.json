@@ -32,6 +32,7 @@
 	    "item" :         {"@type":"@id", "@id" : "oa:item"},
 	    "first":         {"@type":"@id", "@id" : "rdf:first"},
 	    "rest":          {"@type":"@id", "@id" : "rdf:rest", "@container" : "@list"},
+	    "permissions" :  {"@type":"@id", "@id" : "xxx:permissions"},
 	    "chars" :        "cnt:chars",
 	    "bytes" :        "cnt:bytes",
 	    "format" :       "dc:format",
@@ -47,8 +48,7 @@
 	    "label" :        "rdfs:label",
 	    "name" :         "foaf:name",
 	    "mbox" :         "foaf:mbox",
-	    "styleClass" :   "oa:styleClass",
-	    "permissions" :  "xxx:permissions"
+	    "styleClass" :   "oa:styleClass"
   },
   "@type": "oa:Annotation",
   "hasBody": {
