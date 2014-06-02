@@ -56,6 +56,7 @@ class OpenAnnotationWithPermissionsStorageService {
 	def jenaUtilsService
 	def grailsApplication
 	def graphMetadataService
+	def usersAndGroupsService;
 	def jenaVirtuosoStoreService
 	def openAnnotationUtilsService
 	def openAnnotationVirtuosoService;
@@ -506,6 +507,11 @@ class OpenAnnotationWithPermissionsStorageService {
 		allowed.each { token ->
 			if(token.startsWith("user:")) {
 				if(token.substring(5) == userKey) {
+					validated = true;
+					return;
+				}
+			} else if(token.startsWith("group:")) {
+				if(usersAndGroupsService.doesUserBelongToGroups(userKey, token.substring(6))) {
 					validated = true;
 					return;
 				}
