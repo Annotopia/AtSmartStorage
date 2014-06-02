@@ -115,6 +115,16 @@ class OpenAnnotationWithPermissionsVirtuosoService {
 		enabled
 	}
 	
+	public Set<String> whoCanDeleteAnnotation(apiKey, userKey, graphUri) {
+		log.info '[' + apiKey + '] Checking if user ' + userKey + ' can update Annotation ' + graphUri;
+		
+		String queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> " +
+			"SELECT DISTINCT ?allowed FROM <" + graphUri + "> WHERE {  { ?s a oa:Annotation. ?s ?p ?x. ?x <http://purl.org/annotopia#delete> ?allowed. }}";
+
+		Set<String> enabled = jenaVirtuosoStoreService.retrievePropertyValues(apiKey, queryString, "allowed");
+		enabled
+	}
+	
 	public Set<String> retrieveAnnotationGraphsNames(apiKey, userKey, max, offset, tgtUrl, tgtFgt) {
 		log.info  '[' + apiKey + '] Retrieving annotation graphs names ' +
 			' max:' + max +

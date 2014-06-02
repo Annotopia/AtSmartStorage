@@ -146,7 +146,7 @@ class OpenAnnotationVirtuosoService {
 		graphs
 	}
 	
-	// TODO return all graphs also the onces that are bodies!!!!
+	// TODO return all graphs also the ones that are bodies!!!!
 	public Dataset retrieveAnnotation(apiKey, uri) {
 		log.info '[' + apiKey + '] Retrieving annotation ' + uri;
 		

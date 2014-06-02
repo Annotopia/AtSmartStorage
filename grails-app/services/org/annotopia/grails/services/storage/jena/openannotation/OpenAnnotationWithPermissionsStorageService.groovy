@@ -502,6 +502,41 @@ class OpenAnnotationWithPermissionsStorageService {
 		}
 	}
 	
+	public boolean deleteAnnotationDataset(apiKey, userKey, startTime, annotationUri) {
+		//Set<String> enabled = openAnnotationWithPermissionsVirtuosoService.whoCanUpdateAnnotation(apiKey, userKey, annotationGraphUri);
+		//boolean isAllowed = isUserAllowed(apiKey, userKey, enabled);
+		
+		String graphName;
+		Set<String> names = openAnnotationVirtuosoService.retrieveAnnotationGraphNames(apiKey, annotationUri)
+		names.each { graphName = it }
+		
+		Set<String> enabled = openAnnotationWithPermissionsVirtuosoService.whoCanDeleteAnnotation(apiKey, userKey, graphName);
+		boolean isAllowed = isUserAllowed(apiKey, userKey, enabled);
+		
+		if(isAllowed) {
+			Dataset graphs =  openAnnotationVirtuosoService.retrieveAnnotation(apiKey, annotationUri);
+			if(graphs!=null) {
+				graphs.listNames().each {
+					log.trace("[" + apiKey + "] Deleting graph " + it);
+					jenaVirtuosoStoreService.dropGraph(apiKey, it);
+					jenaVirtuosoStoreService.removeAllTriples(apiKey, grailsApplication.config.annotopia.storage.uri.graph.provenance, it);
+				}
+				return true;
+			}  else {
+				// Annotation  not found
+				log.info("[" + apiKey + "] Annotation not found " + annotationUri);
+				def json = JSON.parse('{"status":"nocontent" ,"message":"The requested Annotation cannot be updated as it has not been found"' +
+					',"duration": "' + (System.currentTimeMillis()-startTime) + 'ms", ' + '}');
+				throw new StoreServiceException(200, json, "text/json", "UTF-8");
+			}
+		} else {
+			log.info("[" + apiKey + "] User [" + userKey + "] does not have permission to delete the annotation");
+			def json = JSON.parse('{"status":"nocontent" ,"message":"User [' + userKey + '] does not have permission to delete the annotation"' +
+				',"duration": "' + (System.currentTimeMillis()-startTime) + 'ms", ' + '}');
+			throw new StoreServiceException(200, json, "text/json", "UTF-8");
+		}
+	}
+	
 	private boolean isUserAllowed(apiKey, userKey, Set<String> allowed) {
 		boolean validated = false;
 		allowed.each { token ->
@@ -511,7 +546,7 @@ class OpenAnnotationWithPermissionsStorageService {
 					return;
 				}
 			} else if(token.startsWith("group:")) {
-				if(usersAndGroupsService.doesUserBelongToGroups(userKey, token.substring(6))) {
+				if(usersAndGroupsService.doesUserBelongToGroup(userKey, token.substring(6))) {
 					validated = true;
 					return;
 				}

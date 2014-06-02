@@ -25,7 +25,7 @@ package org.annotopia.grails.services.storage.authentication
  */
 class UsersAndGroupsService {
 
-	boolean doesUserBelongToGroup(userId, groupId) {
+	boolean doesUserBelongToGroup(def userId, def groupId) {
 		return false;
 	}
 }
