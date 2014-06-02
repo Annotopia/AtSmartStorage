@@ -463,14 +463,21 @@ class OpenAnnotationWithPermissionsStorageService {
 					//println jenaUtilsService.getDatasetAsString(updateDataset);
 					
 					Set<String> enabled = openAnnotationWithPermissionsVirtuosoService.whoCanUpdateAnnotation(apiKey, userKey, annotationGraphUri);
-					println "2>>>>>> " + enabled
+					boolean isAllowed = isUserAllowed(apiKey, userKey, enabled);
 					
-					jenaVirtuosoStoreService.updateGraphMetadata(apiKey, metaModel, annotationGraphUri, grailsApplication.config.annotopia.storage.uri.graph.provenance)
+					if(isAllowed) {
+						jenaVirtuosoStoreService.updateGraphMetadata(apiKey, metaModel, annotationGraphUri, grailsApplication.config.annotopia.storage.uri.graph.provenance)
 					
-					jenaVirtuosoStoreService.updateDataset(apiKey, updateDataset);
+						jenaVirtuosoStoreService.updateDataset(apiKey, updateDataset);
 					
-					if(incGph) return updateDataset;
-					else return storedDataset;
+						if(incGph) return updateDataset;
+						else return storedDataset;
+					} else {
+						log.info("[" + apiKey + "] User [" + userKey + "] does not have permission to update the annotation");
+						def json = JSON.parse('{"status":"nocontent" ,"message":"User [' + userKey + '] does not have permission to update the annotation"' +
+							',"duration": "' + (System.currentTimeMillis()-startTime) + 'ms", ' + '}');
+						throw new StoreServiceException(200, json, "text/json", "UTF-8");
+					}
 				} else {
 					// Annotation not found
 					log.info("[" + apiKey + "] Annotation not found " + content);
@@ -492,6 +499,19 @@ class OpenAnnotationWithPermissionsStorageService {
 				',"duration": "' + (System.currentTimeMillis()-startTime) + 'ms", ' + '}');
 			throw new StoreServiceException(200, json, "text/json", "UTF-8");
 		}
+	}
+	
+	private boolean isUserAllowed(apiKey, userKey, Set<String> allowed) {
+		boolean validated = false;
+		allowed.each { token ->
+			if(token.startsWith("user:")) {
+				if(token.substring(5) == userKey) {
+					validated = true;
+					return;
+				}
+			}
+		}
+		return validated;
 	}
 	
 	/**

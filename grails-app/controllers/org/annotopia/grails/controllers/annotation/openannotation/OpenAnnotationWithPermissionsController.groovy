@@ -366,7 +366,7 @@ class OpenAnnotationWithPermissionsController extends BaseController {
 			invalidApiKey(request.getRemoteAddr()); return;
 		}
 		
-		def userKey = "user:http://orcid.org/0000-0002-5156-2703";
+		def userKey = "http://orcid.org/0000-0002-5156-2703";
 		
 		def outCmd = (request.JSON.outCmd!=null)?request.JSON.outCmd:OUTCMD_NONE;
 		if(params.outCmd!=null) outCmd = params.outCmd;
