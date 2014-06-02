@@ -329,6 +329,7 @@ class JenaVirtuosoStoreService implements ITripleStore {
 		log.info '[' + apiKey + '] Retrieving graph: ' + graphUri;
 		
 		VirtGraph set = graph();
+		
 		String queryString = "CONSTRUCT { ?s ?p ?o . } FROM <" + graphUri + ">" + 
 			" WHERE { ?s ?p ?o . }";
 		log.trace '[' + apiKey + '] retrieveGraph: ' + queryString
@@ -355,7 +356,11 @@ class JenaVirtuosoStoreService implements ITripleStore {
 	public Model retrieveGraphMetadata(String apiKey, String graphUri, String metadataGraphUri) {
 		log.info '[' + apiKey + '] Retrieving graph metadata: ' + graphUri;
 		
-		VirtGraph set = graph();
+		VirtGraph set = new VirtGraph (graphUri,
+			grailsApplication.config.annotopia.storage.triplestore.host,
+			grailsApplication.config.annotopia.storage.triplestore.user,
+			grailsApplication.config.annotopia.storage.triplestore.pass);
+		
 		String queryString = "CONSTRUCT { <"+graphUri+"> ?p ?o . } FROM <" + metadataGraphUri + ">" +
 			" WHERE { <"+graphUri+"> ?p ?o .}";
 		log.trace '[' + apiKey + '] retrieveGraphMetadata: ' + queryString
@@ -414,7 +419,10 @@ class JenaVirtuosoStoreService implements ITripleStore {
 		log.info '[' + apiKey + '] Removing all triples with subject: ' + subjectUri + ' from: ' + graphUri;
 		
 		try {
-			VirtGraph graph = graph();
+			VirtGraph graph = new VirtGraph (
+				grailsApplication.config.annotopia.storage.triplestore.host,
+				grailsApplication.config.annotopia.storage.triplestore.user,
+				grailsApplication.config.annotopia.storage.triplestore.pass);
 			String queryString = "DELETE WHERE { GRAPH <" + graphUri + ">" +
 				" { <"+subjectUri+"> ?p ?o .} }";
 			log.trace '[' + apiKey + '] removeAllTriples: ' + queryString
@@ -431,7 +439,10 @@ class JenaVirtuosoStoreService implements ITripleStore {
 		log.info '[' + apiKey + '] Removing graph: ' + graphUri;
 		
 		try {
-			VirtGraph graph = graph();
+			VirtGraph graph = new VirtGraph (
+				grailsApplication.config.annotopia.storage.triplestore.host,
+				grailsApplication.config.annotopia.storage.triplestore.user,
+				grailsApplication.config.annotopia.storage.triplestore.pass);
 			String str = "DROP SILENT GRAPH <" + graphUri + ">";
 			VirtuosoUpdateRequest vur = VirtuosoUpdateFactory.create(str, graph);
 			vur.exec();
@@ -445,7 +456,10 @@ class JenaVirtuosoStoreService implements ITripleStore {
 		log.info '[' + apiKey + '] Clearing graph: ' + graphUri;
 		
 		try {
-			VirtGraph graph = graph();
+			VirtGraph graph = new VirtGraph (
+				grailsApplication.config.annotopia.storage.triplestore.host,
+				grailsApplication.config.annotopia.storage.triplestore.user,
+				grailsApplication.config.annotopia.storage.triplestore.pass);
 			String str = "CLEAR GRAPH <" + graphUri + ">";
 			VirtuosoUpdateRequest vur = VirtuosoUpdateFactory.create(str, graph);
 			vur.exec();
