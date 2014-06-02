@@ -423,9 +423,9 @@ class OpenAnnotationWithPermissionsStorageService {
 					// are mantained with a precise criteria. For now, when updating the URIs are kept while 
 					// URNs and blanks are replaced.
 					
-					ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-					RDFDataMgr.write(outputStream, dataset, RDFLanguages.JSONLD);
-					println outputStream.toString();
+//					ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+//					RDFDataMgr.write(outputStream, dataset, RDFLanguages.JSONLD);
+//					println outputStream.toString();
 					
 					// Find body URI
 					// Query Content As Text

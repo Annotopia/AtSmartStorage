@@ -124,7 +124,7 @@ class JenaVirtuosoStoreService implements ITripleStore {
 	 */
 	public Set<String> retrieveGraphsNames(apiKey, queryString) {
 		VirtGraph graph = graph();
-		log.trace('[' + apiKey + '] ' + queryString);
+		log.trace('[' + apiKey + '] retrieveGraphsNames: ' + queryString);
 		
 		Set<String> graphNames = new HashSet<String>();
 		VirtuosoQueryExecution vqe = VirtuosoQueryExecutionFactory.create(QueryFactory.create(queryString), graph);
@@ -137,9 +137,17 @@ class JenaVirtuosoStoreService implements ITripleStore {
 		graphNames
 	}
 	
+	/**
+	 * This method runs a SELECY query and returns the property values
+	 * as a Set of Strings. 
+	 * @param apiKey		The API software key
+	 * @param queryString	The query that select a property
+	 * @param variable		The property to query
+	 * @return The set of property values
+	 */
 	public Set<String> retrievePropertyValues(apiKey, queryString, variable) {
 		VirtGraph graph = graph();
-		log.trace('[' + apiKey + '] ' + queryString);
+		log.trace('[' + apiKey + '] retrievePropertyValues: ' + queryString);
 		
 		Set<String> propertyValues = new HashSet<String>();
 		VirtuosoQueryExecution vqe = VirtuosoQueryExecutionFactory.create(QueryFactory.create(queryString), graph);
@@ -327,7 +335,7 @@ class JenaVirtuosoStoreService implements ITripleStore {
 		
 		String queryString = "CONSTRUCT { ?s ?p ?o . } FROM <" + graphUri + ">" + 
 			" WHERE { ?s ?p ?o . }";
-		log.trace '[' + apiKey + '] ' + queryString
+		log.trace '[' + apiKey + '] retrieveGraph: ' + queryString
 		
 		try {
 			VirtuosoQueryExecution vqe = VirtuosoQueryExecutionFactory.create (QueryFactory.create(queryString), set);	
@@ -358,7 +366,7 @@ class JenaVirtuosoStoreService implements ITripleStore {
 		
 		String queryString = "CONSTRUCT { <"+graphUri+"> ?p ?o . } FROM <" + metadataGraphUri + ">" +
 			" WHERE { <"+graphUri+"> ?p ?o .}";
-		log.trace '[' + apiKey + '] ' + queryString
+		log.trace '[' + apiKey + '] retrieveGraphMetadata: ' + queryString
 		
 		try {			
 			VirtuosoQueryExecution vqe = VirtuosoQueryExecutionFactory.create (QueryFactory.create(queryString), set);
@@ -420,7 +428,7 @@ class JenaVirtuosoStoreService implements ITripleStore {
 				grailsApplication.config.annotopia.storage.triplestore.pass);
 			String queryString = "DELETE WHERE { GRAPH <" + graphUri + ">" +
 				" { <"+subjectUri+"> ?p ?o .} }";
-			log.trace '[' + apiKey + '] ' + queryString
+			log.trace '[' + apiKey + '] removeAllTriples: ' + queryString
 			
 			VirtuosoUpdateRequest vur = VirtuosoUpdateFactory.create(queryString, graph);
 			vur.exec();
