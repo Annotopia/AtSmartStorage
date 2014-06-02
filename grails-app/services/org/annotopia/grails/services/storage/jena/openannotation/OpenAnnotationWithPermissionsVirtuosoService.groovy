@@ -100,9 +100,20 @@ class OpenAnnotationWithPermissionsVirtuosoService {
 		
 		String queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> " +
 			"SELECT DISTINCT ?g WHERE { GRAPH ?g { <" + uri + "> a oa:Annotation }}";
-		
+
 		Set<String> graphs = jenaVirtuosoStoreService.retrieveGraphsNames(apiKey, queryString);
 		graphs
+	}
+	
+	public Set<String> whoCanUpdateAnnotation(apiKey, userKey, graphUri) {
+		log.info '[' + apiKey + '] Checking if user ' + userKey + ' can update Annotation ' + graphUri;
+		
+		String queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> " +
+			"SELECT DISTINCT ?allowed WHERE { GRAPH <" + graphUri + "> { ?s a oa:Annotation. ?s ?p ?x. ?x <http://purl.org/annotopia#update> ?allowed. }}";
+		println queryString
+			
+		Set<String> enabled = jenaVirtuosoStoreService.retrievePropertyValues(apiKey, queryString, "allowed");
+		enabled
 	}
 	
 	public Set<String> retrieveAnnotationGraphsNames(apiKey, userKey, max, offset, tgtUrl, tgtFgt) {
@@ -120,11 +131,9 @@ class OpenAnnotationWithPermissionsVirtuosoService {
 		} else if(tgtUrl!=null && tgtFgt=="true") {
 			queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> " +
 				"SELECT DISTINCT ?g WHERE { GRAPH ?g { ?s a oa:Annotation . {?s oa:hasTarget <" + tgtUrl +
-				"> } UNION {?s oa:hasTarget ?t. ?t a oa:SpecificResource. ?t oa:hasSource <" + tgtUrl + ">}}} LIMIT " + max + " OFFSET " + offset;
+				"> } UNION {?s oa:hasTarget ?t. ?t a oa:SpecificResource. ?t oa:hasSource <" + tgtUrl + ">. ?x <http://purl.org/annotopia#read> <" + userKey + ">. }}} LIMIT " + max + " OFFSET " + offset;
 		}
 	
-		println queryString
-		
 		Set<String> graphs = jenaVirtuosoStoreService.retrieveGraphsNames(apiKey, queryString);
 		graphs
 	}

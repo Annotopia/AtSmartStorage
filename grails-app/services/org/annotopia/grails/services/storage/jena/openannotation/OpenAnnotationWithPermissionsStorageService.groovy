@@ -275,7 +275,7 @@ class OpenAnnotationWithPermissionsStorageService {
 				// Detection of permissions
 				List<Statement> permissionsStatements = detectPermissionsStatements(apiKey, dataset.getDefaultModel());
 				permissionsStatements.each { statement ->
-					newAnnotationGraphMetadataModel.add(ResourceFactory.createResource(newAnnotationGraphUri),statement.getPredicate(), statement.getObject());
+					newAnnotationGraphMetadataModel.add(ResourceFactory.createResource(newAnnotationGraphUri), statement.getPredicate(), statement.getObject());
 				}
 				
 				if(bodiesGraphsUris.size()>0) {
@@ -349,7 +349,7 @@ class OpenAnnotationWithPermissionsStorageService {
 		}
 	}
 	
-	public Dataset updateAnnotationDataset(apiKey, startTime, Boolean incGph,  Dataset dataset) {
+	public Dataset updateAnnotationDataset(apiKey, userKey, startTime, Boolean incGph,  Dataset dataset) {
 		
 		// Detect all named graphs
 		Set<Resource> graphsUris = jenaUtilsService.detectNamedGraphs(apiKey, dataset);
@@ -398,6 +398,9 @@ class OpenAnnotationWithPermissionsStorageService {
 			
 			Dataset workingDataset = DatasetFactory.createMem();
 			RDFDataMgr.read(workingDataset, new ByteArrayInputStream(content.toString().getBytes("UTF-8")), RDFLanguages.JSONLD);
+			
+			Set<String> enabled = openAnnotationWithPermissionsVirtuosoService.whoCanUpdateAnnotation(apiKey, userKey, "yolo");
+			println "1>>>>>> " + enabled
 			
 			jenaVirtuosoStoreService.updateDataset(apiKey, workingDataset);
 			
@@ -458,6 +461,9 @@ class OpenAnnotationWithPermissionsStorageService {
 					updateDataset.addNamedModel(grailsApplication.config.annotopia.storage.uri.graph.provenance, metaModel);
 
 					//println jenaUtilsService.getDatasetAsString(updateDataset);
+					
+					Set<String> enabled = openAnnotationWithPermissionsVirtuosoService.whoCanUpdateAnnotation(apiKey, userKey, annotationGraphUri);
+					println "2>>>>>> " + enabled
 					
 					jenaVirtuosoStoreService.updateGraphMetadata(apiKey, metaModel, annotationGraphUri, grailsApplication.config.annotopia.storage.uri.graph.provenance)
 					

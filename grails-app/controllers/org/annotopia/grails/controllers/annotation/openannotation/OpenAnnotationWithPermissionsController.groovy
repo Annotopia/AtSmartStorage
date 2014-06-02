@@ -277,6 +277,8 @@ class OpenAnnotationWithPermissionsController extends BaseController {
 			invalidApiKey(request.getRemoteAddr()); return;
 		}
 		
+		def userKey = "user:http://orcid.org/0000-0002-5156-2703";
+		
 		// Parsing the incoming parameters
 		def outCmd = (request.JSON.outCmd!=null)?request.JSON.outCmd:OUTCMD_NONE;
 		if(params.outCmd!=null) outCmd = params.outCmd;		
@@ -364,6 +366,8 @@ class OpenAnnotationWithPermissionsController extends BaseController {
 			invalidApiKey(request.getRemoteAddr()); return;
 		}
 		
+		def userKey = "user:http://orcid.org/0000-0002-5156-2703";
+		
 		def outCmd = (request.JSON.outCmd!=null)?request.JSON.outCmd:OUTCMD_NONE;
 		if(params.outCmd!=null) outCmd = params.outCmd;
 		def incGph = (request.JSON.incGph!=null)?request.JSON.incGph:INCGPH_NO;
@@ -398,7 +402,7 @@ class OpenAnnotationWithPermissionsController extends BaseController {
 			
 			Dataset updatedAnnotation;
 			try {
-				updatedAnnotation = openAnnotationWithPermissionsStorageService.updateAnnotationDataset(apiKey, startTime, Boolean.parseBoolean(incGph), inMemoryDataset);
+				updatedAnnotation = openAnnotationWithPermissionsStorageService.updateAnnotationDataset(apiKey, userKey, startTime, Boolean.parseBoolean(incGph), inMemoryDataset);
 			} catch(StoreServiceException exception) {
 				render(status: exception.status, text: exception.text, contentType: exception.contentType, encoding: exception.encoding);
 				return;
