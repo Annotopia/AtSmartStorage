@@ -137,6 +137,21 @@ class JenaVirtuosoStoreService implements ITripleStore {
 		graphNames
 	}
 	
+	public Set<String> retrievePropertyValues(apiKey, queryString, variable) {
+		VirtGraph graph = graph();
+		log.trace('[' + apiKey + '] ' + queryString);
+		
+		Set<String> propertyValues = new HashSet<String>();
+		VirtuosoQueryExecution vqe = VirtuosoQueryExecutionFactory.create(QueryFactory.create(queryString), graph);
+		ResultSet results = vqe.execSelect();
+		while (results.hasNext()) {
+			QuerySolution result = results.nextSolution();
+			RDFNode property_value = result.get(variable);
+			propertyValues.add(property_value.toString());
+		}
+		propertyValues
+	}
+	
 	// -----------------------------------------------------------------------
 	//    STORE
 	// -----------------------------------------------------------------------
