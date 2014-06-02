@@ -328,10 +328,7 @@ class JenaVirtuosoStoreService implements ITripleStore {
 	public Dataset retrieveGraph(String apiKey, String graphUri) {
 		log.info '[' + apiKey + '] Retrieving graph: ' + graphUri;
 		
-		VirtGraph set = new VirtGraph (graphUri,
-			grailsApplication.config.annotopia.storage.triplestore.host,
-			grailsApplication.config.annotopia.storage.triplestore.user,
-			grailsApplication.config.annotopia.storage.triplestore.pass);
+		VirtGraph set = graph();
 		
 		String queryString = "CONSTRUCT { ?s ?p ?o . } FROM <" + graphUri + ">" + 
 			" WHERE { ?s ?p ?o . }";

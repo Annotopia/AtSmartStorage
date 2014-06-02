@@ -109,7 +109,7 @@ class OpenAnnotationWithPermissionsVirtuosoService {
 		log.info '[' + apiKey + '] Checking if user ' + userKey + ' can update Annotation ' + graphUri;
 		
 		String queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> " +
-			"SELECT DISTINCT ?allowed WHERE { GRAPH <" + graphUri + "> { ?s a oa:Annotation. ?s ?p ?x. ?x <http://purl.org/annotopia#update> ?allowed. }}";
+			"SELECT DISTINCT ?allowed FROM <" + graphUri + "> WHERE {  { ?s a oa:Annotation. ?s ?p ?x. ?x <http://purl.org/annotopia#update> ?allowed. }}";
 
 		Set<String> enabled = jenaVirtuosoStoreService.retrievePropertyValues(apiKey, queryString, "allowed");
 		enabled
