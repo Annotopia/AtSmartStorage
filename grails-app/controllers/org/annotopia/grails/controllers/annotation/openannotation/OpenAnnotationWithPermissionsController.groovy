@@ -366,7 +366,7 @@ class OpenAnnotationWithPermissionsController extends BaseController {
 			invalidApiKey(request.getRemoteAddr()); return;
 		}
 		
-		def userKey = "http://orcid.org/0000-0002-5156-2703";
+		def userKey = "04377356465ddc0e01465ddc21d10001";
 		
 		def outCmd = (request.JSON.outCmd!=null)?request.JSON.outCmd:OUTCMD_NONE;
 		if(params.outCmd!=null) outCmd = params.outCmd;
@@ -533,9 +533,26 @@ class OpenAnnotationWithPermissionsController extends BaseController {
 		if(!apiKeyAuthenticationService.isApiKeyValid(request.getRemoteAddr(), apiKey)) {
 			invalidApiKey(request.getRemoteAddr()); return;
 		}
+		
+		def userKey = "http://orcid.org/0000-0002-5156-2703";
 
 		def uri = (request.JSON.uri!=null)?request.JSON.uri:getCurrentUrl(request);
 		log.info("[" + apiKey + "] Deleting annotation " + uri);
+		
+		try {
+			if(openAnnotationWithPermissionsStorageService.deleteAnnotationDataset(apiKey, userKey, startTime, uri)) {
+				def message = "Annotation deleted";
+				render(status: 200, text: returnMessage(apiKey, "deleted", message, startTime), contentType: "text/json", encoding: "UTF-8");
+			} else {
+				def message = "Annotation could not be deleted";
+				render(status: 200, text: returnMessage(apiKey, "notfound", message, startTime), contentType: "text/json", encoding: "UTF-8");
+			}
+		} catch(StoreServiceException exception) {
+			log.error("[" + apiKey + "] " 	+ exception.getMessage());
+			render(status: exception.status, text: exception.text, contentType: exception.contentType, encoding: exception.encoding);
+			return;
+		}
+		/*
 		Dataset graphs =  openAnnotationVirtuosoService.retrieveAnnotation(apiKey, uri);
 		if(graphs!=null) {
 			graphs.listNames().each {
@@ -550,6 +567,7 @@ class OpenAnnotationWithPermissionsController extends BaseController {
 			def message = "Annotation not found";
 			render(status: 200, text: returnMessage(apiKey, "notfound", message, startTime), contentType: "text/json", encoding: "UTF-8");
 		}
+		*/
 	}
 	
 	private void renderSavedNamedGraphsDataset(def apiKey, long startTime, String outCmd, String status, HttpServletResponse response, Dataset dataset) {
