@@ -279,7 +279,8 @@ class OpenAnnotationWithPermissionsController extends BaseController {
 		}
 		
 		//def userKey = "user:http://orcid.org/0000-0002-5156-2703";
-		def userKey = "user:" + apiKeyAuthenticationService.getUserId(request.getRemoteAddr(), "");
+		def userId = apiKeyAuthenticationService.getUserId(request.getRemoteAddr(), "");
+		def userKey = "user:" + userId;
 		
 		// Parsing the incoming parameters
 		def outCmd = (request.JSON.outCmd!=null)?request.JSON.outCmd:OUTCMD_NONE;
@@ -318,7 +319,7 @@ class OpenAnnotationWithPermissionsController extends BaseController {
 			// Saves the annotation through services
 			Dataset savedAnnotation;
 			try {
-				savedAnnotation = openAnnotationWithPermissionsStorageService.saveAnnotationDataset(apiKey, startTime, Boolean.parseBoolean(incGph), inMemoryDataset);
+				savedAnnotation = openAnnotationWithPermissionsStorageService.saveAnnotationDataset(apiKey, userKey, startTime, Boolean.parseBoolean(incGph), inMemoryDataset);
 			} catch(StoreServiceException exception) {
 				log.error("[" + apiKey + "] " + exception.getMessage());
 				render(status: exception.status, text: exception.text, contentType: exception.contentType, encoding: exception.encoding);
@@ -369,7 +370,9 @@ class OpenAnnotationWithPermissionsController extends BaseController {
 		}
 		
 		//def userKey = "04377356465ddc0e01465ddc21d10001";
-		def userKey = "user:" + apiKeyAuthenticationService.getUserId(request.getRemoteAddr(), "");
+		
+		def userId = apiKeyAuthenticationService.getUserId(request.getRemoteAddr(), "");
+		def userKey = "user:" + userId;
 		
 		def outCmd = (request.JSON.outCmd!=null)?request.JSON.outCmd:OUTCMD_NONE;
 		if(params.outCmd!=null) outCmd = params.outCmd;
@@ -405,7 +408,7 @@ class OpenAnnotationWithPermissionsController extends BaseController {
 			
 			Dataset updatedAnnotation;
 			try {
-				updatedAnnotation = openAnnotationWithPermissionsStorageService.updateAnnotationDataset(apiKey, userKey, startTime, Boolean.parseBoolean(incGph), inMemoryDataset);
+				updatedAnnotation = openAnnotationWithPermissionsStorageService.updateAnnotationDataset(apiKey, userId, startTime, Boolean.parseBoolean(incGph), inMemoryDataset);
 			} catch(StoreServiceException exception) {
 				render(status: exception.status, text: exception.text, contentType: exception.contentType, encoding: exception.encoding);
 				return;
@@ -538,13 +541,16 @@ class OpenAnnotationWithPermissionsController extends BaseController {
 		}
 		
 		//def userKey = "http://orcid.org/0000-0002-5156-2703";
-		def userKey = "user:" + apiKeyAuthenticationService.getUserId(request.getRemoteAddr(), "");
+		//def userKey = "user:" + apiKeyAuthenticationService.getUserId(request.getRemoteAddr(), "");
+		
+		def userId = apiKeyAuthenticationService.getUserId(request.getRemoteAddr(), "");
+		// def userKey = "user:" + userId;
 
 		def uri = (request.JSON.uri!=null)?request.JSON.uri:getCurrentUrl(request);
 		log.info("[" + apiKey + "] Deleting annotation " + uri);
 		
 		try {
-			if(openAnnotationWithPermissionsStorageService.deleteAnnotationDataset(apiKey, userKey, startTime, uri)) {
+			if(openAnnotationWithPermissionsStorageService.deleteAnnotationDataset(apiKey, userId, startTime, uri)) {
 				def message = "Annotation deleted";
 				render(status: 200, text: returnMessage(apiKey, "deleted", message, startTime), contentType: "text/json", encoding: "UTF-8");
 			} else {

@@ -132,7 +132,7 @@ class OpenAnnotationWithPermissionsStorageService {
 	 * @param dataset		The Dataset with the annotation content
 	 * @return The Dataset with the saved (persisted) content. 
 	 */
-	public Dataset saveAnnotationDataset(String apiKey, Long startTime, Boolean incGph, Dataset dataset) {
+	public Dataset saveAnnotationDataset(String apiKey, String userKey, Long startTime, Boolean incGph, Dataset dataset) {
 		
 		// Registry of the URIs of the annotations.
 		// Note: The method currently supports the saving of one annotation at a time
@@ -355,6 +355,8 @@ class OpenAnnotationWithPermissionsStorageService {
 	
 	public Dataset updateAnnotationDataset(apiKey, userKey, startTime, Boolean incGph,  Dataset dataset) {
 		
+		def userIds = usersService.getUserAgentIdentifiers(userKey);
+		
 		// Detect all named graphs
 		Set<Resource> graphsUris = jenaUtilsService.detectNamedGraphs(apiKey, dataset);
 
@@ -467,11 +469,10 @@ class OpenAnnotationWithPermissionsStorageService {
 					//println jenaUtilsService.getDatasetAsString(updateDataset);
 					
 					Set<String> enabled = openAnnotationWithPermissionsVirtuosoService.whoCanUpdateAnnotation(apiKey, userKey, annotationGraphUri);
-					boolean isAllowed = isUserAllowed(apiKey, userKey, enabled);
+					boolean isAllowed = isUserAllowed(apiKey, userKey, userIds, enabled);
 					
 					if(isAllowed) {
-						jenaVirtuosoStoreService.updateGraphMetadata(apiKey, metaModel, annotationGraphUri, grailsApplication.config.annotopia.storage.uri.graph.provenance)
-					
+						jenaVirtuosoStoreService.updateGraphMetadata(apiKey, metaModel, annotationGraphUri, grailsApplication.config.annotopia.storage.uri.graph.provenance)				
 						jenaVirtuosoStoreService.updateDataset(apiKey, updateDataset);
 					
 						if(incGph) return updateDataset;
@@ -509,12 +510,14 @@ class OpenAnnotationWithPermissionsStorageService {
 		//Set<String> enabled = openAnnotationWithPermissionsVirtuosoService.whoCanUpdateAnnotation(apiKey, userKey, annotationGraphUri);
 		//boolean isAllowed = isUserAllowed(apiKey, userKey, enabled);
 		
+		def userIds = usersService.getUserAgentIdentifiers(userKey);
+		
 		String graphName;
 		Set<String> names = openAnnotationVirtuosoService.retrieveAnnotationGraphNames(apiKey, annotationUri)
 		names.each { graphName = it }
 		
 		Set<String> enabled = openAnnotationWithPermissionsVirtuosoService.whoCanDeleteAnnotation(apiKey, userKey, graphName);
-		boolean isAllowed = isUserAllowed(apiKey, userKey, enabled);
+		boolean isAllowed = isUserAllowed(apiKey, userKey, userIds, enabled);
 		
 		if(isAllowed) {
 			Dataset graphs =  openAnnotationVirtuosoService.retrieveAnnotation(apiKey, annotationUri);
@@ -540,13 +543,19 @@ class OpenAnnotationWithPermissionsStorageService {
 		}
 	}
 	
-	private boolean isUserAllowed(apiKey, userKey, Set<String> allowed) {
+	private boolean isUserAllowed(apiKey, userKey, userIds, Set<String> allowed) {
 		boolean validated = false;
 		allowed.each { token ->
 			if(token.startsWith("user:")) {
 				if(token.substring(5) == userKey) {
 					validated = true;
 					return;
+				}
+				userIds.each { userId ->
+					if(token.substring(5) == userId) {
+						validated = true;
+						return;
+					}
 				}
 			} else if(token.startsWith("group:")) {
 				if(usersAndGroupsService.doesUserBelongToGroup(userKey, token.substring(6))) {
