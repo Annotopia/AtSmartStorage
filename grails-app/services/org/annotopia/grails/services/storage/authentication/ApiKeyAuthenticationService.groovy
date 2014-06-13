@@ -46,4 +46,14 @@ class ApiKeyAuthenticationService {
 		);
 	 	return allowed;
 	}
+	
+	def getUserId(def ip, def id) {
+		log.info("Authenticating User [" + id + "] on request from IP: " + ip);
+		// Validation mockup for testing mode
+		if(grailsApplication.config.annotopia.storage.testing.enabled=='true' && 
+				grailsApplication.config.annotopia.storage.testing.userid!=null) 
+			return grailsApplication.config.annotopia.storage.testing.userid;
+		else
+			return null;
+	}
 }

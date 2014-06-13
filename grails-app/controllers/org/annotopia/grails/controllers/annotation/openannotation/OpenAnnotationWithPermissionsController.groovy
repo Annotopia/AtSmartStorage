@@ -20,11 +20,11 @@
  */
 package org.annotopia.grails.controllers.annotation.openannotation
 
-import javax.servlet.http.HttpServletResponse;
-
 import grails.converters.JSON
 
-import org.annotopia.groovy.service.store.BaseController;
+import javax.servlet.http.HttpServletResponse
+
+import org.annotopia.groovy.service.store.BaseController
 import org.annotopia.groovy.service.store.StoreServiceException
 import org.apache.jena.riot.RDFDataMgr
 import org.apache.jena.riot.RDFLanguages
@@ -59,7 +59,7 @@ class OpenAnnotationWithPermissionsController extends BaseController {
 	// incGph (Include graph) constants
 	private final INCGPH_YES = "true";
 	private final INCGPH_NO = "false";
-	
+
 	def openAnnotationVirtuosoService;
 	def annotationJenaStorageService;
 	def openAnnotationWithPermissionsStorageService
@@ -86,7 +86,7 @@ class OpenAnnotationWithPermissionsController extends BaseController {
 			invalidApiKey(request.getRemoteAddr()); return;
 		}
 		
-		def userKey = "user:http://orcid.org/0000-0002-5156-2703";
+		def userKey = "user:" + apiKeyAuthenticationService.getUserId(request.getRemoteAddr(), "");
 		
 		// Response format parametrization and constraints
 		def outCmd = (request.JSON.outCmd!=null)?request.JSON.outCmd:OUTCMD_NONE;
@@ -277,7 +277,8 @@ class OpenAnnotationWithPermissionsController extends BaseController {
 			invalidApiKey(request.getRemoteAddr()); return;
 		}
 		
-		def userKey = "user:http://orcid.org/0000-0002-5156-2703";
+		//def userKey = "user:http://orcid.org/0000-0002-5156-2703";
+		def userKey = "user:" + apiKeyAuthenticationService.getUserId(request.getRemoteAddr(), "");
 		
 		// Parsing the incoming parameters
 		def outCmd = (request.JSON.outCmd!=null)?request.JSON.outCmd:OUTCMD_NONE;
@@ -366,7 +367,8 @@ class OpenAnnotationWithPermissionsController extends BaseController {
 			invalidApiKey(request.getRemoteAddr()); return;
 		}
 		
-		def userKey = "04377356465ddc0e01465ddc21d10001";
+		//def userKey = "04377356465ddc0e01465ddc21d10001";
+		def userKey = "user:" + apiKeyAuthenticationService.getUserId(request.getRemoteAddr(), "");
 		
 		def outCmd = (request.JSON.outCmd!=null)?request.JSON.outCmd:OUTCMD_NONE;
 		if(params.outCmd!=null) outCmd = params.outCmd;
@@ -534,7 +536,8 @@ class OpenAnnotationWithPermissionsController extends BaseController {
 			invalidApiKey(request.getRemoteAddr()); return;
 		}
 		
-		def userKey = "http://orcid.org/0000-0002-5156-2703";
+		//def userKey = "http://orcid.org/0000-0002-5156-2703";
+		def userKey = "user:" + apiKeyAuthenticationService.getUserId(request.getRemoteAddr(), "");
 
 		def uri = (request.JSON.uri!=null)?request.JSON.uri:getCurrentUrl(request);
 		log.info("[" + apiKey + "] Deleting annotation " + uri);
