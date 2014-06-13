@@ -56,6 +56,7 @@ class OpenAnnotationWithPermissionsStorageService {
 	def jenaUtilsService
 	def grailsApplication
 	def graphMetadataService
+	def usersService;
 	def usersAndGroupsService;
 	def jenaVirtuosoStoreService
 	def openAnnotationUtilsService
@@ -86,8 +87,10 @@ class OpenAnnotationWithPermissionsStorageService {
 	public Set<Dataset> retrieveAnnotationGraphs(apiKey, userKey, max, offset, tgtUrl, tgtFgt, incGph) {
 		log.info '[' + apiKey + '] Retrieving annotation graphs';
 	
+		def userIds = usersService.getUserAgentIdentifiers(userKey);
+		
 		Set<Dataset> datasets = new HashSet<Dataset>();
-		Set<String> graphNames = openAnnotationWithPermissionsVirtuosoService.retrieveAnnotationGraphsNames(apiKey, userKey, max, offset, tgtUrl, tgtFgt);
+		Set<String> graphNames = openAnnotationWithPermissionsVirtuosoService.retrieveAnnotationGraphsNames(apiKey, userKey, userIds, max, offset, tgtUrl, tgtFgt);
 		if(graphNames!=null) {
 			graphNames.each { graphName ->
 				Dataset ds = jenaVirtuosoStoreService.retrieveGraph(apiKey, graphName);

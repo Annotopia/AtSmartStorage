@@ -63,6 +63,7 @@ class OpenAnnotationWithPermissionsController extends BaseController {
 	def openAnnotationVirtuosoService;
 	def annotationJenaStorageService;
 	def openAnnotationWithPermissionsStorageService
+	def openAnnotationWithPermissionsVirtuosoService
 	def openAnnotationValidationService;
 	def apiKeyAuthenticationService;
 	def jenaVirtuosoStoreService;
@@ -130,7 +131,7 @@ class OpenAnnotationWithPermissionsController extends BaseController {
 				((outCmd!=null) ? (" outCmd:" + outCmd):"") +
 				((incGph!=null) ? (" incGph:" + incGph):""));	
 			
-			int annotationsTotal = openAnnotationVirtuosoService.countAnnotationGraphs(apiKey, tgtUrl, tgtFgt);
+			int annotationsTotal = openAnnotationWithPermissionsVirtuosoService.countAnnotationGraphs(apiKey, userKey, tgtUrl, tgtFgt);
 			int annotationsPages = (annotationsTotal/Integer.parseInt(max));		
 			if(annotationsTotal>0 && Integer.parseInt(offset)>0 && Integer.parseInt(offset)>=annotationsPages) {
 				def message = 'The requested page ' + offset + 
