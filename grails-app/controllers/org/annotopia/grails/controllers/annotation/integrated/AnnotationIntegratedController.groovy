@@ -357,7 +357,7 @@ class AnnotationIntegratedController extends BaseController {
 	 *
 	 * Validation not yet implemented.
 	 */
-	def update = {
+	def updateAnnotationSet = {
 		long startTime = System.currentTimeMillis();
 		
 		// Verifying the API key
