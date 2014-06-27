@@ -487,7 +487,7 @@ class OpenAnnotationStorageService {
 	public String mintUri(uriType) {
 		return grailsApplication.config.grails.server.protocol + '://' + 
 			grailsApplication.config.grails.server.host + ':' +
-			grailsApplication.config.grails.server.port.http + '/s/' + uriType + '/' + 
+			grailsApplication.config.grails.server.port + '/s/' + uriType + '/' + 
 			org.annotopia.grails.services.storage.utils.UUID.uuid();
 	}
 	

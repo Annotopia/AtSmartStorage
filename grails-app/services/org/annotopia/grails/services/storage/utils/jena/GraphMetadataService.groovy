@@ -115,7 +115,7 @@ class GraphMetadataService {
 	private String getGraphUri() {
 		return grailsApplication.config.grails.server.protocol + '://' + 
 			grailsApplication.config.grails.server.host + ':' +
-			grailsApplication.config.grails.server.port.http + '/s/graph/' +
+			grailsApplication.config.grails.server.port + '/s/graph/' +
 			org.annotopia.grails.services.storage.utils.UUID.uuid();
 	}
 }

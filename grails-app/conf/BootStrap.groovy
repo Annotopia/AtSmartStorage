@@ -112,7 +112,7 @@ class BootStrap {
 		
 		separator();
 		log.info  'Server at http://' + grailsApplication.config.grails.server.host + 
-			":" + grailsApplication.config.grails.server.port.http
+			":" + grailsApplication.config.grails.server.port
 		
 		separator();
 		log.info  'Bootstrapping complete!'
