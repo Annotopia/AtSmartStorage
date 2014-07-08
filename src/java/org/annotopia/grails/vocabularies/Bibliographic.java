@@ -32,6 +32,5 @@ public interface Bibliographic {
 	public static final String PPI = "http://purl.org/spar/fabio#hasPII";
 	public static final String PMCID = "http://purl.org/spar/fabio#hasPubMedCentralId";
 	public static final String PMID = "http://purl.org/spar/fabio#hasPubMedId";
-	public static final String DOI 	= "http://prismstandard.org/namespaces/basic/2.0/doi";
-	
+	public static final String DOI 	= "http://prismstandard.org/namespaces/basic/2.0/doi";	
 }

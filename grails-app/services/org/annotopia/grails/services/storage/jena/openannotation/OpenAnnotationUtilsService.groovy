@@ -190,4 +190,17 @@ class OpenAnnotationUtilsService {
 		log.info("[" + apiKey + "] Identifiable Bodies as Named Graphs " + bodiesGraphsCounter);
 		bodiesGraphsCounter
 	}
+	
+	public Map<String,String> detectTargetIdentifiers(apiKey, Dataset dataset) {
+		log.info("[" + apiKey + "] Target identifiers detection...");
+		String QUERY = "PREFIX frbr: <http://purl.org/vocab/frbr/core#> " + 
+			"PREFIX prism: <http://prismstandard.org/namespaces/basic/2.0/> " + 
+			"PREFIX oa: <http://www.w3.org/ns/oa#> " + 
+			"PREFIX fabio:<http://purl.org/spar/fabio#> " + 
+			"SELECT DISTINCT ?doi ?pmid ?pmcid ?pii ?target WHERE {  GRAPH ?g " + 
+			"{{ ?ann oa:hasTarget ?target . ?target frbr:embodimentOf ?s. ?s prism:doi ?doi . ?s fabio:hasPubMedId ?pmid . ?s fabio:hasPII ?pii . ?s fabio:hasPubMedCentralId ?pmcid . } " + 
+			"UNION { ?ann oa:hasTarget ?spt. ?spt oa:hasSource ?target. ?target frbr:embodimentOf ?s. ?s prism:doi ?doi . ?s fabio:hasPubMedId ?pmid . ?s fabio:hasPII ?pii . ?s fabio:hasPubMedCentralId ?pmcid . }}}"
+		
+		Map<String,String> identifiers = new HashMap<String,String>();
+	}
 }
