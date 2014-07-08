@@ -166,12 +166,17 @@ class OpenAnnotationStorageService {
 			throw new StoreServiceException(200, json, "text/json", "UTF-8");
 		}
 		
+
+		Map<String,String> identifiers = new HashMap<String,String>();
+		
 		String content; 
 		if(defaultGraphDetected) {
 			log.trace("[" + apiKey + "] Default graph detected.");
 			// If the content is expressed in the default graph, it is necessary 
 			// to swap blank nodes and temporary URIs with persistent URIs
 			// NOTE: This is supporting right now a single body
+			
+			openAnnotationUtilsService.detectTargetIdentifiersInDefaultGraph(apiKey, dataset, identifiers);
 			
 			// Annotation identifier
 			Resource annotation = persistURI(apiKey, dataset.getDefaultModel(),
@@ -213,6 +218,8 @@ class OpenAnnotationStorageService {
 			// If multiple graphs are detected, the logic is different as there can be one 
 		    // or more graphs as bodies. 
 		    // NOTE: This is tested right now only for a single body
+		
+			openAnnotationUtilsService.detectTargetIdentifiers(apiKey, dataset, identifiers);
 		
 			// Detecting Specific Resources
 			Set<Resource> specificResourcesUris = new HashSet<Resource>();

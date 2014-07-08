@@ -26,6 +26,7 @@ import com.hp.hpl.jena.query.QueryExecutionFactory
 import com.hp.hpl.jena.query.QueryFactory
 import com.hp.hpl.jena.query.QuerySolution
 import com.hp.hpl.jena.query.ResultSet
+import com.hp.hpl.jena.rdf.model.RDFNode
 import com.hp.hpl.jena.rdf.model.Resource
 
 /**
@@ -191,16 +192,61 @@ class OpenAnnotationUtilsService {
 		bodiesGraphsCounter
 	}
 	
-	public Map<String,String> detectTargetIdentifiers(apiKey, Dataset dataset) {
+	public Map<String,String> detectTargetIdentifiersInDefaultGraph(apiKey, Dataset dataset, Map<String,String> identifiers) {
+		log.info("[" + apiKey + "] Target identifiers detection...");
+		String QUERY = "PREFIX frbr: <http://purl.org/vocab/frbr/core#> " +
+			"PREFIX prism: <http://prismstandard.org/namespaces/basic/2.0/> " +
+			"PREFIX oa: <http://www.w3.org/ns/oa#> " +
+			"PREFIX fabio:<http://purl.org/spar/fabio#> " +
+			"SELECT DISTINCT ?doi ?pmid ?pmcid ?pii ?target WHERE { " +
+			"{{ ?ann oa:hasTarget ?target . ?target frbr:embodimentOf ?s. ?s prism:doi ?doi . ?s fabio:hasPubMedId ?pmid . ?s fabio:hasPII ?pii . ?s fabio:hasPubMedCentralId ?pmcid . } " +
+			"UNION { ?ann oa:hasTarget ?spt. ?spt oa:hasSource ?target. ?target frbr:embodimentOf ?s. ?s prism:doi ?doi . ?s fabio:hasPubMedId ?pmid . ?s fabio:hasPII ?pii . ?s fabio:hasPubMedCentralId ?pmcid . }}}"
+
+		QueryExecution gIdentifiers  = QueryExecutionFactory.create (QueryFactory.create(QUERY), dataset);
+		ResultSet rIdentifiers = gIdentifiers.execSelect();
+		while (rIdentifiers.hasNext()) {
+			QuerySolution querySolution = rIdentifiers.nextSolution();
+	
+			RDFNode url = querySolution.get("target");
+			if(url!=null) {
+				identifiers.put("url", url.toString());
+			
+				RDFNode doi = querySolution.get("doi");
+				if(doi!=null) identifiers.put("doi", doi.toString());
+				
+				RDFNode pmid = querySolution.get("pmid");
+				if(pmid!=null) identifiers.put("pmid", pmid.toString());
+				
+				RDFNode pmcid = querySolution.get("pmcid");
+				if(pmcid!=null) identifiers.put("pmcid", pmcid.toString());
+				
+				RDFNode pii = querySolution.get("pii");
+				if(pii!=null) identifiers.put("pii", pii.toString());
+			}
+		}
+	}
+	
+	public Map<String,String> detectTargetIdentifiers(apiKey, Dataset dataset, Map<String,String> identifiers) {
 		log.info("[" + apiKey + "] Target identifiers detection...");
 		String QUERY = "PREFIX frbr: <http://purl.org/vocab/frbr/core#> " + 
 			"PREFIX prism: <http://prismstandard.org/namespaces/basic/2.0/> " + 
 			"PREFIX oa: <http://www.w3.org/ns/oa#> " + 
 			"PREFIX fabio:<http://purl.org/spar/fabio#> " + 
-			"SELECT DISTINCT ?doi ?pmid ?pmcid ?pii ?target WHERE {  GRAPH ?g " + 
+			"SELECT DISTINCT ?doi ?pmid ?pmcid ?pii ?target WHERE {GRAPH ?g " + 
 			"{{ ?ann oa:hasTarget ?target . ?target frbr:embodimentOf ?s. ?s prism:doi ?doi . ?s fabio:hasPubMedId ?pmid . ?s fabio:hasPII ?pii . ?s fabio:hasPubMedCentralId ?pmcid . } " + 
 			"UNION { ?ann oa:hasTarget ?spt. ?spt oa:hasSource ?target. ?target frbr:embodimentOf ?s. ?s prism:doi ?doi . ?s fabio:hasPubMedId ?pmid . ?s fabio:hasPII ?pii . ?s fabio:hasPubMedCentralId ?pmcid . }}}"
-		
-		Map<String,String> identifiers = new HashMap<String,String>();
+
+		QueryExecution gIdentifiers  = QueryExecutionFactory.create (QueryFactory.create(QUERY), dataset);
+		ResultSet rIdentifiers = gIdentifiers.execSelect();
+		while (rIdentifiers.hasNext()) {
+			println '0000000'
+			QuerySolution querySolution = rIdentifiers.nextSolution();
+			
+			String url = querySolution.get("target").toString();
+			println '****** target ' + url;
+			//if() 
+			//bodiesGraphsUris.add(querySolution.get("graph"));
+			//bodiesGraphsCounter++;
+		}
 	}
 }
