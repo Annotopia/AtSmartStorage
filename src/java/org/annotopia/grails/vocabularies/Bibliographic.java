@@ -29,8 +29,19 @@ package org.annotopia.grails.vocabularies;
 public interface Bibliographic {
 
 	public static final String IS_MANIFESTATION_OF = "http://purl.org/spar/fabio#isManifestationOf";
-	public static final String PPI = "http://purl.org/spar/fabio#hasPII";
+	
+	public static final String EMBODIMENT_OF = "http://purl.org/vocab/frbr/core#embodimentOf";
+	public static final String EXPRESSION = "http://purl.org/vocab/frbr/core#Expression";
+	
+	public static final String WEB_PAGE = "http://purl.org/spar/fabio#WebPage";
+	
+	public static final String LABEL_PII = "pii";
+	public static final String PII = "http://purl.org/spar/fabio#hasPII";
+	public static final String LABEL_PMCID = "pmcid";
 	public static final String PMCID = "http://purl.org/spar/fabio#hasPubMedCentralId";
+	public static final String LABEL_PMID = "pmid";
 	public static final String PMID = "http://purl.org/spar/fabio#hasPubMedId";
+	public static final String LABEL_DOI = "doi";
 	public static final String DOI 	= "http://prismstandard.org/namespaces/basic/2.0/doi";	
+	public static final String LABEL_URL = "url";
 }

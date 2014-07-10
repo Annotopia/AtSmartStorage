@@ -20,6 +20,8 @@
  */
 package org.annotopia.groovy.service.store
 
+import java.util.Map;
+
 import com.hp.hpl.jena.query.Dataset
 import com.hp.hpl.jena.rdf.model.Model
 
@@ -115,6 +117,8 @@ interface ITripleStore {
 	 * @param metadataGraphUri	The URI identifying the graph containing all graphs metadata
 	 */
 	public Model retrieveGraphMetadata(String apiKey, String graphUri, String metadataGraphUri);
+	
+	public Model retrieveGraphIdentifiersMetadata(String apiKey, Map<String,String> identifiers, String metadataGraphUri);
 	
 	/**
 	 * Verifies existence of the graph identified by the given URI

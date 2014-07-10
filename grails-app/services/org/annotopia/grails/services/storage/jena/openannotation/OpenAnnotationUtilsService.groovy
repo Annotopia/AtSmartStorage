@@ -20,6 +20,8 @@
  */
 package org.annotopia.grails.services.storage.jena.openannotation
 
+import org.annotopia.grails.vocabularies.Bibliographic
+
 import com.hp.hpl.jena.query.Dataset
 import com.hp.hpl.jena.query.QueryExecution
 import com.hp.hpl.jena.query.QueryExecutionFactory
@@ -209,19 +211,19 @@ class OpenAnnotationUtilsService {
 	
 			RDFNode url = querySolution.get("target");
 			if(url!=null) {
-				identifiers.put("url", url.toString());
+				identifiers.put(Bibliographic.LABEL_URL, url.toString());
 			
-				RDFNode doi = querySolution.get("doi");
-				if(doi!=null) identifiers.put("doi", doi.toString());
+				RDFNode doi = querySolution.get(Bibliographic.LABEL_DOI);
+				if(doi!=null) identifiers.put(Bibliographic.LABEL_DOI, doi.toString());
 				
-				RDFNode pmid = querySolution.get("pmid");
-				if(pmid!=null) identifiers.put("pmid", pmid.toString());
+				RDFNode pmid = querySolution.get(Bibliographic.LABEL_PMID);
+				if(pmid!=null) identifiers.put(Bibliographic.LABEL_PMID, pmid.toString());
 				
-				RDFNode pmcid = querySolution.get("pmcid");
-				if(pmcid!=null) identifiers.put("pmcid", pmcid.toString());
+				RDFNode pmcid = querySolution.get(Bibliographic.LABEL_PMCID);
+				if(pmcid!=null) identifiers.put(Bibliographic.LABEL_PMCID, pmcid.toString());
 				
-				RDFNode pii = querySolution.get("pii");
-				if(pii!=null) identifiers.put("pii", pii.toString());
+				RDFNode pii = querySolution.get(Bibliographic.LABEL_PII);
+				if(pii!=null) identifiers.put(Bibliographic.LABEL_PII, pii.toString());
 			}
 		}
 	}
@@ -239,14 +241,24 @@ class OpenAnnotationUtilsService {
 		QueryExecution gIdentifiers  = QueryExecutionFactory.create (QueryFactory.create(QUERY), dataset);
 		ResultSet rIdentifiers = gIdentifiers.execSelect();
 		while (rIdentifiers.hasNext()) {
-			println '0000000'
 			QuerySolution querySolution = rIdentifiers.nextSolution();
+	
+			RDFNode url = querySolution.get("target");
+			if(url!=null) {
+				identifiers.put("url", url.toString());
 			
-			String url = querySolution.get("target").toString();
-			println '****** target ' + url;
-			//if() 
-			//bodiesGraphsUris.add(querySolution.get("graph"));
-			//bodiesGraphsCounter++;
+				RDFNode doi = querySolution.get(Bibliographic.LABEL_DOI);
+				if(doi!=null) identifiers.put(Bibliographic.LABEL_DOI, doi.toString());
+				
+				RDFNode pmid = querySolution.get(Bibliographic.LABEL_PMID);
+				if(pmid!=null) identifiers.put(Bibliographic.LABEL_PMID, pmid.toString());
+				
+				RDFNode pmcid = querySolution.get(Bibliographic.LABEL_PMCID);
+				if(pmcid!=null) identifiers.put(Bibliographic.LABEL_PMCID, pmcid.toString());
+				
+				RDFNode pii = querySolution.get(Bibliographic.LABEL_PII);
+				if(pii!=null) identifiers.put(Bibliographic.LABEL_PII, pii.toString());
+			}
 		}
 	}
 }

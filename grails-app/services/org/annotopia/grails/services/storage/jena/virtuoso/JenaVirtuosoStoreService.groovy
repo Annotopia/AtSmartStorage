@@ -22,6 +22,8 @@ package org.annotopia.grails.services.storage.jena.virtuoso
 
 import grails.util.Environment
 
+import org.annotopia.grails.vocabularies.Bibliographic
+import org.annotopia.grails.vocabularies.RDF
 import org.annotopia.groovy.service.store.ITripleStore
 import org.apache.jena.riot.RDFDataMgr
 import org.apache.jena.riot.RDFFormat
@@ -35,7 +37,8 @@ import virtuoso.jena.driver.VirtuosoUpdateRequest
 
 import com.hp.hpl.jena.query.Dataset
 import com.hp.hpl.jena.query.DatasetFactory
-import com.hp.hpl.jena.query.Query
+import com.hp.hpl.jena.query.QueryExecution
+import com.hp.hpl.jena.query.QueryExecutionFactory
 import com.hp.hpl.jena.query.QueryFactory
 import com.hp.hpl.jena.query.QuerySolution
 import com.hp.hpl.jena.query.ResultSet
@@ -374,6 +377,110 @@ class JenaVirtuosoStoreService implements ITripleStore {
 			return null;
 		}
 	}
+	
+	@Override
+	public Model retrieveGraphIdentifiersMetadata(String apiKey, Map<String,String> identifiers, String metadataIdentifiersGraphUri) {
+		log.info '[' + apiKey + '] Retrieving graph identifiers metadata: ' + identifiers;
+		
+		VirtGraph set = new VirtGraph (metadataIdentifiersGraphUri,
+			grailsApplication.config.annotopia.storage.triplestore.host,
+			grailsApplication.config.annotopia.storage.triplestore.user,
+			grailsApplication.config.annotopia.storage.triplestore.pass);
+		
+		if(identifiers.get(Bibliographic.LABEL_URL)!=null) {
+			
+			StringBuffer queryBuffer = new StringBuffer();
+			queryBuffer.append(" ?expression ?ep ?eo . ");
+			
+			String doi = identifiers.get(Bibliographic.LABEL_DOI);
+			if(doi!=null) queryBuffer.append(" OPTIONAL { ?expression <" + Bibliographic.DOI + "> ?doi . FILTER (?doi = '" + doi + "')}");
+			
+			String pmid = identifiers.get(Bibliographic.LABEL_PMID);
+			if(pmid!=null) queryBuffer.append(" OPTIONAL { ?expression <" + Bibliographic.PMID + "> ?pmid . FILTER (?pmid = '" + pmid + "')}");
+			
+			String pmcid = identifiers.get(Bibliographic.LABEL_PMCID);
+			if(pmcid!=null) queryBuffer.append(" OPTIONAL { ?expression <" + Bibliographic.PMCID + "> ?pmcid . FILTER (?pmcid = '" + pmcid + "')}");
+			
+			String pii = identifiers.get(Bibliographic.LABEL_PII);
+			if(pii!=null) queryBuffer.append(" OPTIONAL { ?expression <" + Bibliographic.PII + "> ?pii . FILTER (?pii = '" + pii + "')}");
+			
+			String queryString = "CONSTRUCT { <"+identifiers.get(Bibliographic.LABEL_URL)+"> ?p ?o . ?expression ?ep ?eo. } FROM <" + metadataIdentifiersGraphUri + ">" +
+				" WHERE { <"+identifiers.get(Bibliographic.LABEL_URL)+"> ?p ?o . <"+identifiers.get(Bibliographic.LABEL_URL)+"> <"+RDF.RDF_TYPE+"> <"+Bibliographic.WEB_PAGE+"> . " + queryBuffer.toString() + "}";
+			log.trace '[' + apiKey + '] retrieveGraphIdentifiersMetadata: ' + queryString
+		
+			try {
+				VirtuosoQueryExecution vqe = VirtuosoQueryExecutionFactory.create (QueryFactory.create(queryString), set);
+				Model model = vqe.execConstruct();
+				return model;
+			} catch (Exception e) {
+				log.error(e.getMessage());
+				return null;
+			}
+		}
+	}
+	
+	public List<String> retrieveAllManifestationsByIdentifiers(String apiKey, Map<String,String> identifiers, String metadataIdentifiersGraphUri) {
+		log.info '[' + apiKey + '] Retrieving manifestations by identifiers: ' + identifiers;
+		
+		VirtGraph set = new VirtGraph (metadataIdentifiersGraphUri,
+			grailsApplication.config.annotopia.storage.triplestore.host,
+			grailsApplication.config.annotopia.storage.triplestore.user,
+			grailsApplication.config.annotopia.storage.triplestore.pass);
+		
+
+		boolean first = false;
+		StringBuffer queryBuffer = new StringBuffer();
+		
+		String doi = identifiers.get(Bibliographic.LABEL_DOI);
+		if(doi!=null) {
+			queryBuffer.append(" { ?expression <" + Bibliographic.DOI + "> ?doi . FILTER (?doi = '" + doi + "')}");
+			first = true;
+		}
+		
+		String pmid = identifiers.get(Bibliographic.LABEL_PMID);
+		if(pmid!=null) {
+			if(first) queryBuffer.append(" UNION ");
+			queryBuffer.append(" { ?expression <" + Bibliographic.PMID + "> ?pmid . FILTER (?pmid = '" + pmid + "')}");
+			first = true;
+		}
+		
+		String pmcid = identifiers.get(Bibliographic.LABEL_PMCID);
+		if(pmcid!=null) {
+			if(first) queryBuffer.append(" UNION ");
+			queryBuffer.append(" { ?expression <" + Bibliographic.PMCID + "> ?pmcid . FILTER (?pmcid = '" + pmcid + "')}");
+			first = true;
+		}
+		
+		String pii = identifiers.get(Bibliographic.LABEL_PII);
+		if(pii!=null) {
+			if(first) queryBuffer.append(" UNION ");
+			queryBuffer.append(" { ?expression <" + Bibliographic.PII + "> ?pii . FILTER (?pii = '" + pii + "')}");
+			first = true;
+		}
+		
+		String QUERY = "SELECT DISTINCT ?manifestation FROM <" + metadataIdentifiersGraphUri + ">" +
+			" WHERE { ?manifestation ?p ?expression . ?manifestation <"+RDF.RDF_TYPE+"> <"+Bibliographic.WEB_PAGE+"> . " + queryBuffer.toString() + "}";
+		log.trace '[' + apiKey + '] retrieveAllManifestationsByIdentifiers: ' + QUERY
+	
+		List<String> manifestations = new ArrayList<String>();
+		try {
+			VirtuosoQueryExecution gIdentifiers  = VirtuosoQueryExecutionFactory.create(QueryFactory.create(QUERY), set);
+			ResultSet rIdentifiers = gIdentifiers.execSelect();
+			while (rIdentifiers.hasNext()) {
+				QuerySolution querySolution = rIdentifiers.nextSolution();
+		
+				RDFNode manifestation = querySolution.get("manifestation");
+				if(manifestation!=null) {
+					manifestations.add(manifestation);
+				}
+			}
+			return manifestations;
+		} catch (Exception e) {
+			log.error(e.getMessage());
+			return null;
+		}
+	}
+	
 	
 	@Override
 	public boolean doesGraphExists(String apiKey, String graphUri) {

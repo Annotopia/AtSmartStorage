@@ -48,6 +48,7 @@ class SecretController {
 			jenaVirtuosoStoreService.dropGraph("secret", graph);
 		}
 		
-		jenaVirtuosoStoreService.dropGraph("secret", "annotopia:graphs:provenance");
+		jenaVirtuosoStoreService.dropGraph("secret", grailsApplication.config.annotopia.storage.uri.graph.provenance);
+		jenaVirtuosoStoreService.dropGraph("secret", grailsApplication.config.annotopia.storage.uri.graph.identifiers);
 	}
 }

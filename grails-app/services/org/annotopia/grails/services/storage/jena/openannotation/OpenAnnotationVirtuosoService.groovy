@@ -39,8 +39,60 @@ class OpenAnnotationVirtuosoService {
 	def grailsApplication
 	def jenaVirtuosoStoreService
 	
-	public int countAnnotationGraphs(apiKey, tgtUrl, tgtFgt) {
-
+//	public int countAnnotationGraphs(apiKey,tgtFgt) {
+//		// Retrieves all the annotations
+//		String queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> " +
+//			"SELECT (COUNT(DISTINCT ?g) AS ?total) WHERE { GRAPH ?g { ?s a oa:Annotation }}";
+//		if(tgtFgt=="false") {
+//			queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> " +
+//				"SELECT (COUNT(DISTINCT ?g) AS ?total) WHERE { GRAPH ?g { ?s a oa:Annotation }}";
+//		}
+//		
+//		int totalCount = jenaVirtuosoStoreService.count(apiKey, queryString);
+//		log.info('[' + apiKey + '] Total accessible Annotation Graphs: ' + totalCount);
+//		totalCount;
+//	}
+	
+	public int countAnnotationGraphs(apiKey, List<String> tgtUrls, tgtFgt) {
+		if(tgtUrls!=null && tgtUrls.size()==0) return 0;
+		
+		// Retrieves all the annotations
+		String queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> " +
+			"SELECT (COUNT(DISTINCT ?g) AS ?total) WHERE { GRAPH ?g { ?s a oa:Annotation }}";
+		// Retrieves the annotations on an entire given set of document urls
+		if(tgtUrls!=null && tgtUrls.size()>0 && tgtFgt=="false") {
+			boolean first = false;
+			StringBuffer queryBuffer = new StringBuffer();
+			tgtUrls.each { tgtUrl ->
+				if(first) queryBuffer.append(" UNION ");
+				queryBuffer.append("{ ?s a oa:Annotation . ?s oa:hasTarget <" + tgtUrl + "> }");
+				first=true;
+			}
+			queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> SELECT (COUNT(DISTINCT ?g) AS ?total) " + 
+				"WHERE { GRAPH ?g {" + 
+					queryBuffer.toString() +
+				"}}";
+		// Retrieves the annotations on an entire given set of document urls or their fragments
+		} else if(tgtUrls!=null && tgtUrls.size()>0 && tgtFgt=="true") {
+			boolean first = false;
+			StringBuffer queryBuffer = new StringBuffer();
+			tgtUrls.each { tgtUrl ->
+				if(first) queryBuffer.append(" UNION ");
+				queryBuffer.append("{ ?s a oa:Annotation . ?s oa:hasTarget <" + tgtUrl + "> } UNION {?s oa:hasTarget ?t. ?t a oa:SpecificResource. ?t oa:hasSource <" + tgtUrl + ">}");
+				first=true;
+			}
+			queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> " +
+				"SELECT (COUNT(DISTINCT ?g) AS ?total) WHERE { GRAPH ?g {" +
+					queryBuffer.toString() +
+				"}}";
+		} 
+		
+		int totalCount = jenaVirtuosoStoreService.count(apiKey, queryString);
+		log.info('[' + apiKey + '] Total accessible Annotation Graphs: ' + totalCount);
+		totalCount;
+	}	
+		
+	public int countAnnotationGraphs(apiKey, tgtUrl, tgtFgt, Map<String,String> identifiers) {
 		String queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> " +
 			"SELECT (COUNT(DISTINCT ?g) AS ?total) WHERE { GRAPH ?g { ?s a oa:Annotation }}";		
 		if(tgtUrl!=null && tgtFgt=="false") {
@@ -50,7 +102,21 @@ class OpenAnnotationVirtuosoService {
 			queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> " +
 				"SELECT (COUNT(DISTINCT ?g) AS ?total) WHERE { GRAPH ?g { ?s a oa:Annotation .  {?s oa:hasTarget <" + tgtUrl +
 				"> } UNION {?s oa:hasTarget ?t. ?t a oa:SpecificResource. ?t oa:hasSource <" + tgtUrl + ">}}}";
-		}	
+		} else if(tgtUrl==null && identifiers!=null && identifiers.size()>0) {
+			boolean first = false;
+			StringBuffer queryBuffer = new StringBuffer();
+			List<String> urls = jenaVirtuosoStoreService.retrieveAllManifestationsByIdentifiers(apiKey, identifiers, grailsApplication.config.annotopia.storage.uri.graph.identifiers);
+			println urls
+			urls.each { url ->
+				queryBuffer.append("{?s oa:hasTarget <" + url + "> } UNION {?s oa:hasTarget ?t. ?t a oa:SpecificResource. ?t oa:hasSource <" + url + ">}")
+				if(first) queryBuffer.append(" UNION ");
+				first = true;
+			}
+			
+			queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> " +
+				"SELECT (COUNT(DISTINCT ?g) AS ?total) WHERE { GRAPH ?g { ?s a oa:Annotation . " + queryBuffer.toString() + "}}";
+			println queryString
+		}
 			
 		int totalCount = jenaVirtuosoStoreService.count(apiKey, queryString);
 		log.info('[' + apiKey + '] Total accessible Annotation Graphs: ' + totalCount);
@@ -105,27 +171,72 @@ class OpenAnnotationVirtuosoService {
 		graphs
 	}
 	
-	public Set<String> retrieveAnnotationGraphsNames(apiKey, max, offset, tgtUrl, tgtFgt) {
+	public Set<String> retrieveAnnotationGraphsNames(apiKey, max, offset, List<String> tgtUrls, tgtFgt) {
 		log.info  '[' + apiKey + '] Retrieving annotation graphs names ' +
 			' max:' + max +
 			' offset:' + offset +
-			' tgtUrl:' + tgtUrl +
+			' tgtUrl:' + tgtUrls +
 			' tgtFgt:' + tgtFgt;
+			
+		if(tgtUrls!=null && tgtUrls.size()==0) return new HashSet<String>();
 
 		String queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> " +
 			"SELECT DISTINCT ?g WHERE { GRAPH ?g { ?s a oa:Annotation }} LIMIT " + max + " OFFSET " + offset;
-		if(tgtUrl!=null && tgtFgt=="false") {
+		if(tgtUrls!=null && tgtUrls.size()>0 && tgtFgt=="false") {
+			boolean first = false;
+			StringBuffer queryBuffer = new StringBuffer();
+			tgtUrls.each { tgtUrl ->
+				if(first) queryBuffer.append(" UNION ");
+				queryBuffer.append("{ ?s a oa:Annotation . ?s oa:hasTarget <" + tgtUrl + "> }");
+				first=true;
+			}
+			
 			queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> " +
-				"SELECT DISTINCT ?g WHERE { GRAPH ?g { ?s a oa:Annotation . ?s oa:hasTarget <" + tgtUrl + "> }} LIMIT " + max + " OFFSET " + offset;
-		} else if(tgtUrl!=null && tgtFgt=="true") {
+				"SELECT DISTINCT ?g WHERE { GRAPH ?g {" + 
+					queryBuffer.toString() + 
+				"} LIMIT " + max + " OFFSET " + offset;
+		} else if(tgtUrls!=null && tgtUrls.size()>0 && tgtFgt=="true") {
+			boolean first = false;
+			StringBuffer queryBuffer = new StringBuffer();
+			//List<String> urls = jenaVirtuosoStoreService.retrieveAllManifestationsByIdentifiers(apiKey, identifiers, grailsApplication.config.annotopia.storage.uri.graph.identifiers);
+			//println urls
+			tgtUrls.each { tgtUrl ->
+				if(first) queryBuffer.append(" UNION ");
+				queryBuffer.append("{?s oa:hasTarget <" + tgtUrl + "> } UNION {?s oa:hasTarget ?t. ?t a oa:SpecificResource. ?t oa:hasSource <" + tgtUrl + ">}")			
+				first = true;
+			}
+		
 			queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> " +
-				"SELECT DISTINCT ?g WHERE { GRAPH ?g { ?s a oa:Annotation . {?s oa:hasTarget <" + tgtUrl +
-				"> } UNION {?s oa:hasTarget ?t. ?t a oa:SpecificResource. ?t oa:hasSource <" + tgtUrl + ">}}} LIMIT " + max + " OFFSET " + offset;
+				"SELECT DISTINCT ?g WHERE { GRAPH ?g {" + 
+					queryBuffer.toString() +
+				"}} LIMIT " + max + " OFFSET " + offset;
 		}
 	
 		Set<String> graphs = jenaVirtuosoStoreService.retrieveGraphsNames(apiKey, queryString);
 		graphs
 	}
+	
+//	public Set<String> retrieveAnnotationGraphsNames(apiKey, max, offset, tgtUrl, tgtFgt) {
+//		log.info  '[' + apiKey + '] Retrieving annotation graphs names ' +
+//			' max:' + max +
+//			' offset:' + offset +
+//			' tgtUrl:' + tgtUrl +
+//			' tgtFgt:' + tgtFgt;
+//
+//		String queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> " +
+//			"SELECT DISTINCT ?g WHERE { GRAPH ?g { ?s a oa:Annotation }} LIMIT " + max + " OFFSET " + offset;
+//		if(tgtUrl!=null && tgtFgt=="false") {
+//			queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> " +
+//				"SELECT DISTINCT ?g WHERE { GRAPH ?g { ?s a oa:Annotation . ?s oa:hasTarget <" + tgtUrl + "> }} LIMIT " + max + " OFFSET " + offset;
+//		} else if(tgtUrl!=null && tgtFgt=="true") {
+//			queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> " +
+//				"SELECT DISTINCT ?g WHERE { GRAPH ?g { ?s a oa:Annotation . {?s oa:hasTarget <" + tgtUrl +
+//				"> } UNION {?s oa:hasTarget ?t. ?t a oa:SpecificResource. ?t oa:hasSource <" + tgtUrl + ">}}} LIMIT " + max + " OFFSET " + offset;
+//		}
+//	
+//		Set<String> graphs = jenaVirtuosoStoreService.retrieveGraphsNames(apiKey, queryString);
+//		graphs
+//	}
 	
 	public Set<String> retrieveAnnotationSetsGraphsNames(apiKey, max, offset, tgtUrl, tgtFgt) {
 		log.info  '[' + apiKey + '] Retrieving annotation sets graphs names ' +

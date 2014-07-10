@@ -65,6 +65,50 @@ class OpenAnnotationStorageService {
 	def jenaVirtuosoStoreService
 	def openAnnotationUtilsService
 	def openAnnotationVirtuosoService
+	def graphIdentifiersMetadataService
+	
+	
+	public listAnnotation(apiKey, max, offset, List<String> tgtUrls, tgtFgt, tgtExt, tgtIds, incGph) {
+		log.info '[' + apiKey + '] Listing annotations' +
+			' max:' + max +
+			' offset:' + offset +
+			' incGph:' + incGph +
+			' tgtUrl:' + tgtUrls +
+			' tgtFgt:' + tgtFgt;
+			
+		Set<Dataset> datasets = new HashSet<Dataset>();
+		Set<String> graphNames = openAnnotationVirtuosoService.retrieveAnnotationGraphsNames(apiKey, max, offset, tgtUrls, tgtFgt);
+		if(graphNames!=null) {
+			graphNames.each { graphName ->
+				Dataset ds = jenaVirtuosoStoreService.retrieveGraph(apiKey, graphName);
+				
+				if(ds!=null) {
+					List<Statement> statementsToRemove = new ArrayList<Statement>();
+					Set<Resource> subjectsToRemove = new HashSet<Resource>();
+					Iterator<String> names = ds.listNames();
+					names.each { name ->
+						Model m = ds.getNamedModel(name);
+						// Remove AnnotationSets data and leave oa:Annotation
+						StmtIterator statements = m.listStatements(null, ResourceFactory.createProperty(RDF.RDF_TYPE), ResourceFactory.createResource(AnnotopiaVocabulary.ANNOTATION_SET));
+						statements.each { statement ->
+							subjectsToRemove.add(statement.getSubject())
+						}
+						
+						subjectsToRemove.each { subjectToRemove ->
+							m.removeAll(subjectToRemove, null, null);
+						}
+					}
+				}
+				
+				if(incGph==INCGPH_YES) {
+					Model m = jenaVirtuosoStoreService.retrieveGraphMetadata(apiKey, graphName, grailsApplication.config.annotopia.storage.uri.graph.provenance);
+					if(m!=null) ds.setDefaultModel(m);
+				}
+				if(ds!=null) datasets.add(ds);
+			}
+		}
+		return datasets;
+	}
 	
 	/**
 	 * Lists the ann...
@@ -174,9 +218,7 @@ class OpenAnnotationStorageService {
 			log.trace("[" + apiKey + "] Default graph detected.");
 			// If the content is expressed in the default graph, it is necessary 
 			// to swap blank nodes and temporary URIs with persistent URIs
-			// NOTE: This is supporting right now a single body
-			
-			openAnnotationUtilsService.detectTargetIdentifiersInDefaultGraph(apiKey, dataset, identifiers);
+			// NOTE: This is supporting right now a single body			
 			
 			// Annotation identifier
 			Resource annotation = persistURI(apiKey, dataset.getDefaultModel(),
@@ -201,6 +243,20 @@ class OpenAnnotationStorageService {
 			def graphUri = mintGraphUri();
 			Dataset creationDataset = DatasetFactory.createMem();
 			creationDataset.addNamedModel(graphUri, dataset.getDefaultModel());
+			
+			def identifierUri = mintUri("expression");
+			openAnnotationUtilsService.detectTargetIdentifiersInDefaultGraph(apiKey, dataset, identifiers);
+			
+			Model identifiersModel = jenaVirtuosoStoreService.retrieveGraphIdentifiersMetadata(apiKey, identifiers, grailsApplication.config.annotopia.storage.uri.graph.identifiers);
+			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+			RDFDataMgr.write(outputStream, identifiersModel, RDFLanguages.JSONLD);
+			println outputStream.toString();
+			
+			//List<String> manifestations = jenaVirtuosoStoreService.retrieveAllManifestationsByIdentifiers(apiKey, identifiers, grailsApplication.config.annotopia.storage.uri.graph.identifiers);
+			//println manifestations
+			
+			if(identifiersModel.empty)
+				graphIdentifiersMetadataService.getIdentifiersGraphMetadata(apiKey, creationDataset, identifierUri, identifiers);
 			
 			// Creation of the metadata for the Graph wrapper
 			def graphResource = ResourceFactory.createResource(graphUri);

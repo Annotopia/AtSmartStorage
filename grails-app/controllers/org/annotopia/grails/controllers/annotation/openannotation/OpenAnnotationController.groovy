@@ -20,11 +20,11 @@
  */
 package org.annotopia.grails.controllers.annotation.openannotation
 
-import javax.servlet.http.HttpServletResponse;
-
 import grails.converters.JSON
 
-import org.annotopia.groovy.service.store.BaseController;
+import javax.servlet.http.HttpServletResponse
+
+import org.annotopia.groovy.service.store.BaseController
 import org.annotopia.groovy.service.store.StoreServiceException
 import org.apache.jena.riot.RDFDataMgr
 import org.apache.jena.riot.RDFLanguages
@@ -113,9 +113,20 @@ class OpenAnnotationController extends BaseController {
 			def tgtFgt = (request.JSON.tgtFgt!=null)?request.JSON.tgtFgt:"true";
 			if(params.tgtFgt!=null) tgtFgt = params.tgtFgt;
 			
+			// Target IDs
+			Map<String,String> identifiers = new HashMap<String,String>();
+			def tgtIds = (request.JSON.tgtIds!=null)?request.JSON.tgtIds:null;
+			if(params.tgtIds!=null) tgtIds = params.tgtIds
+			if(tgtIds!=null) {
+				JSONObject ids = JSON.parse(tgtIds);
+				ids.keys().each { key ->
+					identifiers.put(key, ids.get(key));
+				}			
+			}
+			
 			// Currently unusued, planned
 			def tgtExt = request.JSON.tgtExt
-			def tgtIds = request.JSON.tgtIds
+			//def tgtIds = request.JSON.tgtIds
 			def flavor = request.JSON.flavor
 			
 			log.info("[" + apiKey + "] List >>" +
@@ -128,7 +139,17 @@ class OpenAnnotationController extends BaseController {
 				((outCmd!=null) ? (" outCmd:" + outCmd):"") +
 				((incGph!=null) ? (" incGph:" + incGph):""));	
 			
-			int annotationsTotal = openAnnotationVirtuosoService.countAnnotationGraphs(apiKey, tgtUrl, tgtFgt);
+			List<String> tgtUrls ;
+			if(tgtUrl!=null) {
+				tgtUrls = new ArrayList<String>();
+				tgtUrls.add(tgtUrl);
+			} else if(tgtIds!=null) {
+				tgtUrls = new ArrayList<String>();
+				tgtUrls = jenaVirtuosoStoreService.retrieveAllManifestationsByIdentifiers(apiKey, identifiers, grailsApplication.config.annotopia.storage.uri.graph.identifiers);
+			}
+			
+			int annotationsTotal = openAnnotationVirtuosoService.countAnnotationGraphs(apiKey, tgtUrls, tgtFgt);			
+			//int annotationsTotal = openAnnotationVirtuosoService.countAnnotationGraphs(apiKey, tgtUrl, tgtFgt, identifiers);
 			int annotationsPages = (annotationsTotal/Integer.parseInt(max));		
 			if(annotationsTotal>0 && Integer.parseInt(offset)>0 && Integer.parseInt(offset)>=annotationsPages) {
 				def message = 'The requested page ' + offset + 
@@ -138,7 +159,7 @@ class OpenAnnotationController extends BaseController {
 				return;
 			}
 			
-			Set<Dataset> annotationGraphs = openAnnotationStorageService.listAnnotation(apiKey, max, offset, tgtUrl, tgtFgt, tgtExt, tgtIds, incGph);
+			Set<Dataset> annotationGraphs = openAnnotationStorageService.listAnnotation(apiKey, max, offset, tgtUrls, tgtFgt, tgtExt, tgtIds, incGph);
 			def summaryPrefix = '"total":"' + annotationsTotal + '", ' +
 					'"pages":"' + annotationsPages + '", ' +
 					'"duration": "' + (System.currentTimeMillis()-startTime) + 'ms", ' +
