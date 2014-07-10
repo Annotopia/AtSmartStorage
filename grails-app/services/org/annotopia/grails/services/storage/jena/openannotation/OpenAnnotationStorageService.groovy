@@ -68,6 +68,22 @@ class OpenAnnotationStorageService {
 	def graphIdentifiersMetadataService
 	
 	
+	/**
+	 * Retrieves the available annotations given the specified parameters.
+	 * @param apiKey	The API key of the client issuing the request
+	 * @param max		The maximum number of results to return (pagination)
+	 * @param offset	The offset for the results (pagination)
+	 * @param tgtUrls	The list of URLs identifying the targets of interest. 
+	 *                  If null all the available annotations will be returned. 
+	 *                  If empty none will be returned.
+	 * @param tgtFgt	If true the results will include annotation of document fragments.
+	 * 					If false, only the annotations on full resources will be returned.
+	 * @param tgtExt	(Not implemented yet)
+	 * @param tgtIds	The list of IDs identifying the targets of interest.
+	 * @param incGph	If true the graph accommodating the annotation metadata included
+	 * 					in the annotation metadata provenance graph will be returned as well.
+	 * @return The list of annotations meeting the given criteria
+	 */
 	public listAnnotation(apiKey, max, offset, List<String> tgtUrls, tgtFgt, tgtExt, tgtIds, incGph) {
 		log.info '[' + apiKey + '] Listing annotations' +
 			' max:' + max +

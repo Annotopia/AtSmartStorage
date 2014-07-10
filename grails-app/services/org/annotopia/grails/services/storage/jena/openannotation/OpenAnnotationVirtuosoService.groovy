@@ -171,17 +171,33 @@ class OpenAnnotationVirtuosoService {
 		graphs
 	}
 	
+	/**
+	 * Retrieves all the graph names of the graphs containing annotation meeting
+	 * the given criteria.
+	 * @param apiKey	The API key of the client issuing the request
+	 * @param max		The maximum number of results to return (pagination)
+	 * @param offset	The offset for the results (pagination)
+	 * @param tgtUrls	The list of URLs identifying the targets of interest. 
+	 *                  If null all the available annotations will be returned. 
+	 *                  If empty none will be returned.
+	 * @param tgtFgt	If true the results will include annotation of document fragments.
+	 * 					If false, only the annotations on full resources will be returned.
+	 * @return The graph names of the arrotations meeting the given criteria.
+	 */
 	public Set<String> retrieveAnnotationGraphsNames(apiKey, max, offset, List<String> tgtUrls, tgtFgt) {
 		log.info  '[' + apiKey + '] Retrieving annotation graphs names ' +
 			' max:' + max +
 			' offset:' + offset +
-			' tgtUrl:' + tgtUrls +
+			' tgtUrls:' + tgtUrls +
 			' tgtFgt:' + tgtFgt;
 			
+		// This is the case when criteria did not meet existing annotations
 		if(tgtUrls!=null && tgtUrls.size()==0) return new HashSet<String>();
 
+		// Returns any annotation
 		String queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> " +
 			"SELECT DISTINCT ?g WHERE { GRAPH ?g { ?s a oa:Annotation }} LIMIT " + max + " OFFSET " + offset;
+		// Returns annotations on the requested URLs (full resource)
 		if(tgtUrls!=null && tgtUrls.size()>0 && tgtFgt=="false") {
 			boolean first = false;
 			StringBuffer queryBuffer = new StringBuffer();
@@ -195,6 +211,7 @@ class OpenAnnotationVirtuosoService {
 				"SELECT DISTINCT ?g WHERE { GRAPH ?g {" + 
 					queryBuffer.toString() + 
 				"} LIMIT " + max + " OFFSET " + offset;
+		// Returns annotations on the requested URLs (full resource and fragments)
 		} else if(tgtUrls!=null && tgtUrls.size()>0 && tgtFgt=="true") {
 			boolean first = false;
 			StringBuffer queryBuffer = new StringBuffer();
