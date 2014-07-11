@@ -523,12 +523,6 @@ class AnnotationIntegratedStorageService {
 			Dataset storedDataset = DatasetFactory.createMem();
 			storedDataset.addNamedModel(graphUri, inMemoryDataset.getDefaultModel());
 			
-			/*
-			println identifiers
-			if(identifiersModel.empty)
-				graphIdentifiersMetadataService.getIdentifiersGraphMetadata(apiKey, storedDataset, identifierUri, identifiers);
-				*/
-			
 			// Creation of the metadata for the Graph wrapper
 			def graphResource = ResourceFactory.createResource(graphUri);
 			Model metaModel = graphMetadataService.getAnnotationSetGraphCreationMetadata(apiKey, creationDataset, graphUri);
@@ -543,6 +537,11 @@ class AnnotationIntegratedStorageService {
 			
 			// split the annotations into graphs
 			Dataset annotationGraphs = openAnnotationSetsUtilsService.splitAnnotationGraphs(apiKey, storedDataset);
+			
+			println identifiers
+			if(identifiersModel.empty)
+				graphIdentifiersMetadataService.getIdentifiersGraphMetadata(apiKey, annotationGraphs, identifierUri, identifiers);
+			
 			jenaVirtuosoStoreService.storeDataset(apiKey, annotationGraphs);
 			storedDataset
 		}
