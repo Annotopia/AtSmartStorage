@@ -31,20 +31,17 @@ class SecretController {
 
 	def jenaVirtuosoStoreService;
 	def openAnnotationVirtuosoService;
+	def annotationIntegratedStorageService;
 	
 	def clearAllGraphs = {
 		println 'clearing all graphs'
-		Set<String> annotationSetsGraphNames = openAnnotationVirtuosoService.retrieveAnnotationSetsGraphsNames("secret", 100, 0, null, false);
+		Set<String> annotationSetsGraphNames = annotationIntegratedStorageService.retrieveAnnotationSetsGraphsNames("secret", 100, 0, null, "true");
 		annotationSetsGraphNames.each { graph ->
-			println 'dropping annotation set graph ' + graph
 			jenaVirtuosoStoreService.dropGraph("secret", graph);
 		}
 		
-		//jenaVirtuosoStoreService.dropGraph("secret", "virt:DEFAULT");
-		
-		Set<String> annotationGraphNames = openAnnotationVirtuosoService.retrieveAnnotationGraphsNames("secret", 100, 0, null, false);
+		Set<String> annotationGraphNames = openAnnotationVirtuosoService.retrieveAnnotationGraphsNames("secret", 100, 0, null, "true");
 		annotationGraphNames.each { graph ->
-			println 'dropping annotation graph ' + graph
 			jenaVirtuosoStoreService.dropGraph("secret", graph);
 		}
 		

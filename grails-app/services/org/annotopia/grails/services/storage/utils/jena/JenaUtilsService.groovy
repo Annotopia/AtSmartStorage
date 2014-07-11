@@ -20,8 +20,6 @@
  */
 package org.annotopia.grails.services.storage.utils.jena
 
-import groovy.sql.DataSet
-
 import org.apache.jena.riot.RDFDataMgr
 import org.apache.jena.riot.RDFLanguages
 
@@ -32,6 +30,7 @@ import com.hp.hpl.jena.query.QueryExecutionFactory
 import com.hp.hpl.jena.query.QueryFactory
 import com.hp.hpl.jena.query.QuerySolution
 import com.hp.hpl.jena.query.ResultSet
+import com.hp.hpl.jena.rdf.model.Model
 import com.hp.hpl.jena.rdf.model.Resource
 
 /**
@@ -67,9 +66,20 @@ class JenaUtilsService {
 	 * @param dataset	The Dataset to serialize
 	 * @return The serialization of the Dataset
 	 */
-	public String getDatasetAsString(DataSet dataset) {
+	public String getDatasetAsString(Dataset dataset) {
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 		RDFDataMgr.write(outputStream, dataset, RDFLanguages.JSONLD);
+		return outputStream.toString();
+	}
+	
+	/**
+	 * Returns a String representation in JSON-LD format of a Dataset
+	 * @param dataset	The Dataset to serialize
+	 * @return The serialization of the Dataset
+	 */
+	public String getDatasetAsString(Model model) {
+		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+		RDFDataMgr.write(outputStream, model, RDFLanguages.JSONLD);
 		return outputStream.toString();
 	}
 }

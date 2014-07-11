@@ -20,15 +20,15 @@
  */
 package org.annotopia.grails.controllers.annotation.openannotation
 
-import java.text.SimpleDateFormat
+import grails.converters.JSON
 
-import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
 
 import org.annotopia.groovy.service.store.BaseController
 import org.annotopia.groovy.service.store.StoreServiceException
 import org.apache.jena.riot.RDFDataMgr
 import org.apache.jena.riot.RDFLanguages
+import org.codehaus.groovy.grails.web.json.JSONObject
 
 import com.github.jsonldjava.core.JsonLdOptions
 import com.github.jsonldjava.core.JsonLdProcessor
@@ -46,9 +46,11 @@ class OpenAnnotationSetController extends BaseController {
 //	String AT_FRAME = "https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/AnnotopiaFrame.json";
 	
 	def grailsApplication;
+	def jenaVirtuosoStoreService;
 	def apiKeyAuthenticationService;
 	def openAnnotationSetStorageService;
 	def openAnnotationVirtuosoService;
+	def openAnnotationSetVirtuosoService;
 
 	/*
 	 * GET
@@ -97,9 +99,19 @@ class OpenAnnotationSetController extends BaseController {
 			def tgtFgt = (request.JSON.tgtFgt!=null)?request.JSON.tgtFgt:"true"; 
 			if(params.tgtFgt!=null) tgtFgt = params.tgtFgt;
 			
+			// Target IDs
+			Map<String,String> identifiers = new HashMap<String,String>();
+			def tgtIds = (request.JSON.tgtIds!=null)?request.JSON.tgtIds:null;
+			if(params.tgtIds!=null) tgtIds = params.tgtIds
+			if(tgtIds!=null) {
+				JSONObject ids = JSON.parse(tgtIds);
+				ids.keys().each { key ->
+					identifiers.put(key, ids.get(key));
+				}
+			}
+			
 			// Currently unusued, planned
 			def tgtExt = request.JSON.tgtExt
-			def tgtIds = request.JSON.tgtIds
 			def flavor = request.JSON.flavor
 			
 			log.info("[" + apiKey + "] List >>" +
@@ -112,7 +124,16 @@ class OpenAnnotationSetController extends BaseController {
 				((outCmd!=null) ? (" outCmd:" + outCmd):"") +
 				((incGph!=null) ? (" incGph:" + incGph):""));
 			
-			int annotationSetsTotal = openAnnotationVirtuosoService.countAnnotationSetGraphs(apiKey, tgtUrl, tgtFgt);
+			List<String> tgtUrls ;
+			if(tgtUrl!=null) {
+				tgtUrls = new ArrayList<String>();
+				tgtUrls.add(tgtUrl);
+			} else if(tgtIds!=null) {
+				tgtUrls = new ArrayList<String>();
+				tgtUrls = jenaVirtuosoStoreService.retrieveAllManifestationsByIdentifiers(apiKey, identifiers, grailsApplication.config.annotopia.storage.uri.graph.identifiers);
+			}
+			
+			int annotationSetsTotal = openAnnotationSetVirtuosoService.countAnnotationSetGraphs(apiKey, tgtUrls, tgtFgt);
 			int annotationSetsPages = (annotationSetsTotal/Integer.parseInt(max));
 			if(annotationSetsTotal>0 && Integer.parseInt(offset)>0 && Integer.parseInt(offset)>=annotationSetsPages) {
 				def message = 'The requested page ' + offset +
@@ -193,7 +214,7 @@ class OpenAnnotationSetController extends BaseController {
 		else {
 			String url = getCurrentUrl(request).substring(0, getCurrentUrl(request).indexOf("?"))
 			
-			Dataset graphs =  openAnnotationVirtuosoService.retrieveAnnotationSet(apiKey, url);
+			Dataset graphs =  openAnnotationSetVirtuosoService.retrieveAnnotationSet(apiKey, url);
 			
 			Object contextJson = null;
 			if(graphs!=null && graphs.listNames().hasNext()) {

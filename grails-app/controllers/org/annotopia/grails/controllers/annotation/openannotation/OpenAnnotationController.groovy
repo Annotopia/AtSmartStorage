@@ -126,7 +126,6 @@ class OpenAnnotationController extends BaseController {
 			
 			// Currently unusued, planned
 			def tgtExt = request.JSON.tgtExt
-			//def tgtIds = request.JSON.tgtIds
 			def flavor = request.JSON.flavor
 			
 			log.info("[" + apiKey + "] List >>" +

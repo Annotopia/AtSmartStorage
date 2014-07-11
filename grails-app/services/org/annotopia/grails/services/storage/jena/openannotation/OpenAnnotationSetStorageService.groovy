@@ -54,7 +54,8 @@ class OpenAnnotationSetStorageService {
 	def graphMetadataService
 	def jenaVirtuosoStoreService
 	def openAnnotationUtilsService
-	def openAnnotationVirtuosoService
+	//def openAnnotationVirtuosoService
+	def openAnnotationSetsVirtuosoService
 	def openAnnotationStorageService
 	def openAnnotationSetsUtilsService
 	
@@ -72,7 +73,7 @@ class OpenAnnotationSetStorageService {
 		log.info '[' + apiKey + '] Retrieving annotation sets';
 	
 		Set<Dataset> datasets = new HashSet<Dataset>();
-		Set<String> graphNames = openAnnotationVirtuosoService.retrieveAnnotationSetsGraphsNames(apiKey, max, offset, tgtUrl, tgtFgt);
+		Set<String> graphNames = openAnnotationSetsVirtuosoService.retrieveAnnotationSetsGraphsNames(apiKey, max, offset, tgtUrl, tgtFgt);
 		if(graphNames!=null) {
 			graphNames.each { graphName ->
 				Dataset ds = jenaVirtuosoStoreService.retrieveGraph(apiKey, graphName);

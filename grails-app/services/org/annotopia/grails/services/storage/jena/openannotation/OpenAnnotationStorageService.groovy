@@ -260,17 +260,11 @@ class OpenAnnotationStorageService {
 			Dataset creationDataset = DatasetFactory.createMem();
 			creationDataset.addNamedModel(graphUri, dataset.getDefaultModel());
 			
+			// Identity management
 			def identifierUri = mintUri("expression");
-			openAnnotationUtilsService.detectTargetIdentifiersInDefaultGraph(apiKey, dataset, identifiers);
-			
+			openAnnotationUtilsService.detectTargetIdentifiersInDefaultGraph(apiKey, dataset, identifiers)		
 			Model identifiersModel = jenaVirtuosoStoreService.retrieveGraphIdentifiersMetadata(apiKey, identifiers, grailsApplication.config.annotopia.storage.uri.graph.identifiers);
-			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-			RDFDataMgr.write(outputStream, identifiersModel, RDFLanguages.JSONLD);
-			println outputStream.toString();
-			
-			//List<String> manifestations = jenaVirtuosoStoreService.retrieveAllManifestationsByIdentifiers(apiKey, identifiers, grailsApplication.config.annotopia.storage.uri.graph.identifiers);
-			//println manifestations
-			
+			jenaUtilsService.getDatasetAsString(identifiersModel);
 			if(identifiersModel.empty)
 				graphIdentifiersMetadataService.getIdentifiersGraphMetadata(apiKey, creationDataset, identifierUri, identifiers);
 			
