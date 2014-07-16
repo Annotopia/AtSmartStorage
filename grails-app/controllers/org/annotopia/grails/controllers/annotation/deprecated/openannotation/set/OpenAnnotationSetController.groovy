@@ -18,7 +18,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.annotopia.grails.controllers.annotation.openannotation
+package org.annotopia.grails.controllers.annotation.deprecated.openannotation.set
 
 import grails.converters.JSON
 

@@ -381,29 +381,29 @@ class JenaVirtuosoStoreService implements ITripleStore {
 	@Override
 	public Model retrieveGraphIdentifiersMetadata(String apiKey, Map<String,String> identifiers, String metadataIdentifiersGraphUri) {
 		log.info '[' + apiKey + '] Retrieving graph identifiers metadata: ' + identifiers;
-		
+
 		VirtGraph set = new VirtGraph (metadataIdentifiersGraphUri,
 			grailsApplication.config.annotopia.storage.triplestore.host,
 			grailsApplication.config.annotopia.storage.triplestore.user,
 			grailsApplication.config.annotopia.storage.triplestore.pass);
-		
+
 		if(identifiers.get(Bibliographic.LABEL_URL)!=null) {
-			
+
 			StringBuffer queryBuffer = new StringBuffer();
 			queryBuffer.append(" ?expression ?ep ?eo . ");
 			
 			String doi = identifiers.get(Bibliographic.LABEL_DOI);
 			if(doi!=null) queryBuffer.append(" OPTIONAL { ?expression <" + Bibliographic.DOI + "> ?doi . FILTER (?doi = '" + doi + "')}");
-			
+
 			String pmid = identifiers.get(Bibliographic.LABEL_PMID);
 			if(pmid!=null) queryBuffer.append(" OPTIONAL { ?expression <" + Bibliographic.PMID + "> ?pmid . FILTER (?pmid = '" + pmid + "')}");
-			
+
 			String pmcid = identifiers.get(Bibliographic.LABEL_PMCID);
 			if(pmcid!=null) queryBuffer.append(" OPTIONAL { ?expression <" + Bibliographic.PMCID + "> ?pmcid . FILTER (?pmcid = '" + pmcid + "')}");
-			
+
 			String pii = identifiers.get(Bibliographic.LABEL_PII);
 			if(pii!=null) queryBuffer.append(" OPTIONAL { ?expression <" + Bibliographic.PII + "> ?pii . FILTER (?pii = '" + pii + "')}");
-			
+
 			String queryString = "CONSTRUCT { <"+identifiers.get(Bibliographic.LABEL_URL)+"> ?p ?o . ?expression ?ep ?eo. } FROM <" + metadataIdentifiersGraphUri + ">" +
 				" WHERE { <"+identifiers.get(Bibliographic.LABEL_URL)+"> ?p ?o . <"+identifiers.get(Bibliographic.LABEL_URL)+"> <"+RDF.RDF_TYPE+"> <"+Bibliographic.WEB_PAGE+"> . " + queryBuffer.toString() + "}";
 			log.trace '[' + apiKey + '] retrieveGraphIdentifiersMetadata: ' + queryString

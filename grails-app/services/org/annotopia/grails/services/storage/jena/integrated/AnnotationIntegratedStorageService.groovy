@@ -538,9 +538,17 @@ class AnnotationIntegratedStorageService {
 			// split the annotations into graphs
 			Dataset annotationGraphs = openAnnotationSetsUtilsService.splitAnnotationGraphs(apiKey, storedDataset);
 			
-			println identifiers
+			// If no identifiers are found for this resource we create the identifiers metadata.
 			if(identifiersModel.empty)
 				graphIdentifiersMetadataService.getIdentifiersGraphMetadata(apiKey, annotationGraphs, identifierUri, identifiers);
+			else {
+				// TODO Update indetifiers metadata
+				println 'TODO: update'
+				identifiers.keySet().each {
+					println it;
+				}
+				graphIdentifiersMetadataService.updateIdentifiersGraphMetadata(apiKey, identifiersModel, identifiers);
+			}
 			
 			jenaVirtuosoStoreService.storeDataset(apiKey, annotationGraphs);
 			storedDataset

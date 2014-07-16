@@ -22,7 +22,6 @@ package org.annotopia.grails.services.storage.utils.jena
 
 import java.text.SimpleDateFormat
 
-import org.annotopia.grails.vocabularies.AnnotopiaVocabulary
 import org.annotopia.grails.vocabularies.Bibliographic
 import org.annotopia.grails.vocabularies.RDF
 
@@ -30,6 +29,7 @@ import com.hp.hpl.jena.query.Dataset
 import com.hp.hpl.jena.rdf.model.Model
 import com.hp.hpl.jena.rdf.model.ModelFactory
 import com.hp.hpl.jena.rdf.model.ResourceFactory
+import com.hp.hpl.jena.rdf.model.StmtIterator
 
 
 /**
@@ -86,5 +86,26 @@ class GraphIdentifiersMetadataService {
 			dataset.addNamedModel(grailsApplication.config.annotopia.storage.uri.graph.identifiers, metaModel);
 		}
 		metaModel
+	}
+	
+	public Model updateIdentifiersGraphMetadata(String apiKey, Model metaModel, Map<String, String> identifiers) {
+		
+		StmtIterator wrapper = metaModel.listStatements(null, ResourceFactory.createProperty(Bibliographic.EMBODIMENT_OF), null);
+		if(wrapper.hasNext()) {
+			def object = wrapper.next().getObject();
+			StmtIterator identifiersData = metaModel.listStatements(object, null, null);
+			while(identifiersData.hasNext()) {
+				println identifiersData.next()
+			}
+		}
+		
+		
+		
+		
+		
+//		if(identifiers.get(Bibliographic.LABEL_PMID)!=null) {
+//			metaModel.add(graphRes, ResourceFactory.createProperty(Bibliographic.PMID),
+//				ResourceFactory.createPlainLiteral(identifiers.get(Bibliographic.LABEL_PMID)));
+//		}
 	}
 }

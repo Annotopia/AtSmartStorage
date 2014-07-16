@@ -201,8 +201,8 @@ class OpenAnnotationUtilsService {
 			"PREFIX oa: <http://www.w3.org/ns/oa#> " +
 			"PREFIX fabio:<http://purl.org/spar/fabio#> " +
 			"SELECT DISTINCT ?doi ?pmid ?pmcid ?pii ?target WHERE { " +
-			"{{ ?ann oa:hasTarget ?target . ?target frbr:embodimentOf ?s. ?s prism:doi ?doi . ?s fabio:hasPubMedId ?pmid . ?s fabio:hasPII ?pii . ?s fabio:hasPubMedCentralId ?pmcid . } " +
-			"UNION { ?ann oa:hasTarget ?spt. ?spt oa:hasSource ?target. ?target frbr:embodimentOf ?s. ?s prism:doi ?doi . ?s fabio:hasPubMedId ?pmid . ?s fabio:hasPII ?pii . ?s fabio:hasPubMedCentralId ?pmcid . }}}"
+			"{{ ?ann oa:hasTarget ?target . ?target frbr:embodimentOf ?s. OPTIONAL { ?s prism:doi ?doi .} OPTIONAL {?s fabio:hasPubMedId ?pmid .} OPTIONAL { ?s fabio:hasPII ?pii .} OPTIONAL { ?s fabio:hasPubMedCentralId ?pmcid . }} " +
+			"UNION { ?ann oa:hasTarget ?spt. ?spt oa:hasSource ?target. ?target frbr:embodimentOf ?s. OPTIONAL {?s prism:doi ?doi .} OPTIONAL {?s fabio:hasPubMedId ?pmid .} OPTIONAL {?s fabio:hasPII ?pii .} OPTIONAL {?s fabio:hasPubMedCentralId ?pmcid .} }}}"
 
 		QueryExecution gIdentifiers  = QueryExecutionFactory.create (QueryFactory.create(QUERY), dataset);
 		ResultSet rIdentifiers = gIdentifiers.execSelect();

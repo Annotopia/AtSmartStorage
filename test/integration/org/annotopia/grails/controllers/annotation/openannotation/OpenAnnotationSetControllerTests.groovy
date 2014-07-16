@@ -23,6 +23,8 @@ package org.annotopia.grails.controllers.annotation.openannotation;
 import static org.junit.Assert.*
 import grails.test.mixin.TestFor
 
+import org.annotopia.grails.controllers.annotation.deprecated.openannotation.set.OpenAnnotationSetController
+
 /**
  * @author Paolo Ciccarese <paolo.ciccarese@gmail.com>
  */
