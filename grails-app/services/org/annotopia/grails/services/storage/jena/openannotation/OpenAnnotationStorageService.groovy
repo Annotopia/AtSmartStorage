@@ -264,13 +264,12 @@ class OpenAnnotationStorageService {
 			def identifierUri = mintUri("expression");
 			openAnnotationUtilsService.detectTargetIdentifiersInDefaultGraph(apiKey, dataset, identifiers)		
 			Model identifiersModel = jenaVirtuosoStoreService.retrieveGraphIdentifiersMetadata(apiKey, identifiers, grailsApplication.config.annotopia.storage.uri.graph.identifiers);
-			jenaUtilsService.getDatasetAsString(identifiersModel);
+			//jenaUtilsService.getDatasetAsString(identifiersModel);
 			// If no identifiers are found for this resource we create the identifiers metadata.
-			if(identifiersModel.empty)
+			if(identifiersModel!=null && identifiersModel.empty)
 				graphIdentifiersMetadataService.getIdentifiersGraphMetadata(apiKey, creationDataset, identifierUri, identifiers);
-			else {
-				// TODO Update indetifiers metadata
-				println 'TODO: update'
+			else if(identifiersModel!=null) {
+				graphIdentifiersMetadataService.updateIdentifiersGraphMetadata(apiKey, creationDataset, identifiersModel, identifiers);
 			}
 			
 			// Creation of the metadata for the Graph wrapper

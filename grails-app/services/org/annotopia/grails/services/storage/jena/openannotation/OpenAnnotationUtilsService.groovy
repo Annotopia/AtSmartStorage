@@ -203,8 +203,8 @@ class OpenAnnotationUtilsService {
 			"SELECT DISTINCT ?doi ?pmid ?pmcid ?pii ?target WHERE { " +
 			"{{ ?ann oa:hasTarget ?target . ?target frbr:embodimentOf ?s. OPTIONAL { ?s prism:doi ?doi .} OPTIONAL {?s fabio:hasPubMedId ?pmid .} OPTIONAL { ?s fabio:hasPII ?pii .} OPTIONAL { ?s fabio:hasPubMedCentralId ?pmcid . }} " +
 			"UNION { ?ann oa:hasTarget ?spt. ?spt oa:hasSource ?target. ?target frbr:embodimentOf ?s. OPTIONAL {?s prism:doi ?doi .} OPTIONAL {?s fabio:hasPubMedId ?pmid .} OPTIONAL {?s fabio:hasPII ?pii .} OPTIONAL {?s fabio:hasPubMedCentralId ?pmcid .} }}}"
-
-		QueryExecution gIdentifiers  = QueryExecutionFactory.create (QueryFactory.create(QUERY), dataset);
+			
+		QueryExecution gIdentifiers  = QueryExecutionFactory.create (QueryFactory.create(QUERY), dataset.getDefaultModel());
 		ResultSet rIdentifiers = gIdentifiers.execSelect();
 		while (rIdentifiers.hasNext()) {
 			QuerySolution querySolution = rIdentifiers.nextSolution();
@@ -212,16 +212,16 @@ class OpenAnnotationUtilsService {
 			RDFNode url = querySolution.get("target");
 			if(url!=null) {
 				identifiers.put(Bibliographic.LABEL_URL, url.toString());
-			
+
 				RDFNode doi = querySolution.get(Bibliographic.LABEL_DOI);
 				if(doi!=null) identifiers.put(Bibliographic.LABEL_DOI, doi.toString());
-				
+
 				RDFNode pmid = querySolution.get(Bibliographic.LABEL_PMID);
 				if(pmid!=null) identifiers.put(Bibliographic.LABEL_PMID, pmid.toString());
-				
+
 				RDFNode pmcid = querySolution.get(Bibliographic.LABEL_PMCID);
 				if(pmcid!=null) identifiers.put(Bibliographic.LABEL_PMCID, pmcid.toString());
-				
+
 				RDFNode pii = querySolution.get(Bibliographic.LABEL_PII);
 				if(pii!=null) identifiers.put(Bibliographic.LABEL_PII, pii.toString());
 			}

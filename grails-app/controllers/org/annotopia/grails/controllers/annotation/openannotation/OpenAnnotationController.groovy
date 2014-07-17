@@ -321,9 +321,6 @@ class OpenAnnotationController extends BaseController {
 			Dataset inMemoryDataset = DatasetFactory.createMem();
 			try {
 				RDFDataMgr.read(inMemoryDataset, new ByteArrayInputStream(item.toString().getBytes("UTF-8")), RDFLanguages.JSONLD);
-//				ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-//				RDFDataMgr.write(outputStream, inMemoryDataset, RDFLanguages.JSONLD);
-//				println outputStream.toString();
 			} catch (Exception ex) {
 				log.error("[" + apiKey + "] " + ex.getMessage());
 				def message = "Invalid content, annotation cannot be read";

@@ -458,6 +458,10 @@ class JenaVirtuosoStoreService implements ITripleStore {
 			first = true;
 		}
 		
+		// If no identifier has been found return an empty list
+		// And don't exexute the following query.
+		if(!first) return new ArrayList<String>();
+		
 		String QUERY = "SELECT DISTINCT ?manifestation FROM <" + metadataIdentifiersGraphUri + ">" +
 			" WHERE { ?manifestation ?p ?expression . ?manifestation <"+RDF.RDF_TYPE+"> <"+Bibliographic.WEB_PAGE+"> . " + queryBuffer.toString() + "}";
 		log.trace '[' + apiKey + '] retrieveAllManifestationsByIdentifiers: ' + QUERY
