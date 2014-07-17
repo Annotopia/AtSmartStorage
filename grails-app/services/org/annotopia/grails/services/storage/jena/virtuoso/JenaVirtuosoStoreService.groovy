@@ -390,7 +390,8 @@ class JenaVirtuosoStoreService implements ITripleStore {
 		if(identifiers.get(Bibliographic.LABEL_URL)!=null) {
 
 			StringBuffer queryBuffer = new StringBuffer();
-			queryBuffer.append(" ?expression ?ep ?eo . ");
+			//queryBuffer.append("<"+identifiers.get(Bibliographic.LABEL_URL)+"> <http://purl.org/vocab/frbr/core#embodimentOf> ?expression. ?expression ?ep ?eo . ");
+			queryBuffer.append("?s <http://purl.org/vocab/frbr/core#embodimentOf> ?expression. ?expression ?ep ?eo . ");
 			
 			String doi = identifiers.get(Bibliographic.LABEL_DOI);
 			if(doi!=null) queryBuffer.append(" OPTIONAL { ?expression <" + Bibliographic.DOI + "> ?doi . FILTER (?doi = '" + doi + "')}");
@@ -404,8 +405,12 @@ class JenaVirtuosoStoreService implements ITripleStore {
 			String pii = identifiers.get(Bibliographic.LABEL_PII);
 			if(pii!=null) queryBuffer.append(" OPTIONAL { ?expression <" + Bibliographic.PII + "> ?pii . FILTER (?pii = '" + pii + "')}");
 
-			String queryString = "CONSTRUCT { <"+identifiers.get(Bibliographic.LABEL_URL)+"> ?p ?o . ?expression ?ep ?eo. } FROM <" + metadataIdentifiersGraphUri + ">" +
-				" WHERE { <"+identifiers.get(Bibliographic.LABEL_URL)+"> ?p ?o . <"+identifiers.get(Bibliographic.LABEL_URL)+"> <"+RDF.RDF_TYPE+"> <"+Bibliographic.WEB_PAGE+"> . " + queryBuffer.toString() + "}";
+//			String queryString = "CONSTRUCT { <"+identifiers.get(Bibliographic.LABEL_URL)+"> ?p ?o . ?expression ?ep ?eo. } FROM <" + metadataIdentifiersGraphUri + ">" +
+//				" WHERE { <"+identifiers.get(Bibliographic.LABEL_URL)+"> ?p ?o . <"+identifiers.get(Bibliographic.LABEL_URL)+"> <"+RDF.RDF_TYPE+"> <"+Bibliographic.WEB_PAGE+"> . " + queryBuffer.toString() + "}";
+			
+			String queryString = "CONSTRUCT { ?s ?p ?o . ?expression ?ep ?eo. } FROM <" + metadataIdentifiersGraphUri + ">" +
+			" WHERE { ?s ?p ?o . ?s <"+RDF.RDF_TYPE+"> <"+Bibliographic.WEB_PAGE+"> . " + queryBuffer.toString() + "}";
+
 			log.trace '[' + apiKey + '] retrieveGraphIdentifiersMetadata: ' + queryString
 		
 			try {

@@ -30,6 +30,7 @@ import com.hp.hpl.jena.rdf.model.Model
 import com.hp.hpl.jena.rdf.model.ModelFactory
 import com.hp.hpl.jena.rdf.model.Resource
 import com.hp.hpl.jena.rdf.model.ResourceFactory
+import com.hp.hpl.jena.rdf.model.Statement
 import com.hp.hpl.jena.rdf.model.StmtIterator
 
 
@@ -51,8 +52,9 @@ class GraphIdentifiersMetadataService {
 	 * @return The Model with all the Expression bibliographic metadata.
 	 */
 	public Model getIdentifiersGraphMetadata(String apiKey, Dataset dataset, def graphUri, Map<String, String> identifiers) {
-		//def metaGraphUri = getGraphUri();
-		Resource graphRes = ResourceFactory.createResource(graphUri);
+		log.trace("Creating bilbliographic identifiers " + identifiers);
+
+		Resource expression = ResourceFactory.createResource(graphUri);
 		Model metaModel;
 		if(dataset.getNamedModel(grailsApplication.config.annotopia.storage.uri.graph.identifiers)!=null) {
 			 metaModel = dataset.getNamedModel(grailsApplication.config.annotopia.storage.uri.graph.identifiers);
@@ -62,22 +64,45 @@ class GraphIdentifiersMetadataService {
 		}
 		
 		if(identifiers.get(Bibliographic.LABEL_URL)!=null) {
-			metaModel.add(ResourceFactory.createResource(identifiers.get(Bibliographic.LABEL_URL)),
-				ResourceFactory.createProperty(Bibliographic.EMBODIMENT_OF), graphRes);
-			
-			metaModel.add(ResourceFactory.createResource(identifiers.get(Bibliographic.LABEL_URL)),
-				ResourceFactory.createProperty(RDF.RDF_TYPE), ResourceFactory.createResource(Bibliographic.WEB_PAGE));
-			
-			metaModel.add(graphRes, ResourceFactory.createProperty(RDF.RDF_TYPE), 
+			// Definition of the expression
+			metaModel.add(expression, ResourceFactory.createProperty(RDF.RDF_TYPE), 
 				ResourceFactory.createResource(Bibliographic.EXPRESSION));
-			
-			updateModelWithIdentifiers(graphRes, metaModel, identifiers);
+			// Definition of the manifestation
+			addManifestation(expression, metaModel, identifiers);
+			// Update of the identifiers list
+			updateModelWithIdentifiers(expression, metaModel, identifiers);
 			dataset.addNamedModel(grailsApplication.config.annotopia.storage.uri.graph.identifiers, metaModel);
 		}
 		metaModel
 	}
 	
-	private updateModelWithIdentifiers(Resource expression, Model model, Map<String, String> identifiers) {
+	/**
+	 * Adds the manifestation to the model.
+	 * @param expression	The expression of the content
+	 * @param model			The model with the bibliographic metadata
+	 * @param identifiers	The collection of new bibliographic identifiers
+	 */
+	private void addManifestation(Resource expression, Model model, Map<String, String> identifiers) {
+		log.trace("Adding alternative manifestation: " + identifiers.get(Bibliographic.LABEL_URL +
+			" for expression " + expression.toString()));
+		
+		model.add(ResourceFactory.createResource(identifiers.get(Bibliographic.LABEL_URL)),
+			ResourceFactory.createProperty(Bibliographic.EMBODIMENT_OF),
+			expression);
+		
+		model.add(ResourceFactory.createResource(identifiers.get(Bibliographic.LABEL_URL)),
+			ResourceFactory.createProperty(RDF.RDF_TYPE),
+			ResourceFactory.createResource(Bibliographic.WEB_PAGE));
+	}
+	
+	/**
+	 * Updates the expression with the newly available identifiers.
+	 * @param expression	The expression resource
+	 * @param model			The model to update
+	 * @param identifiers	The list of new identifiers
+	 */
+	private void updateModelWithIdentifiers(Resource expression, Model model, Map<String, String> identifiers) {
+		log.trace("Updating expression.");
 		if(identifiers.get(Bibliographic.LABEL_DOI)!=null) {
 			model.add(expression, ResourceFactory.createProperty(Bibliographic.DOI),
 				ResourceFactory.createPlainLiteral(identifiers.get(Bibliographic.LABEL_DOI)));
@@ -107,53 +132,65 @@ class GraphIdentifiersMetadataService {
 	 * @return The updated Model with all the Expression bibliographic metadata
 	 */
 	public Model updateIdentifiersGraphMetadata(String apiKey, Dataset dataset, Model metaModel, Map<String, String> identifiers) {
-		StmtIterator wrapper = metaModel.listStatements(null, ResourceFactory.createProperty(Bibliographic.EMBODIMENT_OF), null);
-		if(wrapper.hasNext()) {
-			def expression = wrapper.next().getObject();
-			StmtIterator identifiersData = metaModel.listStatements(expression, null, null);
-			while(identifiersData.hasNext()) {
-				def statement = identifiersData.next();
-				def label = statement.getPredicate().toString();
-				if(label==Bibliographic.DOI) {
-					if(identifiers.get(Bibliographic.LABEL_DOI)!=null) {
-						if(identifiers.get(Bibliographic.LABEL_DOI)!=statement.getObject().toString()) {
-							log.warn("DOI inconsistency detected [old:" + statement.getObject().toString() + 
-								", new:" + identifiers.get(Bibliographic.LABEL_DOI) + "]");
-						}
-						identifiers.remove(Bibliographic.LABEL_DOI);
+		log.trace("Updating bilbliographic identifiers " + identifiers);
+		
+		Resource expression;
+		Set<String> resources = new HashSet<String>();
+		StmtIterator resourcesIterator = metaModel.listStatements(null, ResourceFactory.createProperty(Bibliographic.EMBODIMENT_OF), null);
+		while(resourcesIterator.hasNext()) {
+			def statement = resourcesIterator.next();
+			if(expression==null) expression = statement.getObject();
+			resources.add(statement.getSubject().toString());
+		}
+		println '**************** ' + resources;
+
+		if(!resources.contains(identifiers.get(Bibliographic.LABEL_URL))) {
+			addManifestation(expression, metaModel, identifiers);
+		}
+		
+		StmtIterator identifiersData = metaModel.listStatements(expression, null, null);
+		while(identifiersData.hasNext()) {
+			def statement = identifiersData.next();
+			def label = statement.getPredicate().toString();
+			if(label==Bibliographic.DOI) {
+				if(identifiers.get(Bibliographic.LABEL_DOI)!=null) {
+					if(identifiers.get(Bibliographic.LABEL_DOI)!=statement.getObject().toString()) {
+						log.warn("DOI inconsistency detected [old:" + statement.getObject().toString() + 
+							", new:" + identifiers.get(Bibliographic.LABEL_DOI) + "]");
 					}
-				}		
-				if(label==Bibliographic.PMID) {
-					if(identifiers.get(Bibliographic.LABEL_PMID)!=null) {
-						if(identifiers.get(Bibliographic.LABEL_PMID)!=statement.getObject().toString()) {
-							log.warn("PMID inconsistency detected [old:" + statement.getObject().toString() + 
-								", new:" + identifiers.get(Bibliographic.LABEL_PMID) + "]");
-						}
-						identifiers.remove(Bibliographic.LABEL_PMID);
-					}
+					identifiers.remove(Bibliographic.LABEL_DOI);
 				}
-				if(label==Bibliographic.PMCID) {
-					if(identifiers.get(Bibliographic.LABEL_PMCID)!=null) {
-						if(identifiers.get(Bibliographic.LABEL_PMCID)!=statement.getObject().toString()) {
-							log.warn("PMCID inconsistency detected [old:" + statement.getObject().toString() + 
-								", new:" + identifiers.get(Bibliographic.LABEL_PMCID) + "]");
-						}
-						identifiers.remove(Bibliographic.LABEL_PMCID);
+			}		
+			if(label==Bibliographic.PMID) {
+				if(identifiers.get(Bibliographic.LABEL_PMID)!=null) {
+					if(identifiers.get(Bibliographic.LABEL_PMID)!=statement.getObject().toString()) {
+						log.warn("PMID inconsistency detected [old:" + statement.getObject().toString() + 
+							", new:" + identifiers.get(Bibliographic.LABEL_PMID) + "]");
 					}
-				}
-				if(label==Bibliographic.PII) {
-					if(identifiers.get(Bibliographic.LABEL_PII)!=null) {
-						if(identifiers.get(Bibliographic.LABEL_PII)!=statement.getObject().toString()) {
-							log.warn("PII inconsistency detected [old:" + statement.getObject().toString() + 
-								", new:" + identifiers.get(Bibliographic.LABEL_PII) + "]");
-						}
-						identifiers.remove(Bibliographic.LABEL_PII);
-					}
+					identifiers.remove(Bibliographic.LABEL_PMID);
 				}
 			}
-			
-			updateModelWithIdentifiers(expression, metaModel, identifiers)
-			dataset.addNamedModel(grailsApplication.config.annotopia.storage.uri.graph.identifiers, metaModel);
+			if(label==Bibliographic.PMCID) {
+				if(identifiers.get(Bibliographic.LABEL_PMCID)!=null) {
+					if(identifiers.get(Bibliographic.LABEL_PMCID)!=statement.getObject().toString()) {
+						log.warn("PMCID inconsistency detected [old:" + statement.getObject().toString() + 
+							", new:" + identifiers.get(Bibliographic.LABEL_PMCID) + "]");
+					}
+					identifiers.remove(Bibliographic.LABEL_PMCID);
+				}
+			}
+			if(label==Bibliographic.PII) {
+				if(identifiers.get(Bibliographic.LABEL_PII)!=null) {
+					if(identifiers.get(Bibliographic.LABEL_PII)!=statement.getObject().toString()) {
+						log.warn("PII inconsistency detected [old:" + statement.getObject().toString() + 
+							", new:" + identifiers.get(Bibliographic.LABEL_PII) + "]");
+					}
+					identifiers.remove(Bibliographic.LABEL_PII);
+				}
+			}
 		}
+		
+		updateModelWithIdentifiers(expression, metaModel, identifiers)
+		dataset.addNamedModel(grailsApplication.config.annotopia.storage.uri.graph.identifiers, metaModel);
 	}
 }
