@@ -126,63 +126,63 @@ class OpenAnnotationStorageService {
 		return datasets;
 	}
 	
-	/**
-	 * Lists the ann...
-	 * @param apiKey
-	 * @param max
-	 * @param offset
-	 * @param tgtUrl
-	 * @param tgtFgt
-	 * @param tgtExt
-	 * @param tgtIds
-	 * @return
-	 */
-	public listAnnotation(apiKey, max, offset, tgtUrl, tgtFgt, tgtExt, tgtIds, incGph) {
-		log.info '[' + apiKey + '] List annotations' +
-			' max:' + max +
-			' offset:' + offset +
-			' incGph:' + incGph +
-			' tgtUrl:' + tgtUrl +
-			' tgtFgt:' + tgtFgt;
-		retrieveAnnotationGraphs(apiKey, max, offset, tgtUrl, tgtFgt, incGph);
-	}
-	
-	public Set<Dataset> retrieveAnnotationGraphs(apiKey, max, offset, tgtUrl, tgtFgt, incGph) {
-		log.info '[' + apiKey + '] Retrieving annotation graphs';
-	
-		Set<Dataset> datasets = new HashSet<Dataset>();
-		Set<String> graphNames = openAnnotationVirtuosoService.retrieveAnnotationGraphsNames(apiKey, max, offset, tgtUrl, tgtFgt);
-		if(graphNames!=null) {
-			graphNames.each { graphName ->
-				Dataset ds = jenaVirtuosoStoreService.retrieveGraph(apiKey, graphName);
-				
-				if(ds!=null) {
-					List<Statement> statementsToRemove = new ArrayList<Statement>();
-					Set<Resource> subjectsToRemove = new HashSet<Resource>();
-					Iterator<String> names = ds.listNames();
-					names.each { name ->
-						Model m = ds.getNamedModel(name);
-						// Remove AnnotationSets data and leave oa:Annotation
-						StmtIterator statements = m.listStatements(null, ResourceFactory.createProperty(RDF.RDF_TYPE), ResourceFactory.createResource(AnnotopiaVocabulary.ANNOTATION_SET));
-						statements.each { statement ->
-							subjectsToRemove.add(statement.getSubject())
-						}		
-						
-						subjectsToRemove.each { subjectToRemove ->
-							m.removeAll(subjectToRemove, null, null);
-						}
-					}
-				}
-				
-				if(incGph==INCGPH_YES) {
-					Model m = jenaVirtuosoStoreService.retrieveGraphMetadata(apiKey, graphName, grailsApplication.config.annotopia.storage.uri.graph.provenance);
-					if(m!=null) ds.setDefaultModel(m);
-				}
-				if(ds!=null) datasets.add(ds);
-			}
-		}
-		return datasets;
-	}
+//	/**
+//	 * Lists the ann...
+//	 * @param apiKey
+//	 * @param max
+//	 * @param offset
+//	 * @param tgtUrl
+//	 * @param tgtFgt
+//	 * @param tgtExt
+//	 * @param tgtIds
+//	 * @return
+//	 */
+//	public listAnnotation(apiKey, max, offset, tgtUrl, tgtFgt, tgtExt, tgtIds, incGph) {
+//		log.info '[' + apiKey + '] List annotations' +
+//			' max:' + max +
+//			' offset:' + offset +
+//			' incGph:' + incGph +
+//			' tgtUrl:' + tgtUrl +
+//			' tgtFgt:' + tgtFgt;
+//		retrieveAnnotationGraphs(apiKey, max, offset, tgtUrl, tgtFgt, incGph);
+//	}
+//	
+//	public Set<Dataset> retrieveAnnotationGraphs(apiKey, max, offset, tgtUrl, tgtFgt, incGph) {
+//		log.info '[' + apiKey + '] Retrieving annotation graphs';
+//	
+//		Set<Dataset> datasets = new HashSet<Dataset>();
+//		Set<String> graphNames = openAnnotationVirtuosoService.retrieveAnnotationGraphsNames(apiKey, max, offset, tgtUrl, tgtFgt);
+//		if(graphNames!=null) {
+//			graphNames.each { graphName ->
+//				Dataset ds = jenaVirtuosoStoreService.retrieveGraph(apiKey, graphName);
+//				
+//				if(ds!=null) {
+//					List<Statement> statementsToRemove = new ArrayList<Statement>();
+//					Set<Resource> subjectsToRemove = new HashSet<Resource>();
+//					Iterator<String> names = ds.listNames();
+//					names.each { name ->
+//						Model m = ds.getNamedModel(name);
+//						// Remove AnnotationSets data and leave oa:Annotation
+//						StmtIterator statements = m.listStatements(null, ResourceFactory.createProperty(RDF.RDF_TYPE), ResourceFactory.createResource(AnnotopiaVocabulary.ANNOTATION_SET));
+//						statements.each { statement ->
+//							subjectsToRemove.add(statement.getSubject())
+//						}		
+//						
+//						subjectsToRemove.each { subjectToRemove ->
+//							m.removeAll(subjectToRemove, null, null);
+//						}
+//					}
+//				}
+//				
+//				if(incGph==INCGPH_YES) {
+//					Model m = jenaVirtuosoStoreService.retrieveGraphMetadata(apiKey, graphName, grailsApplication.config.annotopia.storage.uri.graph.provenance);
+//					if(m!=null) ds.setDefaultModel(m);
+//				}
+//				if(ds!=null) datasets.add(ds);
+//			}
+//		}
+//		return datasets;
+//	}
 	
 	/**
 	 * Saves the annotation Dataset. The service now accept one single item
@@ -211,6 +211,18 @@ class OpenAnnotationStorageService {
 		Set<Resource> annotationsGraphsUris = new HashSet<Resource>();
 		int detectedAnnotationGraphsCounter = openAnnotationUtilsService.detectAnnotationsInNamedGraph(
 			apiKey, dataset, graphsUris, annotationsGraphsUris, annotationUris, null)
+		
+		int detectedAnnotationTarget = 
+			openAnnotationUtilsService.detectAnnotationTarget(apiKey, dataset);
+		if(detectedAnnotationTarget==0) {
+			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+			RDFDataMgr.write(outputStream, dataset, RDFLanguages.JSONLD);
+			log.info("[" + apiKey + "] Annotation target not found " + outputStream.toString());
+			def json = JSON.parse('{"statusCode":"nocontent" ,"statusMessage":"oa:hasTarget not found"' +
+				',"message":"The request does not carry acceptable payload or payload cannot be read"' +
+				',"duration":"' + (System.currentTimeMillis()-startTime) + 'ms", ' + '}');
+			throw new StoreServiceException(200, json, "text/json", "UTF-8");
+		}
 		
 		// Enforcing the limit to one annotation per transaction
 		if(defaultGraphDetected && detectedAnnotationGraphsCounter>0) {
@@ -266,10 +278,12 @@ class OpenAnnotationStorageService {
 			Model identifiersModel = jenaVirtuosoStoreService.retrieveGraphIdentifiersMetadata(apiKey, identifiers, grailsApplication.config.annotopia.storage.uri.graph.identifiers);
 			//jenaUtilsService.getDatasetAsString(identifiersModel);
 			// If no identifiers are found for this resource we create the identifiers metadata.
-			if(identifiersModel!=null && identifiersModel.empty)
-				graphIdentifiersMetadataService.getIdentifiersGraphMetadata(apiKey, creationDataset, identifierUri, identifiers);
-			else if(identifiersModel!=null) {
-				graphIdentifiersMetadataService.updateIdentifiersGraphMetadata(apiKey, creationDataset, identifiersModel, identifiers);
+			if(identifiersModel!=null) {
+				if(identifiersModel.empty) {
+					graphIdentifiersMetadataService.getIdentifiersGraphMetadata(apiKey, creationDataset, identifierUri, identifiers);
+				} else {
+					graphIdentifiersMetadataService.updateIdentifiersGraphMetadata(apiKey, creationDataset, identifiersModel, identifiers);
+				}
 			}
 			
 			// Creation of the metadata for the Graph wrapper
@@ -411,8 +425,9 @@ class OpenAnnotationStorageService {
 			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 			RDFDataMgr.write(outputStream, dataset, RDFLanguages.JSONLD);
 			log.info("[" + apiKey + "] Annotation not found " + outputStream.toString());
-			def json = JSON.parse('{"status":"nocontent" ,"message":"The request does not carry acceptable payload or payload cannot be read"' +
-				',"duration": "' + (System.currentTimeMillis()-startTime) + 'ms", ' + '}');
+			def json = JSON.parse('{"statusCode":"nocontent" ,"statusMessage":"oa:Annotation type not found"' +
+				',"message":"The request does not carry acceptable payload or payload cannot be read"' +
+				',"duration":"' + (System.currentTimeMillis()-startTime) + 'ms", ' + '}');
 			throw new StoreServiceException(200, json, "text/json", "UTF-8");
 		}
 	}

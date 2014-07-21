@@ -539,10 +539,12 @@ class AnnotationIntegratedStorageService {
 			Dataset annotationGraphs = openAnnotationSetsUtilsService.splitAnnotationGraphs(apiKey, storedDataset);
 			
 			// If no identifiers are found for this resource we create the identifiers metadata.
-			if(identifiersModel!=null && identifiersModel.empty)
-				graphIdentifiersMetadataService.getIdentifiersGraphMetadata(apiKey, annotationGraphs, identifierUri, identifiers);
-			else if(identifiersModel!=null) {
-				graphIdentifiersMetadataService.updateIdentifiersGraphMetadata(apiKey, creationDataset, identifiersModel, identifiers);
+			if(identifiersModel!=null) {
+				if(identifiersModel.empty) {
+					graphIdentifiersMetadataService.getIdentifiersGraphMetadata(apiKey, annotationGraphs, identifierUri, identifiers);
+				} else {
+					graphIdentifiersMetadataService.updateIdentifiersGraphMetadata(apiKey, creationDataset, identifiersModel, identifiers);
+				}
 			}
 			
 			jenaVirtuosoStoreService.storeDataset(apiKey, annotationGraphs);

@@ -61,6 +61,7 @@ class OpenAnnotationWithPermissionsStorageService {
 	def jenaVirtuosoStoreService
 	def openAnnotationUtilsService
 	def openAnnotationVirtuosoService;
+	def graphIdentifiersMetadataService;
 	def openAnnotationWithPermissionsVirtuosoService;
 	
 	/**
@@ -196,6 +197,20 @@ class OpenAnnotationWithPermissionsStorageService {
 			def graphUri = mintGraphUri();
 			Dataset creationDataset = DatasetFactory.createMem();
 			creationDataset.addNamedModel(graphUri, dataset.getDefaultModel());
+			
+			// Identity management
+			def identifierUri = mintUri("expression");
+			openAnnotationUtilsService.detectTargetIdentifiersInDefaultGraph(apiKey, dataset, identifiers)
+			Model identifiersModel = jenaVirtuosoStoreService.retrieveGraphIdentifiersMetadata(apiKey, identifiers, grailsApplication.config.annotopia.storage.uri.graph.identifiers);
+			//jenaUtilsService.getDatasetAsString(identifiersModel);
+			// If no identifiers are found for this resource we create the identifiers metadata.
+			if(identifiersModel!=null) {
+				if(identifiersModel.empty) {
+					graphIdentifiersMetadataService.getIdentifiersGraphMetadata(apiKey, creationDataset, identifierUri, identifiers);
+				} else {
+					graphIdentifiersMetadataService.updateIdentifiersGraphMetadata(apiKey, creationDataset, identifiersModel, identifiers);
+				}
+			}
 			
 			// Creation of the metadata for the Graph wrapper
 			def graphResource = ResourceFactory.createResource(graphUri);

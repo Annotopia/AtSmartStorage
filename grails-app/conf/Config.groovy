@@ -43,7 +43,8 @@ environments {
 			debug  'grails.app.services.org.annotopia.grails.services.storage.jena.VirtuosoJenaStoreService',
 				   'org.annotopia.groovy.service.store'
 			
-			trace  'grails.app' // Necessary for Bootstrap logging
+			trace  'grails.app', // Necessary for Bootstrap logging
+			       'org.annotopia.grails.services.storage.jena.openannotation'
 		}
 	}
 	
@@ -72,7 +73,8 @@ environments {
 				   'org.annotopia.groovy.service.store',
 				   'org.annotopia.grails.controllers.annotation.openannotation'
 			
-			trace  'grails.app' // Necessary for Bootstrap logging
+			trace  'grails.app', // Necessary for Bootstrap logging
+				   'org.annotopia.grails.services.storage.jena.openannotation'
 		}
 	}
 	

@@ -110,6 +110,25 @@ class OpenAnnotationUtilsService {
 		annotationGraphsCounter
 	}
 			
+	public int detectAnnotationTarget(apiKey, Dataset dataset) {
+		log.info("[" + apiKey + "] Annotation target detection...");
+		
+		String QUERY = "PREFIX oa: <http://www.w3.org/ns/oa#> SELECT DISTINCT ?s WHERE " +
+			"{{ { ?s oa:hasTarget ?o . }} UNION " +
+			"{{ GRAPH ?g { ?s oa:hasTarget ?o . }}}}";
+		log.trace("[" + apiKey + "] Query: " + QUERY);
+		
+		int specificResourcesGraphsCounter = 0;
+		QueryExecution qSpecificResources  = QueryExecutionFactory.create (QueryFactory.create(QUERY), dataset);
+		ResultSet rSpecificResources = qSpecificResources.execSelect();
+		while (rSpecificResources.hasNext()) {
+			QuerySolution querySolution = rSpecificResources.nextSolution();
+			specificResourcesGraphsCounter++;
+		}
+		log.info("[" + apiKey + "] Identifiable Annotation targets " + specificResourcesGraphsCounter);
+		specificResourcesGraphsCounter
+	}
+			
 	/**
 	 * Detects all the Specific Resources that are defined in Named Graphs.
 	 * @param apiKey				The API key of the client that issued the request
