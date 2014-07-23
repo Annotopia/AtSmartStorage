@@ -639,7 +639,7 @@ class OpenAnnotationControllerTests extends GroovyTestCase {
 	}
 	
 	/**
-	 * Content with full target and a textual body.
+	 * Content with two full targets and a textual body.
 	 */
 	void testSimpleAnnotationCreationAndRetrieval005() {
 		LOG_TEST_TITLE(getCurrentMethodName());
