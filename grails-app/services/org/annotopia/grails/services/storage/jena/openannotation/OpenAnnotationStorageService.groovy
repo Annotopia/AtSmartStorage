@@ -212,16 +212,35 @@ class OpenAnnotationStorageService {
 		int detectedAnnotationGraphsCounter = openAnnotationUtilsService.detectAnnotationsInNamedGraph(
 			apiKey, dataset, graphsUris, annotationsGraphsUris, annotationUris, null)
 		
-		int detectedAnnotationTarget = 
-			openAnnotationUtilsService.detectAnnotationTarget(apiKey, dataset);
-		if(detectedAnnotationTarget==0) {
-			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-			RDFDataMgr.write(outputStream, dataset, RDFLanguages.JSONLD);
-			log.info("[" + apiKey + "] Annotation target not found " + outputStream.toString());
-			def json = JSON.parse('{"statusCode":"nocontent" ,"statusMessage":"oa:hasTarget not found"' +
-				',"message":"The request does not carry acceptable payload or payload cannot be read"' +
-				',"duration":"' + (System.currentTimeMillis()-startTime) + 'ms", ' + '}');
-			throw new StoreServiceException(200, json, "text/json", "UTF-8");
+		// Verifies the existence of an annotation target
+		if(true) {
+			int detectedAnnotationTarget = 
+				openAnnotationUtilsService.detectAnnotationTarget(apiKey, dataset);
+			if(detectedAnnotationTarget==0) {
+				ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+				RDFDataMgr.write(outputStream, dataset, RDFLanguages.JSONLD);
+				log.info("[" + apiKey + "] Annotation target not found " + outputStream.toString());
+				def json = JSON.parse('{"statusCode":"nocontent" ,"statusMessage":"oa:hasTarget not found"' +
+					',"message":"The request does not carry acceptable payload or payload cannot be read"' +
+					',"duration":"' + (System.currentTimeMillis()-startTime) + 'ms", ' + '}');
+				throw new StoreServiceException(200, json, "text/json", "UTF-8");
+			}
+		}
+		
+		// Verifies the existence of the annotator 
+		// Currently disabled
+		if(false) {
+			int detectedAnnotatorInfo =
+				openAnnotationUtilsService.detectAnnotatorInfo(apiKey, dataset);
+			if(detectedAnnotatorInfo==0) {
+				ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+				RDFDataMgr.write(outputStream, dataset, RDFLanguages.JSONLD);
+				log.info("[" + apiKey + "] Annotator info not found " + outputStream.toString());
+				def json = JSON.parse('{"statusCode":"nocontent" ,"statusMessage":"oa:annotatedBy not found"' +
+					',"message":"The request does not carry acceptable payload or payload cannot be read"' +
+					',"duration":"' + (System.currentTimeMillis()-startTime) + 'ms", ' + '}');
+				throw new StoreServiceException(200, json, "text/json", "UTF-8");
+			}
 		}
 		
 		// Enforcing the limit to one annotation per transaction

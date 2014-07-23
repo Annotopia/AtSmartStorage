@@ -128,6 +128,25 @@ class OpenAnnotationUtilsService {
 		log.info("[" + apiKey + "] Identifiable Annotation targets " + specificResourcesGraphsCounter);
 		specificResourcesGraphsCounter
 	}
+	
+	public int detectAnnotatorInfo(apiKey, Dataset dataset) {
+		log.info("[" + apiKey + "] Annotator info detection...");
+		
+		String QUERY = "PREFIX oa: <http://www.w3.org/ns/oa#> PREFIX foaf: <http://xmlns.com/foaf/0.1/> SELECT DISTINCT ?s WHERE " +
+			"{{ { ?s oa:annotatedBy ?o . ?o a foaf:Person . }} UNION " +
+			"{{ GRAPH ?g { ?s oa:annotatedBy ?o . ?o a foaf:Person .}}}}";
+		log.trace("[" + apiKey + "] Query: " + QUERY);
+		
+		int annotatorCounter = 0;
+		QueryExecution qSpecificResources  = QueryExecutionFactory.create (QueryFactory.create(QUERY), dataset);
+		ResultSet rSpecificResources = qSpecificResources.execSelect();
+		while (rSpecificResources.hasNext()) {
+			QuerySolution querySolution = rSpecificResources.nextSolution();
+			annotatorCounter++;
+		}
+		log.info("[" + apiKey + "] Identifiable Annotator info " + annotatorCounter);
+		annotatorCounter
+	}
 			
 	/**
 	 * Detects all the Specific Resources that are defined in Named Graphs.
