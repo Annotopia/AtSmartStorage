@@ -24,6 +24,7 @@ import static org.junit.Assert.*
 import grails.converters.JSON
 import grails.test.mixin.TestFor
 
+import org.annotopia.grails.vocabularies.DC
 import org.codehaus.groovy.runtime.StackTraceUtils
 
 /**
@@ -146,6 +147,333 @@ class OpenAnnotationControllerTests extends GroovyTestCase {
 		c.validate()
 		
 		assertEquals 200, response.status
+		LOG_SEPARATOR();
+	}
+	
+	final NO_CONTENT = "nocontent"
+	final TEST_TARGET_URL = "http://www.example.com/pmc/articles/PMC3102893/"
+	
+	/**
+	 * Content without declared oa:Annotation: triggers a 'nocontent' message.
+	 */
+	void testSimpleAnnotationCreation000() {
+		LOG_TEST_TITLE(getCurrentMethodName());
+		/*
+			Testing with command line:
+			curl -i -X POST http://localhost:8090/s/annotation -H "Content-Type: application/json" \
+			-d'{"apiKey":"testkey", "item":{"@context":"https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/OAContext.json","@id":"urn:temp:001","hasBody":{"@type":["cnt:ContentAsText","dctypes:Text"],"cnt:chars":"This paper is about Annotation Ontology (AO)","dc:format":"text/plain"},"hasTarget":{"@id":"http://www.ncbi.nlm.nih.gov/pmc/articles/PMC3102894/","@type":"dctypes:Text"}}}'
+		*/
+		
+		String content =
+			'{"@context":"https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/OAContext.json",' +
+				'"@id":"urn:temp:001",' +
+				'"hasBody":{' +
+					'"@type":["cnt:ContentAsText","dctypes:Text"],' +
+					'"cnt:chars":"This paper is about Annotation Ontology (AO)",' +
+					'"dc:format":"text/plain"' +
+				'},' +
+				'"hasTarget":{' +
+					'"@id":"' + TEST_TARGET_URL + '",' +
+					'"@type":"dctypes:Text"}' +
+				'}' +
+			'}';
+
+		def c = new OpenAnnotationController()
+		c.request.JSON =
+			'{"apiKey":"' + grailsApplication.config.annotopia.storage.testing.apiKey + '",' +
+			'"item":' + content + '}';
+		c.save()
+		
+		assertEquals 200, response.status
+		
+		def resp = JSON.parse(response.text);
+		assertEquals NO_CONTENT, resp.statusCode
+		log.error(resp.statusMessage);
+		LOG_SEPARATOR();
+	}
+	
+	/**
+	 * Content without a target: triggers a 'nocontent' message.
+	 */
+	void testSimpleAnnotationCreation001() {
+		LOG_TEST_TITLE(getCurrentMethodName());
+		/*
+			Testing with command line:
+			curl -i -X POST http://localhost:8090/s/annotation -H "Content-Type: application/json" \
+			-d'{"apiKey":"testkey", "item":{"@context":"https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/OAContext.json","@id":"urn:temp:001","@type" : "http://www.w3.org/ns/oa#Annotation","hasBody":{"@type":["cnt:ContentAsText","dctypes:Text"],"cnt:chars":"This paper is about Annotation Ontology (AO)","dc:format":"text/plain"}}}'
+		*/
+		
+		String content =
+			'{"@context":"https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/OAContext.json",' +
+				'"@id":"urn:temp:001",' +
+				'"@type" : "http://www.w3.org/ns/oa#Annotation",' +
+				'"hasBody":{' +
+					'"@type":["cnt:ContentAsText","dctypes:Text"],' +
+					'"cnt:chars":"This paper is about Annotation Ontology (AO)",' +
+					'"dc:format":"text/plain"' +
+				'}' +
+			'}';
+
+		def c = new OpenAnnotationController()
+		c.request.JSON =
+			'{"apiKey":"' + grailsApplication.config.annotopia.storage.testing.apiKey + '",' +
+			'"item":' + content + '}';
+		c.save()
+		
+		assertEquals 200, response.status
+		
+		def resp = JSON.parse(response.text);
+		assertEquals NO_CONTENT, resp.statusCode
+		log.error(resp.statusMessage);
+		
+		LOG_SEPARATOR();
+	}
+	
+	/**
+	 * Content with target and no body.
+	 */
+	void testSimpleAnnotationCreation002() {
+		LOG_TEST_TITLE(getCurrentMethodName());
+		/*
+			Testing with command line:
+			curl -i -X POST http://localhost:8090/s/annotation -H "Content-Type: application/json" \
+			-d'{"apiKey":"testkey", "outCmd":"frame", "item":{"@context":"https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/OAContext.json","@id":"urn:temp:001","@type":"http://www.w3.org/ns/oa#Annotation","hasTarget":{"@id":"http://www.ncbi.nlm.nih.gov/pmc/articles/PMC3102894/","@type":"dctypes:Text"}}}'
+		*/
+		
+		String content =
+			'{"@context":"https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/OAContext.json",' +
+				'"@id":"urn:temp:001",' +
+				'"@type":"http://www.w3.org/ns/oa#Annotation",' +
+				'"hasTarget":{' +
+					'"@id":"' + TEST_TARGET_URL + '",' +
+					'"@type":"dctypes:Text"' +
+				'}' +
+			'}';
+
+		def c = new OpenAnnotationController()
+		c.request.JSON =
+			'{"apiKey":"' + grailsApplication.config.annotopia.storage.testing.apiKey + '",' +
+			'"item":' + content + ',"outCmd":"frame"}';
+		c.save()
+		
+		assertEquals 200, response.status
+		
+		def resp = JSON.parse(response.text);
+		def annName = resp['result']['item'][0]['@graph'][0]['@id']
+		
+		log.info("Removing annotation " + annName);
+		c.request.JSON << JSON.parse('{"apiKey":"' + grailsApplication.config.annotopia.storage.testing.apiKey + '","uri":"' + annName + '"}')
+		c.delete();
+		
+		LOG_SEPARATOR();
+	}
+	
+	/**
+	 * Content with target and body.
+	 */
+	void testSimpleAnnotationCreation003() {
+		LOG_TEST_TITLE(getCurrentMethodName());
+		/*
+			Testing with command line:
+			curl -i -X POST http://localhost:8090/s/annotation -H "Content-Type: application/json" \
+			-d'{"apiKey":"testkey", "outCmd":"frame", "item":{"@context":"https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/OAContext.json","@id":"urn:temp:001","@type":"http://www.w3.org/ns/oa#Annotation","hasTarget":{"@id":"http://www.ncbi.nlm.nih.gov/pmc/articles/PMC3102893/","@type":"dctypes:Text"},"hasBody":{"@type":["cnt:ContentAsText","dctypes:Text"],"cnt:chars":"This paper is about Annotation Ontology (AO)","dc:format":"text/plain"}}}'
+		*/
+		
+		String content =
+			'{"@context":"https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/OAContext.json",' +
+				'"@id":"urn:temp:001",' +
+				'"@type":"http://www.w3.org/ns/oa#Annotation",' +
+				'"hasTarget":{' +
+					'"@id":"' + TEST_TARGET_URL + '",' +
+					'"@type":"dctypes:Text"' +
+				'},' +
+				'"hasBody":{' +
+					'"@type":["cnt:ContentAsText","dctypes:Text"],' +
+					'"cnt:chars":"This paper is about Annotation Ontology (AO)",' +
+					'"dc:format":"text/plain"' +
+				'}' +
+			'}';
+
+		def c = new OpenAnnotationController()
+		c.request.JSON =
+			'{"apiKey":"' + grailsApplication.config.annotopia.storage.testing.apiKey + '",' +
+			'"item":' + content + ',"outCmd":"frame"}';
+		c.save()
+		
+		assertEquals 200, response.status
+		
+		def resp = JSON.parse(response.text);
+		def annUri = resp['result']['item'][0]['@graph'][0]['@id']
+		
+		log.info("Removing annotation " + annUri);
+		c.request.JSON << JSON.parse('{"apiKey":"' + grailsApplication.config.annotopia.storage.testing.apiKey + '","uri":"' + annUri + '"}')
+		c.delete();
+		
+		assertEquals 200, response.status
+		
+		LOG_SEPARATOR();
+	}
+	
+	/**
+	 * Content with full target and a textual body.
+	 */
+	void testSimpleAnnotationCreationAndRetrieval001() {
+		LOG_TEST_TITLE(getCurrentMethodName());
+		/*
+			Testing with command line:
+			curl -i -X POST http://localhost:8090/s/annotation -H "Content-Type: application/json" \
+			-d'{"apiKey":"testkey", "outCmd":"frame", "item":{"@context":"https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/OAContext.json","@id":"urn:temp:001","@type":"http://www.w3.org/ns/oa#Annotation","hasTarget":{"@id":"http://www.ncbi.nlm.nih.gov/pmc/articles/PMC3102893/","@type":"dctypes:Text"},"hasBody":{"@type":["cnt:ContentAsText","dctypes:Text"],"cnt:chars":"This paper is about Annotation Ontology (AO)","dc:format":"text/plain"}}}'
+		*/
+		
+		String content =
+			'{"@context":"https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/OAContext.json",' +
+				'"@id":"urn:temp:001",' +
+				'"@type":"http://www.w3.org/ns/oa#Annotation",' +
+				'"hasTarget":{' +
+					'"@id":"' + TEST_TARGET_URL + '",' +
+					'"@type":"dctypes:Text"' +
+				'},' +
+				'"hasBody":{' +
+					'"@type":["cnt:ContentAsText","dctypes:Text"],' +
+					'"cnt:chars":"This paper is about Annotation Ontology (AO)",' +
+					'"dc:format":"text/plain"' +
+				'}' +
+			'}';
+
+		def c = new OpenAnnotationController()
+		c.request.JSON =
+			'{"apiKey":"' + grailsApplication.config.annotopia.storage.testing.apiKey + '",' +
+			'"item":' + content + ',"outCmd":"frame"}';
+		c.save()
+		
+		assertEquals 200, response.status
+		
+		log.info("Saved: " + response.text);
+		
+		def resp = JSON.parse(response.text);
+		def annUri = resp['result']['item'][0]['@graph'][0]['@id']
+		
+		c.response.reset();
+		c.request.JSON.clear();
+		
+		log.info("Retrieving annotation by target URL " + TEST_TARGET_URL);
+		c.request.JSON =
+			'{"apiKey":"' + grailsApplication.config.annotopia.storage.testing.apiKey + '",' +
+			'"tgtUrl":"' + TEST_TARGET_URL + '","outCmd":"frame"}';
+		c.show();
+		
+		assertEquals 200, response.status
+		
+		log.trace("Retrieved: " + response.text);
+		resp = JSON.parse(response.text);
+		
+		log.info("Verifying annotation id");
+		def respAnnUri = resp['result']['items'][0]['@graph'][0]['@id']
+		assertEquals annUri, respAnnUri
+		
+		log.info("Verifying annotation motivation");
+		def respAnnMotivation = resp['result']['items'][0]['@graph'][0]['hasMotivation']
+		assertNull respAnnMotivation
+		
+		log.info("Verifying annotation target");
+		def respAnnTarget = resp['result']['items'][0]['@graph'][0]['hasTarget']
+		assertEquals respAnnTarget["@id"], TEST_TARGET_URL
+		assertEquals respAnnTarget["@type"], "dctypes:Text"
+		
+		log.info("Verifying annotation body");
+		def respAnnBody = resp['result']['items'][0]['@graph'][0]['hasBody']
+		assertEquals respAnnBody["format"], "text/plain"
+		assertNotNull respAnnBody["chars"]
+		assertEquals respAnnBody["@type"].size(), 2
+		
+		log.info("Removing annotation " + annUri);
+		c.request.JSON << JSON.parse('{"apiKey":"' + grailsApplication.config.annotopia.storage.testing.apiKey + '","uri":"' + annUri + '"}')
+		c.delete();
+		
+		assertEquals 200, response.status
+		
+		LOG_SEPARATOR();
+	}
+	
+	/**
+	 * Content with full target and a textual comment body.
+	 */
+	void testSimpleAnnotationCreationAndRetrieval002() {
+		LOG_TEST_TITLE(getCurrentMethodName());
+		/*
+			 Testing with command line:
+			 curl -i -X POST http://localhost:8090/s/annotation -H "Content-Type: application/json" \
+			 -d'{"apiKey":"testkey", "outCmd":"frame", "item":{"@context":"https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/OAContext.json","@id":"urn:temp:001","@type":"http://www.w3.org/ns/oa#Annotation","hasMotivation":"oa:commenting","hasTarget":{"@id":"http://www.ncbi.nlm.nih.gov/pmc/articles/PMC3102893/","@type":"dctypes:Text"},"hasBody":{"@type":["cnt:ContentAsText","dctypes:Text"],"cnt:chars":"This paper is about Annotation Ontology (AO)","dc:format":"text/plain"}}}'
+		 */
+		
+		String content =
+		'{"@context":"https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/OAContext.json",' +
+			'"@id":"urn:temp:001",' +
+			'"@type":"http://www.w3.org/ns/oa#Annotation",' +
+			'"motivatedBy": "oa:commenting",' +
+			'"hasTarget":{' +
+				'"@id":"' + TEST_TARGET_URL + '",' +
+				'"@type":"dctypes:Text"' +
+			'},' +
+			'"hasBody":{' +
+				'"@type":["cnt:ContentAsText","dctypes:Text"],' +
+				'"cnt:chars":"This paper is about Annotation Ontology (AO)",' +
+				'"dc:format":"text/plain"' +
+			'}' +
+		'}';
+
+		def c = new OpenAnnotationController()
+		c.request.JSON =
+			'{"apiKey":"' + grailsApplication.config.annotopia.storage.testing.apiKey + '",' +
+			'"item":' + content + ',"outCmd":"frame"}';
+		c.save()
+		
+		assertEquals 200, response.status
+		
+		log.info("Saved: " + response.text);
+		
+		def resp = JSON.parse(response.text);
+		def annUri = resp['result']['item'][0]['@graph'][0]['@id']
+		
+		c.response.reset();
+		c.request.JSON.clear();
+		
+		log.info("Retrieving annotation by target URL " + TEST_TARGET_URL);
+		c.request.JSON =
+			'{"apiKey":"' + grailsApplication.config.annotopia.storage.testing.apiKey + '",' +
+			'"tgtUrl":"' + TEST_TARGET_URL + '","outCmd":"frame"}';
+		c.show();
+		
+		assertEquals 200, response.status
+		
+		log.trace("Retrieved: " + response.text);
+		resp = JSON.parse(response.text);
+		
+		log.info("Verifying annotation id");
+		def respAnnUri = resp['result']['items'][0]['@graph'][0]['@id']
+		assertEquals annUri, respAnnUri
+		
+		log.info("Verifying annotation motivation");
+		def respAnnMotivation = resp['result']['items'][0]['@graph'][0]['motivatedBy']
+		assertEquals 'oa:commenting', respAnnMotivation
+		
+		log.info("Verifying annotation target");
+		def respAnnTarget = resp['result']['items'][0]['@graph'][0]['hasTarget']
+		assertEquals respAnnTarget["@id"], TEST_TARGET_URL
+		assertEquals respAnnTarget["@type"], "dctypes:Text"
+		
+		log.info("Verifying annotation body");
+		def respAnnBody = resp['result']['items'][0]['@graph'][0]['hasBody']
+		assertEquals respAnnBody["format"], "text/plain"
+		assertNotNull respAnnBody["chars"]
+		assertEquals respAnnBody["@type"].size(), 2
+		
+		log.info("Removing annotation " + annUri);
+		c.request.JSON << JSON.parse('{"apiKey":"' + grailsApplication.config.annotopia.storage.testing.apiKey + '","uri":"' + annUri + '"}')
+		c.delete();
+		
+		assertEquals 200, response.status
+		
 		LOG_SEPARATOR();
 	}
 }
