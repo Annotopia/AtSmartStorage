@@ -206,7 +206,7 @@ class OpenAnnotationController extends BaseController {
 							Object compact = JsonLdProcessor.compact(JsonUtils.fromString(baos.toString()), contextJson,  new JsonLdOptions());
 							response.outputStream << JsonUtils.toPrettyString(compact)
 						}  else if(outCmd==OUTCMD_FRAME) {
-							Object framed =  JsonLdProcessor.frame(JsonUtils.fromString(baos.toString()), contextJson, new JsonLdOptions());
+							Object framed =  JsonLdProcessor.frame(JsonUtils.fromString(baos.toString().replace('"@id" : "urn:x-arq:DefaultGraphNode",','')), contextJson, new JsonLdOptions());
 							response.outputStream << JsonUtils.toPrettyString(framed)
 						}
 					}
@@ -333,6 +333,7 @@ class OpenAnnotationController extends BaseController {
 			Dataset savedAnnotation;
 			try {
 				savedAnnotation = openAnnotationStorageService.saveAnnotationDataset(apiKey, startTime, Boolean.parseBoolean(incGph), inMemoryDataset);
+				//println savedAnnotation.getDefaultGraph();
 			} catch(StoreServiceException exception) {
 				log.error("[" + apiKey + "] " + exception.getMessage());
 				render(status: exception.status, text: exception.text, contentType: exception.contentType, encoding: exception.encoding);
@@ -611,7 +612,7 @@ class OpenAnnotationController extends BaseController {
 				Object compact = JsonLdProcessor.compact(JsonUtils.fromString(baos.toString()), contextJson, new JsonLdOptions());
 				response.outputStream << JsonUtils.toPrettyString(compact)
 			} else if(sizeDataset==1 && outCmd==OUTCMD_FRAME) {
-				Object framed =  JsonLdProcessor.frame(JsonUtils.fromString(baos.toString()), contextJson, new JsonLdOptions());
+				Object framed =  JsonLdProcessor.frame(JsonUtils.fromString(baos.toString().replace('"@id" : "urn:x-arq:DefaultGraphNode",','')), contextJson, new JsonLdOptions());
 				response.outputStream << JsonUtils.toPrettyString(framed)
 			} 
 		}

@@ -315,6 +315,7 @@ class OpenAnnotationStorageService {
 			
 			Dataset storedDataset = DatasetFactory.createMem();
 			storedDataset.addNamedModel(graphUri, dataset.getDefaultModel());
+			
 			if(incGph) return creationDataset;
 			else return storedDataset;
 		} else if(detectedAnnotationGraphsCounter>0) {
