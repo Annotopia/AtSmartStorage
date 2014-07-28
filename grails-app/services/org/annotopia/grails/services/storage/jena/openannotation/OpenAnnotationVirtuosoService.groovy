@@ -50,7 +50,7 @@ class OpenAnnotationVirtuosoService {
 	 * 					If false, only the annotations on full resources will be returned.
 	 * @return The total number of annotations meeting the given criteria.
 	 */
-	public int countAnnotationGraphs(apiKey, List<String> tgtUrls, tgtFgt) {
+	public int countAnnotationGraphs(apiKey, List<String> tgtUrls, tgtFgt, motivations) {
 		log.info('[' + apiKey + '] Counting Annotation Graphs');
 		StringBuffer queryBuffer = new StringBuffer();
 		if(tgtUrls==null) { // Return any annotation
@@ -72,6 +72,16 @@ class OpenAnnotationVirtuosoService {
 						queryBuffer.append("{ ?s oa:hasTarget <" + tgtUrl + "> } UNION {?s oa:hasTarget ?t. ?t a oa:SpecificResource. ?t oa:hasSource <" + tgtUrl + ">}");
 					first=true;
 				}
+			}
+		}
+		
+		if(motivations!=null && motivations.size()>0) {
+			boolean first = false;
+			motivations.each { motivation ->
+				if(first) queryBuffer.append(" UNION ");
+				if(motivation!='unmotivated') queryBuffer.append("{ ?s oa:motivatedBy ?motivation. FILTER (str(?motivation) = 'http://www.w3.org/ns/oa#" + motivation + "') }")
+				else queryBuffer.append("{ ?s a oa:Annotation . FILTER NOT EXISTS { ?s oa:motivatedBy ?m. }}");
+				first=true;
 			}
 		}
 		
@@ -99,7 +109,7 @@ class OpenAnnotationVirtuosoService {
 	 * 					If false, only the annotations on full resources will be returned.
 	 * @return The graph names of the annotations meeting the given criteria.
 	 */
-	public Set<String> retrieveAnnotationGraphsNames(apiKey, max, offset, List<String> tgtUrls, tgtFgt) {
+	public Set<String> retrieveAnnotationGraphsNames(apiKey, max, offset, List<String> tgtUrls, tgtFgt, motivations) {
 		log.info  '[' + apiKey + '] Retrieving annotation graphs names ' +
 			' max:' + max +
 			' offset:' + offset +
@@ -128,11 +138,22 @@ class OpenAnnotationVirtuosoService {
 				}
 			}
 		}
+		
+		if(motivations!=null && motivations.size()>0) {
+			boolean first = false;
+			motivations.each { motivation ->
+				if(first) queryBuffer.append(" UNION ");
+				if(motivation!='unmotivated') queryBuffer.append("{ ?s oa:motivatedBy ?motivation. FILTER (str(?motivation) = 'http://www.w3.org/ns/oa#" + motivation + "') }")
+				else queryBuffer.append("{ ?s a oa:Annotation . FILTER NOT EXISTS { ?s oa:motivatedBy ?motivation. }}");
+				first=true;
+			}
+		}
 	
 		String queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> " +
 		"SELECT DISTINCT ?g WHERE { GRAPH ?g { ?s a oa:Annotation. " +
 			queryBuffer.toString() +
 		"}} LIMIT " + max + " OFFSET " + offset;
+		println '@@@@@@@ ' + queryString
 		Set<String> graphs = jenaVirtuosoStoreService.retrieveGraphsNames(apiKey, queryString);
 		graphs
 	}
