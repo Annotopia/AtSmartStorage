@@ -75,6 +75,16 @@ class OpenAnnotationVirtuosoService {
 			}
 		}
 		
+		if(sources!=null && sources.size()>0) {
+			boolean first = false;
+			sources.each { source ->
+				if(first) queryBuffer.append(" UNION ");
+				if(source!='others' && source!='unspecified') queryBuffer.append("{ ?s oa:serializedBy ?software. FILTER (str(?software) = 'urn:application:" + source + "') }")
+				else if(source=='other') {}
+				else queryBuffer.append("{ ?s a oa:Annotation . FILTER NOT EXISTS { ?s oa:serializedBy ?m. }}");
+				first=true;
+			}
+		}
 		if(motivations!=null && motivations.size()>0) {
 			boolean first = false;
 			motivations.each { motivation ->
@@ -141,6 +151,16 @@ class OpenAnnotationVirtuosoService {
 			}
 		}
 		
+		if(sources!=null && sources.size()>0) {
+			boolean first = false;
+			sources.each { source ->
+				if(first) queryBuffer.append(" UNION ");  
+				if(source!='others' && source!='unspecified') queryBuffer.append("{ ?s oa:serializedBy ?software. FILTER (str(?software) = 'urn:application:" + source + "') }")
+				else if(source=='other') {}
+				else queryBuffer.append("{ ?s a oa:Annotation . FILTER NOT EXISTS { ?s oa:serializedBy ?m. }}");
+				first=true;
+			}
+		}
 		if(motivations!=null && motivations.size()>0) {
 			boolean first = false;
 			motivations.each { motivation ->
