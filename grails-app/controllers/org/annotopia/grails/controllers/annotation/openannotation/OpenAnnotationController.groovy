@@ -125,10 +125,10 @@ class OpenAnnotationController extends BaseController {
 			}
 			
 			// Facets
-			def permissions = request.JSON.permissions
-			if(params.permissions!=null) permissions = params.permissions;
-			def permissionsFacet = []
-			if(permissions) permissionsFacet = permissions.split(",");
+			def sources = request.JSON.sources
+			if(params.sources!=null) sources = params.sources;
+			def sourcesFacet = []
+			if(sources) sourcesFacet = sources.split(",");
 			def motivations = request.JSON.motivations
 			if(params.motivations!=null) motivations = params.motivations;
 			def motivationsFacet = []
@@ -157,7 +157,7 @@ class OpenAnnotationController extends BaseController {
 				tgtUrls = jenaVirtuosoStoreService.retrieveAllManifestationsByIdentifiers(apiKey, identifiers, grailsApplication.config.annotopia.storage.uri.graph.identifiers);
 			}
 			
-			int annotationsTotal = openAnnotationVirtuosoService.countAnnotationGraphs(apiKey, tgtUrls, tgtFgt, motivationsFacet);			
+			int annotationsTotal = openAnnotationVirtuosoService.countAnnotationGraphs(apiKey, tgtUrls, tgtFgt, sourcesFacet, motivationsFacet);			
 			//int annotationsTotal = openAnnotationVirtuosoService.countAnnotationGraphs(apiKey, tgtUrl, tgtFgt, identifiers);
 			int annotationsPages = (annotationsTotal/Integer.parseInt(max));		
 			if(annotationsTotal>0 && Integer.parseInt(offset)>0 && Integer.parseInt(offset)>=annotationsPages) {
@@ -168,7 +168,7 @@ class OpenAnnotationController extends BaseController {
 				return;
 			}
 			
-			Set<Dataset> annotationGraphs = openAnnotationStorageService.listAnnotation(apiKey, max, offset, tgtUrls, tgtFgt, tgtExt, tgtIds, incGph, motivationsFacet);
+			Set<Dataset> annotationGraphs = openAnnotationStorageService.listAnnotation(apiKey, max, offset, tgtUrls, tgtFgt, tgtExt, tgtIds, incGph, sourcesFacet, motivationsFacet);
 			def summaryPrefix = '"total":"' + annotationsTotal + '", ' +
 					'"pages":"' + annotationsPages + '", ' +
 					'"duration": "' + (System.currentTimeMillis()-startTime) + 'ms", ' +

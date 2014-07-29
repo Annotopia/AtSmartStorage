@@ -40,7 +40,7 @@ class SecretController {
 			jenaVirtuosoStoreService.dropGraph("secret", graph);
 		}
 		
-		Set<String> annotationGraphNames = openAnnotationVirtuosoService.retrieveAnnotationGraphsNames("secret", 100, 0, null, "true");
+		Set<String> annotationGraphNames = openAnnotationVirtuosoService.retrieveAnnotationGraphsNames("secret", 100, 0, null, "true", null, null);
 		annotationGraphNames.each { graph ->
 			jenaVirtuosoStoreService.dropGraph("secret", graph);
 		}

@@ -50,7 +50,7 @@ class OpenAnnotationVirtuosoService {
 	 * 					If false, only the annotations on full resources will be returned.
 	 * @return The total number of annotations meeting the given criteria.
 	 */
-	public int countAnnotationGraphs(apiKey, List<String> tgtUrls, tgtFgt, motivations) {
+	public int countAnnotationGraphs(apiKey, List<String> tgtUrls, tgtFgt, sources, motivations) {
 		log.info('[' + apiKey + '] Counting Annotation Graphs');
 		StringBuffer queryBuffer = new StringBuffer();
 		if(tgtUrls==null) { // Return any annotation
@@ -109,12 +109,14 @@ class OpenAnnotationVirtuosoService {
 	 * 					If false, only the annotations on full resources will be returned.
 	 * @return The graph names of the annotations meeting the given criteria.
 	 */
-	public Set<String> retrieveAnnotationGraphsNames(apiKey, max, offset, List<String> tgtUrls, tgtFgt, motivations) {
+	public Set<String> retrieveAnnotationGraphsNames(apiKey, max, offset, List<String> tgtUrls, tgtFgt, sources, motivations) {
 		log.info  '[' + apiKey + '] Retrieving annotation graphs names ' +
 			' max:' + max +
 			' offset:' + offset +
 			' tgtUrls:' + tgtUrls +
-			' tgtFgt:' + tgtFgt;
+			' tgtFgt:' + tgtFgt +
+			' sources:' + sources +
+			' motivations:' + motivations;
 			
 		StringBuffer queryBuffer = new StringBuffer();
 		if(tgtUrls==null) { // Return any annotation
@@ -152,8 +154,7 @@ class OpenAnnotationVirtuosoService {
 		String queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> " +
 		"SELECT DISTINCT ?g WHERE { GRAPH ?g { ?s a oa:Annotation. " +
 			queryBuffer.toString() +
-		"}} LIMIT " + max + " OFFSET " + offset;
-		println '@@@@@@@ ' + queryString
+		"}} ORDER BY DESC(?annotatedAt) LIMIT " + max + " OFFSET " + offset;
 		Set<String> graphs = jenaVirtuosoStoreService.retrieveGraphsNames(apiKey, queryString);
 		graphs
 	}

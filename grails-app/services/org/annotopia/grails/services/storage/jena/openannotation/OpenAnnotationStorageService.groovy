@@ -84,7 +84,7 @@ class OpenAnnotationStorageService {
 	 * 					in the annotation metadata provenance graph will be returned as well.
 	 * @return The list of annotations meeting the given criteria
 	 */
-	public listAnnotation(apiKey, max, offset, List<String> tgtUrls, tgtFgt, tgtExt, tgtIds, incGph, motivations) {
+	public listAnnotation(apiKey, max, offset, List<String> tgtUrls, tgtFgt, tgtExt, tgtIds, incGph, sources, motivations) {
 		log.info '[' + apiKey + '] Listing annotations' +
 			' max:' + max +
 			' offset:' + offset +
@@ -93,7 +93,7 @@ class OpenAnnotationStorageService {
 			' tgtFgt:' + tgtFgt;
 			
 		Set<Dataset> datasets = new HashSet<Dataset>();
-		Set<String> graphNames = openAnnotationVirtuosoService.retrieveAnnotationGraphsNames(apiKey, max, offset, tgtUrls, tgtFgt, motivations);
+		Set<String> graphNames = openAnnotationVirtuosoService.retrieveAnnotationGraphsNames(apiKey, max, offset, tgtUrls, tgtFgt, sources, motivations);
 		if(graphNames!=null) {
 			graphNames.each { graphName ->
 				Dataset ds = jenaVirtuosoStoreService.retrieveGraph(apiKey, graphName);
