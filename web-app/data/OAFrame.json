@@ -57,7 +57,7 @@
   },
   "@type": "oa:Annotation",
   "hasBody": {
-    "@type": "cnt:ContentAsText"
+    "@type": ["cnt:ContentAsText","oa:SemanticTag"]
   },
   "hasTarget": {
   },
