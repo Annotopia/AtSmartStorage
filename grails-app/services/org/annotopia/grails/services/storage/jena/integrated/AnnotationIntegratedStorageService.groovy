@@ -64,7 +64,7 @@ class AnnotationIntegratedStorageService {
 	def jenaVirtuosoStoreService
 	def openAnnotationUtilsService
 	def openAnnotationVirtuosoService
-	def openAnnotationSetVirtuosoService
+	def openAnnotationSetsVirtuosoService
 	def openAnnotationStorageService
 	def openAnnotationSetsUtilsService
 	def graphIdentifiersMetadataService
@@ -205,7 +205,6 @@ class AnnotationIntegratedStorageService {
 			subquery +
 		"}} LIMIT " + max + " OFFSET " + offset;
 		Set<String> graphs = jenaVirtuosoStoreService.retrieveGraphsNames(apiKey, queryString);
-		println graphs
 		graphs
 	}
 	
@@ -796,7 +795,7 @@ class AnnotationIntegratedStorageService {
 //					RDFDataMgr.write(outputStream, datasetToRender, RDFLanguages.JSONLD);
 //					println outputStream.toString();
 					
-					Dataset graphs =  openAnnotationSetVirtuosoService.retrieveAnnotationSet(apiKey, annotationSetUri);
+					Dataset graphs =  openAnnotationSetsVirtuosoService.retrieveAnnotationSet(apiKey, annotationSetUri);
 					
 					if(graphs!=null && graphs.listNames().hasNext()) {
 						Set<Model> toAdd = new HashSet<Model>();

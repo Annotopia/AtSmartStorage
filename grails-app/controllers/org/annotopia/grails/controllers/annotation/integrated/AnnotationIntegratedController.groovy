@@ -524,7 +524,7 @@ class AnnotationIntegratedController extends BaseController {
 				Object compact = JsonLdProcessor.compact(JsonUtils.fromString(baos.toString()), contextJson, new JsonLdOptions());
 				response.outputStream << JsonUtils.toPrettyString(compact)
 			}  else if(sizeDataset==1 && outCmd=='frame') {
-				Object framed =  JsonLdProcessor.frame(JsonUtils.fromString(baos.toString()), contextJson, new JsonLdOptions());
+				Object framed =  JsonLdProcessor.frame(JsonUtils.fromString(baos.toString().replace('"@id" : "urn:x-arq:DefaultGraphNode",','')), contextJson, new JsonLdOptions());
 				response.outputStream << JsonUtils.toPrettyString(framed)
 			}
 		}
