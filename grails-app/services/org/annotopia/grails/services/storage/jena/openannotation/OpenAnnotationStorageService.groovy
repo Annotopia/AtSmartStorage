@@ -126,6 +126,64 @@ class OpenAnnotationStorageService {
 		return datasets;
 	}
 	
+	/**
+	 * Retrieves the available annotations given the specified parameters.
+	 * @param apiKey	The API key of the client issuing the request
+	 * @param max		The maximum number of results to return (pagination)
+	 * @param offset	The offset for the results (pagination)
+	 * @param tgtUrls	The list of URLs identifying the targets of interest.
+	 *                  If null all the available annotations will be returned.
+	 *                  If empty none will be returned.
+	 * @param tgtFgt	If true the results will include annotation of document fragments.
+	 * 					If false, only the annotations on full resources will be returned.
+	 * @param tgtExt	(Not implemented yet)
+	 * @param tgtIds	The list of IDs identifying the targets of interest.
+	 * @param incGph	If true the graph accommodating the annotation metadata included
+	 * 					in the annotation metadata provenance graph will be returned as well.
+	 * @return The list of annotations meeting the given criteria
+	 */
+	public listAnnotation(apiKey, max, offset, List<String> tgtUrls, tgtFgt, tgtExt, tgtIds, incGph, text, sources, motivations) {
+		log.info '[' + apiKey + '] Listing annotations' +
+			' max:' + max +
+			' offset:' + offset +
+			' incGph:' + incGph +
+			' tgtUrl:' + tgtUrls +
+			' tgtFgt:' + tgtFgt;
+			
+		Set<Dataset> datasets = new HashSet<Dataset>();
+		Set<String> graphNames = openAnnotationVirtuosoService.retrieveAnnotationGraphsNames(apiKey, max, offset, tgtUrls, tgtFgt, text, sources, motivations);
+		if(graphNames!=null) {
+			graphNames.each { graphName ->
+				Dataset ds = jenaVirtuosoStoreService.retrieveGraph(apiKey, graphName);
+				
+				if(ds!=null) {
+					List<Statement> statementsToRemove = new ArrayList<Statement>();
+					Set<Resource> subjectsToRemove = new HashSet<Resource>();
+					Iterator<String> names = ds.listNames();
+					names.each { name ->
+						Model m = ds.getNamedModel(name);
+						// Remove AnnotationSets data and leave oa:Annotation
+						StmtIterator statements = m.listStatements(null, ResourceFactory.createProperty(RDF.RDF_TYPE), ResourceFactory.createResource(AnnotopiaVocabulary.ANNOTATION_SET));
+						statements.each { statement ->
+							subjectsToRemove.add(statement.getSubject())
+						}
+						
+						subjectsToRemove.each { subjectToRemove ->
+							m.removeAll(subjectToRemove, null, null);
+						}
+					}
+				}
+				
+				if(incGph==INCGPH_YES) {
+					Model m = jenaVirtuosoStoreService.retrieveGraphMetadata(apiKey, graphName, grailsApplication.config.annotopia.storage.uri.graph.provenance);
+					if(m!=null) ds.setDefaultModel(m);
+				}
+				if(ds!=null) datasets.add(ds);
+			}
+		}
+		return datasets;
+	}
+	
 //	/**
 //	 * Lists the ann...
 //	 * @param apiKey

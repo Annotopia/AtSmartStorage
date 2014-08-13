@@ -49,6 +49,7 @@ import com.hp.hpl.jena.rdf.model.Resource
 class OpenAnnotationSetsUtilsService {
 
 	def grailsApplication
+	def jenaUtilsService
 	
 //	public boolean isAnnotationInDefaultGraphAlreadyStored(apiKey, Dataset dataset, String annotationUri) {
 //		log.info("[" + apiKey + "] Detecting if the Annotation has never been saved before " + annotationUri);
@@ -176,7 +177,7 @@ class OpenAnnotationSetsUtilsService {
 		RDFDataMgr.write(baos, datasetToRender, RDFLanguages.JSONLD);
 
 		Object contextJson = JsonUtils.fromInputStream(callExternalUrl(apiKey, AT_FRAME));
-		Map<String, Object> framed =  JsonLdProcessor.frame(JsonUtils.fromString(baos.toString()), contextJson, new JsonLdOptions());
+		Map<String, Object> framed =  JsonLdProcessor.frame(JsonUtils.fromString(baos.toString().replace('"@id" : "urn:x-arq:DefaultGraphNode",','')), contextJson, new JsonLdOptions());
 
 		def annGraphUris = [];
 		Dataset annotationGraphs = DatasetFactory.createMem();

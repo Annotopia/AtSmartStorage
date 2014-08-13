@@ -107,6 +107,85 @@ class OpenAnnotationVirtuosoService {
 	}
 	
 	/**
+	 * Counts all the graph (annotations) containing annotation meeting
+	 * the given criteria.
+	 * @param apiKey	The API key of the client issuing the request
+	 * @param tgtUrls	The list of URLs identifying the targets of interest.
+	 *                  If null all the available annotations will be returned.
+	 *                  If empty none will be returned.
+	 * @param tgtFgt	If true the results will include annotation of document fragments.
+	 * 					If false, only the annotations on full resources will be returned.
+	 * @return The total number of annotations meeting the given criteria.
+	 */
+	public int countAnnotationGraphs(apiKey, List<String> tgtUrls, tgtFgt, text, sources, motivations) {
+		log.info('[' + apiKey + '] Counting Annotation Graphs');
+		StringBuffer queryBuffer = new StringBuffer();
+		if(tgtUrls==null) { // Return any annotation
+			// If the tgtFgt is not true we need to filter out the
+			// annotations that target fragments
+			if(tgtFgt!="true") {
+				queryBuffer.append("FILTER NOT EXISTS { ?s oa:hasTarget ?sr. ?sr a oa:SpecificResource .}");
+			}
+		} else {
+			// No results
+			if(tgtUrls.size()==0) return 0;
+			else {
+				boolean first = false;
+				tgtUrls.each { tgtUrl ->
+					if(first) queryBuffer.append(" UNION ");
+					if(tgtFgt=="false")
+						queryBuffer.append("{ ?s oa:hasTarget <" + tgtUrl + "> }");
+					else if(tgtFgt=="true")
+						queryBuffer.append("{ ?s oa:hasTarget <" + tgtUrl + "> } UNION {?s oa:hasTarget ?t. ?t a oa:SpecificResource. ?t oa:hasSource <" + tgtUrl + ">}");
+					first=true;
+				}
+			}
+		}
+		
+		if(sources!=null && sources.size()>0) {
+			boolean first = false;
+			sources.each { source ->
+				if(first) queryBuffer.append(" UNION ");
+				if(source!='others' && source!='unspecified') queryBuffer.append("{ ?s oa:serializedBy ?software. FILTER (str(?software) = 'urn:application:" + source + "') }")
+				else if(source=='other') {}
+				else queryBuffer.append("{ ?s a oa:Annotation . FILTER NOT EXISTS { ?s oa:serializedBy ?m. }}");
+				first=true;
+			}
+		}
+		if(motivations!=null && motivations.size()>0) {
+			boolean first = false;
+			motivations.each { motivation ->
+				if(first) queryBuffer.append(" UNION ");
+				if(motivation!='unmotivated') queryBuffer.append("{ ?s oa:motivatedBy ?motivation. FILTER (str(?motivation) = 'http://www.w3.org/ns/oa#" + motivation + "') }")
+				else queryBuffer.append("{ ?s a oa:Annotation . FILTER NOT EXISTS { ?s oa:motivatedBy ?m. }}");
+				first=true;
+			}
+		}
+		if(text!=null && text.length()>0) {
+			queryBuffer.append("{");
+			queryBuffer.append("{ ?s oa:hasBody ?b1. ?b1 cnt:chars ?content. FILTER regex(?content, \"" + text + "\", \"i\")  }");
+			queryBuffer.append(" UNION ");
+			queryBuffer.append("{ ?s oa:hasBody ?b2. ?b2 rdfs:label ?content. FILTER regex(?content, \"" + text + "\", \"i\")  }");
+			
+			if(motivations!=null && motivations.size()>0 && ("highlighting" in motivations)) {
+				queryBuffer.append(" UNION ");
+				queryBuffer.append("{ ?s oa:motivatedBy ?motivation1. FILTER (str(?motivation1) = 'http://www.w3.org/ns/oa#highlighting'). ?s oa:hasTarget ?t1. ?t1 oa:hasSelector ?selector. ?selector a oa:TextQuoteSelector. ?selector oa:exact ?exact. FILTER regex(?exact, \"" + text + "\", \"i\")  }");
+			}
+			queryBuffer.append("}");
+		}
+		
+		String queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> PREFIX  cnt:  <http://www.w3.org/2011/content#> PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>" +
+			"SELECT (COUNT(DISTINCT ?g) AS ?total) WHERE { GRAPH ?g { ?s a oa:Annotation. {" +
+				queryBuffer.toString() +
+			"}}}";
+		
+		log.info('[' + apiKey + '] Query total accessible Annotation Graphs: ' + queryString);
+		int totalCount = jenaVirtuosoStoreService.count(apiKey, queryString);
+		log.info('[' + apiKey + '] Total accessible Annotation Graphs: ' + totalCount);
+		totalCount;
+	}
+	
+	/**
 	 * Retrieves all the graph names of the graphs containing annotation meeting
 	 * the given criteria.
 	 * @param apiKey	The API key of the client issuing the request
@@ -172,6 +251,92 @@ class OpenAnnotationVirtuosoService {
 		}
 	
 		String queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> " +
+		"SELECT DISTINCT ?g WHERE { GRAPH ?g { ?s a oa:Annotation. " +
+			queryBuffer.toString() +
+		"}} ORDER BY DESC(?annotatedAt) LIMIT " + max + " OFFSET " + offset;
+		Set<String> graphs = jenaVirtuosoStoreService.retrieveGraphsNames(apiKey, queryString);
+		graphs
+	}
+	
+	/**
+	 * Retrieves all the graph names of the graphs containing annotation meeting
+	 * the given criteria.
+	 * @param apiKey	The API key of the client issuing the request
+	 * @param max		The maximum number of results to return (pagination)
+	 * @param offset	The offset for the results (pagination)
+	 * @param tgtUrls	The list of URLs identifying the targets of interest.
+	 *                  If null all the available annotations will be returned.
+	 *                  If empty none will be returned.
+	 * @param tgtFgt	If true the results will include annotation of document fragments.
+	 * 					If false, only the annotations on full resources will be returned.
+	 * @return The graph names of the annotations meeting the given criteria.
+	 */
+	public Set<String> retrieveAnnotationGraphsNames(apiKey, max, offset, List<String> tgtUrls, tgtFgt, text, sources, motivations) {
+		log.info  '[' + apiKey + '] Retrieving annotation graphs names ' +
+			' max:' + max +
+			' offset:' + offset +
+			' tgtUrls:' + tgtUrls +
+			' tgtFgt:' + tgtFgt +
+			' sources:' + sources +
+			' motivations:' + motivations;
+			
+		StringBuffer queryBuffer = new StringBuffer();
+		if(tgtUrls==null) { // Return any annotation
+			// If the tgtFgt is not true we need to filter out the
+			// annotations that target fragments
+			if(tgtFgt!="true") {
+				queryBuffer.append("FILTER NOT EXISTS { ?s oa:hasTarget ?sr. ?sr a oa:SpecificResource .}");
+			}
+		} else {
+			if(tgtUrls.size()==0) return new HashSet<String>();
+			// Returns annotations on the requested URLs (full resource)
+			else {
+				boolean first = false;
+				tgtUrls.each { tgtUrl ->
+					if(first) queryBuffer.append(" UNION ");
+					if(tgtUrls.size()>0 && tgtFgt=="false")
+						queryBuffer.append("{ ?s a oa:Annotation . ?s oa:hasTarget <" + tgtUrl + "> }");
+					else if(tgtUrls.size()>0 && tgtFgt=="true")
+						queryBuffer.append("{?s oa:hasTarget <" + tgtUrl + "> } UNION {?s oa:hasTarget ?t. ?t a oa:SpecificResource. ?t oa:hasSource <" + tgtUrl + ">}")
+					first=true;
+				}
+			}
+		}
+		
+		if(sources!=null && sources.size()>0) {
+			boolean first = false;
+			sources.each { source ->
+				if(first) queryBuffer.append(" UNION ");
+				if(source!='others' && source!='unspecified') queryBuffer.append("{ ?s oa:serializedBy ?software. FILTER (str(?software) = 'urn:application:" + source + "') }")
+				else if(source=='other') {}
+				else queryBuffer.append("{ ?s a oa:Annotation . FILTER NOT EXISTS { ?s oa:serializedBy ?m. }}");
+				first=true;
+			}
+		}
+		if(motivations!=null && motivations.size()>0) {
+			boolean first = false;
+			motivations.each { motivation ->
+				if(first) queryBuffer.append(" UNION ");
+				if(motivation!='unmotivated') queryBuffer.append("{ ?s oa:motivatedBy ?motivation. FILTER (str(?motivation) = 'http://www.w3.org/ns/oa#" + motivation + "') }")
+				else queryBuffer.append("{ ?s a oa:Annotation . FILTER NOT EXISTS { ?s oa:motivatedBy ?motivation. }}");
+				first=true;
+			}
+		}
+		if(text!=null && text.length()>0) {
+			queryBuffer.append("{");
+			queryBuffer.append("{ ?s oa:hasBody ?b1. ?b1 cnt:chars ?content. FILTER regex(?content, \"" + text + "\", \"i\")  }");
+			queryBuffer.append(" UNION ");
+			queryBuffer.append("{ ?s oa:hasBody ?b2. ?b2 rdfs:label ?content. FILTER regex(?content, \"" + text + "\", \"i\")  }");
+			
+			if(motivations!=null && motivations.size()>0 && ("highlighting" in motivations)) {
+				queryBuffer.append(" UNION ");
+				queryBuffer.append("{ ?s oa:motivatedBy ?motivation1. FILTER (str(?motivation1) = 'http://www.w3.org/ns/oa#highlighting') ?s oa:hasTarget ?t1. ?t1 oa:hasSelector ?selector. ?selector a oa:TextQuoteSelector. ?selector oa:exact ?exact. FILTER regex(?exact, \"" + text + "\", \"i\")  }");
+			}
+			
+			queryBuffer.append("}");
+		}
+	
+		String queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> PREFIX  cnt:  <http://www.w3.org/2011/content#> PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> " +
 		"SELECT DISTINCT ?g WHERE { GRAPH ?g { ?s a oa:Annotation. " +
 			queryBuffer.toString() +
 		"}} ORDER BY DESC(?annotatedAt) LIMIT " + max + " OFFSET " + offset;
