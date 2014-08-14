@@ -53,6 +53,7 @@ class AnnotationIntegratedController extends BaseController {
 	//String AT_FRAME_LIGHT = "https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/AnnotopiaFrameLight.json";
 	
 	def grailsApplication;
+	def jenaUtilsService;
 	def jenaVirtuosoStoreService;
 	def apiKeyAuthenticationService;
 	def openAnnotationSetStorageService;
@@ -199,7 +200,7 @@ class AnnotationIntegratedController extends BaseController {
 							Object compact = JsonLdProcessor.compact(JsonUtils.fromString(baos.toString()), contextJson,  new JsonLdOptions());
 							response.outputStream << JsonUtils.toPrettyString(compact)
 						}  else if(outCmd=='frame') {
-							Object framed =  JsonLdProcessor.frame(JsonUtils.fromString(baos.toString()), contextJson, new JsonLdOptions());
+							Object framed =  JsonLdProcessor.frame(JsonUtils.fromString(baos.toString().replace('"@id" : "urn:x-arq:DefaultGraphNode",','')), contextJson, new JsonLdOptions());
 							response.outputStream << JsonUtils.toPrettyString(framed)
 						}
 					}
@@ -226,7 +227,6 @@ class AnnotationIntegratedController extends BaseController {
 			else url = getCurrentUrl(request);
 			
 			Dataset graphs =  annotationIntegratedStorageService.retrieveAnnotationSet(apiKey, url);
-			
 			if(graphs!=null && graphs.listNames().hasNext()) {
 				Set<Model> toAdd = new HashSet<Model>();
 				Set<Statement> statsToAdd = new HashSet<Statement>();
@@ -291,7 +291,7 @@ class AnnotationIntegratedController extends BaseController {
 						Object compact = JsonLdProcessor.compact(JsonUtils.fromString(baos.toString()), contextJson,  new JsonLdOptions());
 						response.outputStream << JsonUtils.toPrettyString(compact)
 					}  else if(outCmd=='frame') {
-						Object framed =  JsonLdProcessor.frame(JsonUtils.fromString(baos.toString()),contextJson, new JsonLdOptions());
+						Object framed =  JsonLdProcessor.frame(JsonUtils.fromString(baos.toString().replace('"@id" : "urn:x-arq:DefaultGraphNode",','')),contextJson, new JsonLdOptions());
 						response.outputStream << JsonUtils.toPrettyString(framed)
 					}
 				}

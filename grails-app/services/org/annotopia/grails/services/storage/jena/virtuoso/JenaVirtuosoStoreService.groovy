@@ -418,7 +418,7 @@ class JenaVirtuosoStoreService implements ITripleStore {
 				Model model = vqe.execConstruct();
 				return model;
 			} catch (Exception e) {
-				log.error(e.getMessage());
+				log.error(":retrieveGraphIdentifiersMetadata " + e.getMessage());
 				return null;
 			}
 		}

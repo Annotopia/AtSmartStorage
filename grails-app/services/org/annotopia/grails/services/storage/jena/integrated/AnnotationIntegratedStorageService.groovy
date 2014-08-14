@@ -86,7 +86,7 @@ class AnnotationIntegratedStorageService {
 			// If the tgtFgt is not true we need to filter out the
 			// annotations that target fragments
 			if(tgtFgt!="true") {
-				queryBuffer.append("FILTER NOT EXISTS { ?s oa:hasTarget ?sr. ?sr a oa:SpecificResource .}");
+				queryBuffer.append("?s a oa:Annotation . FILTER NOT EXISTS { ?s oa:hasTarget ?sr. ?sr a oa:SpecificResource .}");
 			}
 		} else {
 			// No results
@@ -105,9 +105,11 @@ class AnnotationIntegratedStorageService {
 		}
 		
 		String queryString = "PREFIX oa: <http://www.w3.org/ns/oa#>  PREFIX at: <http://purl.org/annotopia#>" +
-			"SELECT (COUNT(DISTINCT ?g) AS ?total) WHERE { GRAPH ?g { ?set a at:AnnotationSet . ?set at:annotations ?s . " +
-				queryBuffer.toString() +
-			"}}";
+			"SELECT (COUNT(DISTINCT ?g1) AS ?total) WHERE { " + 
+				"GRAPH ?g1 { ?set a at:AnnotationSet . ?set at:annotations ?g2 . } . " +
+				"GRAPH ?g2 { " + queryBuffer.toString() + "}" +
+			"}";
+			
 		log.info('[' + apiKey + '] Query total accessible Annotation Sets Graphs: ' + queryString);
 		int totalCount = jenaVirtuosoStoreService.count(apiKey, queryString);
 		log.info('[' + apiKey + '] Total accessible Annotation Set Graphs: ' + totalCount);
@@ -419,8 +421,10 @@ class AnnotationIntegratedStorageService {
 			def identifierUri = mintUri("expression");
 			jenaUtilsService.getDatasetAsString(inMemoryDataset);
 			openAnnotationUtilsService.detectTargetIdentifiersInDefaultGraph(apiKey, inMemoryDataset, identifiers)
+			
+			// identifiersModel can be null if no identifier is present.
 			Model identifiersModel = jenaVirtuosoStoreService.retrieveGraphIdentifiersMetadata(apiKey, identifiers, grailsApplication.config.annotopia.storage.uri.graph.identifiers);
-			jenaUtilsService.getDatasetAsString(identifiersModel);
+			if(identifiersModel!=null) jenaUtilsService.getDatasetAsString(identifiersModel);
 			
 			
 	//		// Identity management
