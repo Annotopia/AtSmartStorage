@@ -141,4 +141,16 @@ class OpenAnnotationReportingService {
 		"UNION { ?a oa:hasTarget ?t. ?t a oa:SpecificResource. ?t oa:hasSource ?u.}}} GROUP BY ?user";
 		jenaVirtuosoStoreService.countAndGroupBy(apiKey, queryString, "total", "user");
 	}
+	
+	/**
+	 * Counts the annotations for each resource. No matter if they
+	 * have been annotated in full or not.
+	 * @param apiKey The apiKey used for the request
+	 * @return A Map with all the resources and the counters of related annotations.
+	 */
+	Map<String, Integer> countAnnotationsByType(def apiKey) {
+		String queryString = PREFIX_OPEN_ANNOTATION + PREFIX_ANNOTOPIA +
+		"SELECT ?motivation (COUNT(DISTINCT ?annotation) AS ?total) WHERE { GRAPH ?g { ?annotation a oa:Annotation . ?annotation oa:motivatedBy ?motivation. }} GROUP BY ?motivation";
+		jenaVirtuosoStoreService.countAndGroupBy(apiKey, queryString, "total", "motivation");
+	}
 }
