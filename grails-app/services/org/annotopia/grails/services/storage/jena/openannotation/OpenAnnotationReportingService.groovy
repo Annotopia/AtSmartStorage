@@ -160,7 +160,9 @@ class OpenAnnotationReportingService {
 	 */
 	Map<String, Integer> countAnnotationsByClient(def apiKey) {
 		String queryString = PREFIX_OPEN_ANNOTATION + PREFIX_ANNOTOPIA +
-		"SELECT ?client (COUNT(DISTINCT ?annotation) AS ?total) WHERE { GRAPH ?g { ?annotation a oa:Annotation . ?annotation oa:serializedBy ?client. }} GROUP BY ?client";
+		"SELECT ?client (COUNT(DISTINCT ?annotation) AS ?total) WHERE { GRAPH ?g {{ ?annotation a oa:Annotation . ?annotation oa:serializedBy ?client. } " + 
+		"UNION { ?annotation a oa:Annotation.  FILTER NOT EXISTS { ?annotation oa:serializedBy ?client. } } } } GROUP BY ?client";
+		println queryString
 		jenaVirtuosoStoreService.countAndGroupBy(apiKey, queryString, "total", "client");
 	}
 	
@@ -171,8 +173,8 @@ class OpenAnnotationReportingService {
 	 */
 	Map<String, Integer> countAnnotationsByTargetType(def apiKey) {
 		String queryString = PREFIX_OPEN_ANNOTATION + PREFIX_ANNOTOPIA +
-		"SELECT ?type (COUNT(?t) AS ?total)  WHERE { GRAPH ?g { ?a a oa:Annotation . ?a oa:annotatedBy ?user. { ?a oa:hasTarget ?u. ?u a ?type. FILTER NOT EXISTS { ?u  a oa:SpecificResource } } " +
-		"UNION { ?a oa:hasTarget ?t. ?t a oa:SpecificResource. ?t oa:hasSource ?p. ?p a ?type}}} GROUP BY ?type";
+		"SELECT ?type (COUNT(?t) AS ?total)  WHERE { GRAPH ?g { ?a a oa:Annotation . ?a oa:annotatedBy ?user. { ?a oa:hasTarget ?t. ?t a ?type. FILTER NOT EXISTS { ?t  a oa:SpecificResource } } " +
+		"UNION { ?a oa:hasTarget ?t. ?t a oa:SpecificResource. ?t oa:hasSource ?p. ?p a ?type} UNION { ?a oa:hasTarget ?t.  FILTER NOT EXISTS { ?t a ?type. } } }} GROUP BY ?type";
 		jenaVirtuosoStoreService.countAndGroupBy(apiKey, queryString, "total", "type");
 	}
 	
