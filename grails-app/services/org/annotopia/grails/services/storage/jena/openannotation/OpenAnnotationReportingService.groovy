@@ -163,4 +163,16 @@ class OpenAnnotationReportingService {
 		"SELECT ?client (COUNT(DISTINCT ?annotation) AS ?total) WHERE { GRAPH ?g { ?annotation a oa:Annotation . ?annotation oa:serializedBy ?client. }} GROUP BY ?client";
 		jenaVirtuosoStoreService.countAndGroupBy(apiKey, queryString, "total", "client");
 	}
+	
+	/**
+	 * Counts the annotations targeting a full or a partial resource.
+	 * @param apiKey The apiKey used for the request
+	 * @return A Map with all the resources and the counters of annotations targeting a full or a partial resource.
+	 */
+	Map<String, Integer> countAnnotationsByTargetType(def apiKey) {
+		String queryString = PREFIX_OPEN_ANNOTATION + PREFIX_ANNOTOPIA +
+		"SELECT (COUNT(?u) AS ?full) (COUNT(?p) AS ?partial) WHERE { GRAPH ?g { ?a a oa:Annotation . ?a oa:annotatedBy ?user. { ?a oa:hasTarget ?u. FILTER NOT EXISTS { ?u  a oa:SpecificResource } } " + 
+		"UNION { ?a oa:hasTarget ?t. ?t a oa:SpecificResource. ?t oa:hasSource ?p.}}}";
+		jenaVirtuosoStoreService.counters(apiKey, queryString, ["full", "partial"]);
+	}
 }

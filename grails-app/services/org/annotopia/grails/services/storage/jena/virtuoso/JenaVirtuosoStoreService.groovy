@@ -89,6 +89,26 @@ class JenaVirtuosoStoreService implements ITripleStore {
 		totalCount;
 	}
 	
+	public Map<String, Integer> counters(apiKey, queryString, counters = ["total"]) {
+		VirtGraph graph = graph();
+		log.trace('[' + apiKey + '] ' +  queryString);
+			
+		Map<String, Integer> map = new HashMap<String, Integer>();
+		VirtuosoQueryExecution vqe = VirtuosoQueryExecutionFactory.create (QueryFactory.create(queryString), graph);
+		ResultSet results=vqe.execSelect();
+		if(results.hasNext()) {
+			QuerySolution querySolution = results.nextSolution();
+			counters.each { counter ->
+				map.put(
+					counter.toString(), 
+					querySolution.get(counter).asLiteral().int
+				);
+			}
+		}
+		log.info('[' + apiKey + '] Total: ' + map);
+		map;
+	}
+	
 	/**
 	 * Counts occurrences of grouped entities.
 	 * @param apiKey		The API software key
