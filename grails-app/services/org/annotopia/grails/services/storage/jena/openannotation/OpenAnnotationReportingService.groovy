@@ -162,20 +162,31 @@ class OpenAnnotationReportingService {
 		String queryString = PREFIX_OPEN_ANNOTATION + PREFIX_ANNOTOPIA +
 		"SELECT ?client (COUNT(DISTINCT ?annotation) AS ?total) WHERE { GRAPH ?g {{ ?annotation a oa:Annotation . ?annotation oa:serializedBy ?client. } " + 
 		"UNION { ?annotation a oa:Annotation.  FILTER NOT EXISTS { ?annotation oa:serializedBy ?client. } } } } GROUP BY ?client";
-		println queryString
 		jenaVirtuosoStoreService.countAndGroupBy(apiKey, queryString, "total", "client");
 	}
 	
 	/**
-	 * Counts the annotations targeting a full or a partial resource.
+	 * Counts the annotations by target type.
 	 * @param apiKey The apiKey used for the request
-	 * @return A Map with all the resources and the counters of annotations targeting a full or a partial resource.
+	 * @return A Map with all the resources and the counters of annotations by target type.
 	 */
 	Map<String, Integer> countAnnotationsByTargetType(def apiKey) {
 		String queryString = PREFIX_OPEN_ANNOTATION + PREFIX_ANNOTOPIA +
 		"SELECT ?type (COUNT(?t) AS ?total)  WHERE { GRAPH ?g { ?a a oa:Annotation . ?a oa:annotatedBy ?user. { ?a oa:hasTarget ?t. ?t a ?type. FILTER NOT EXISTS { ?t  a oa:SpecificResource } } " +
 		"UNION { ?a oa:hasTarget ?t. ?t a oa:SpecificResource. ?t oa:hasSource ?p. ?p a ?type} UNION { ?a oa:hasTarget ?t.  FILTER NOT EXISTS { ?t a ?type. } } }} GROUP BY ?type";
 		jenaVirtuosoStoreService.countAndGroupBy(apiKey, queryString, "total", "type");
+	}
+	
+	/**
+	 * Counts the annotations by target type.
+	 * @param apiKey The apiKey used for the request
+	 * @return A Map with all the resources and the counters of annotations by target type.
+	 */
+	Map<String, Integer> countAnnotationsByTargetTypeAndFormat(def apiKey) {
+		String queryString = PREFIX_OPEN_ANNOTATION + PREFIX_ANNOTOPIA +
+		"ELECT ?type ?format (COUNT(?t) AS ?total)  WHERE { GRAPH ?g { ?a a oa:Annotation . ?a oa:annotatedBy ?user. { ?a oa:hasTarget ?t. ?t a ?type. ?t <http://purl.org/dc/elements/1.1/format> ?format. FILTER NOT EXISTS { ?t  a oa:SpecificResource } }  " +
+		"UNION { ?a oa:hasTarget ?t. ?t a oa:SpecificResource. ?t oa:hasSource ?p. ?p a ?type . ?p <http://purl.org/dc/elements/1.1/format> ?format.} UNION { ?a oa:hasTarget ?t. ?t <http://purl.org/dc/elements/1.1/format> ?format. FILTER NOT EXISTS { ?t a ?type.  } } }} GROUP BY ?type ?format";
+		jenaVirtuosoStoreService.countAndGroupBys(apiKey, queryString, "total", ["type","format"]);
 	}
 	
 	/**

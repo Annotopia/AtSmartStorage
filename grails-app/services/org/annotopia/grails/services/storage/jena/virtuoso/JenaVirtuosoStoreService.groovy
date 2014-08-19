@@ -134,6 +134,23 @@ class JenaVirtuosoStoreService implements ITripleStore {
 		map
 	}
 	
+	public Map<String, Integer> countAndGroupBys(apiKey, queryString, counter, groupBys) {
+		VirtGraph graph = graph();
+		log.trace('[' + apiKey + '] ' + queryString);
+		
+		Map<String, Integer> map = new HashMap<String, Integer>();
+		VirtuosoQueryExecution qGraphs = VirtuosoQueryExecutionFactory.create (QueryFactory.create(queryString), graph);
+		ResultSet rGraphs = qGraphs.execSelect();
+		while (rGraphs.hasNext()) {
+			QuerySolution querySolution = rGraphs.nextSolution();
+			map.put(
+				querySolution.get(groupBy).toString(),
+				querySolution.get(counter).asLiteral().int
+			);
+		}
+		map
+	}
+	
 	// -----------------------------------------------------------------------
 	//    QUERY
 	// -----------------------------------------------------------------------
