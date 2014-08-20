@@ -760,8 +760,8 @@ class AnnotationIntegratedStorageService {
 								} else {
 									println 'UPDATE ' + annotationUri
 									// Updated last saved on	
-									def lGraph = annotationToAnnotationGraphMap.containsKey(annotationUri);
-									datasetToRender.addNamedModel(lGraph, annotationGraphToModelMap.get(lGraph));
+									def lGraph = annotationToAnnotationGraphMap.get(annotationUri);
+									datasetToRender.addNamedModel(annotationUri, annotationGraphToModelMap.get(lGraph));
 								}		
 							} else {
 								// Annotation to ignore (graph is already in the storage, does not change)
