@@ -142,7 +142,7 @@ class OpenAnnotationStorageService {
 	 * 					in the annotation metadata provenance graph will be returned as well.
 	 * @return The list of annotations meeting the given criteria
 	 */
-	public listAnnotation(apiKey, max, offset, List<String> tgtUrls, tgtFgt, tgtExt, tgtIds, incGph, text, sources, motivations) {
+	public listAnnotation(apiKey, max, offset, List<String> tgtUrls, tgtFgt, tgtExt, tgtIds, incGph, text, sources, motivations, inclusions) {
 		log.info '[' + apiKey + '] Listing annotations' +
 			' max:' + max +
 			' offset:' + offset +
@@ -151,7 +151,7 @@ class OpenAnnotationStorageService {
 			' tgtFgt:' + tgtFgt;
 			
 		Set<Dataset> datasets = new HashSet<Dataset>();
-		Set<String> graphNames = openAnnotationVirtuosoService.retrieveAnnotationGraphsNames(apiKey, max, offset, tgtUrls, tgtFgt, text, sources, motivations);
+		Set<String> graphNames = openAnnotationVirtuosoService.retrieveAnnotationGraphsNames(apiKey, max, offset, tgtUrls, tgtFgt, text, sources, motivations, inclusions);
 		if(graphNames!=null) {
 			graphNames.each { graphName ->
 				Dataset ds = jenaVirtuosoStoreService.retrieveGraph(apiKey, graphName);
@@ -343,6 +343,8 @@ class OpenAnnotationStorageService {
 			// TODO Tags management
 			// TODO Extension points
 			
+			log.trace "*******1"
+			
 			// Minting of the URI for the Named Graph that will wrap the
 			// default graph
 			def graphUri = mintGraphUri();
@@ -363,11 +365,15 @@ class OpenAnnotationStorageService {
 				}
 			}
 			
+			log.trace "*******2"
+			
 			// Creation of the metadata for the Graph wrapper
 			def graphResource = ResourceFactory.createResource(graphUri);
 			Model metaModel = graphMetadataService.getAnnotationGraphCreationMetadata(apiKey, creationDataset, graphUri);
 			metaModel.add(graphResource, ResourceFactory.createProperty(AnnotopiaVocabulary.ANNOTATION), ResourceFactory.createPlainLiteral(annotation.toString()));
 			metaModel.add(graphResource, ResourceFactory.createProperty(AnnotopiaVocabulary.ANNOTATION_COUNT), ResourceFactory.createPlainLiteral("1"));
+			
+			log.trace "*******3"
 			
 			jenaVirtuosoStoreService.storeDataset(apiKey, creationDataset);
 			

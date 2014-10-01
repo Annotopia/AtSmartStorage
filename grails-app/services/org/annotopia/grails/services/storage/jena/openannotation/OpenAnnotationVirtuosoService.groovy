@@ -39,29 +39,42 @@ class OpenAnnotationVirtuosoService {
 	def grailsApplication
 	def jenaVirtuosoStoreService
 	
-//	private getTargetFilter(queryBuffer, tgtUrls, tgtFgt) {
-//		if(tgtUrls==null) { // Return any annotation
-//			// If the tgtFgt is not true we need to filter out the
-//			// annotations that target fragments
-//			if(tgtFgt!="true") {
-//				queryBuffer.append("FILTER NOT EXISTS { ?s oa:hasTarget ?sr. ?sr a oa:SpecificResource .}");
-//			}
-//		} else {
-//			if(tgtUrls.size()==0) return new HashSet<String>();
-//			// Returns annotations on the requested URLs (full resource)
-//			else {
-//				boolean first = false;
-//				tgtUrls.each { tgtUrl ->
-//					if(first) queryBuffer.append(" UNION ");
-//					if(tgtUrls.size()>0 && tgtFgt=="false")
-//						queryBuffer.append("{ ?s a oa:Annotation . ?s oa:hasTarget <" + tgtUrl + "> }");
-//					else if(tgtUrls.size()>0 && tgtFgt=="true")
-//						queryBuffer.append("{?s oa:hasTarget <" + tgtUrl + "> } UNION {?s oa:hasTarget ?t. ?t a oa:SpecificResource. ?t oa:hasSource <" + tgtUrl + ">}")
-//					first=true;
-//				}
-//			}
-//		}
-//	}
+	// --------------------------------------------------------
+	//  GENERAL
+	// --------------------------------------------------------
+	
+	private boolean getTargetFilter(queryBuffer, tgtUrls, tgtFgt) {
+		if(tgtUrls==null) { // Return any annotation
+			// If the tgtFgt is not true we need to filter out the
+			// annotations that target fragments
+			if(tgtFgt!="true") {
+				queryBuffer.append("FILTER NOT EXISTS { ?s oa:hasTarget ?sr. ?sr a oa:SpecificResource .}");
+			}
+		} else {
+			if(tgtUrls.size()==0) return false;
+			// Returns annotations on the requested URLs (full resource)
+			else {
+				boolean first = false;
+				tgtUrls.each { tgtUrl ->
+					if(first) queryBuffer.append(" UNION ");
+					if(tgtUrls.size()>0 && tgtFgt=="false")
+						queryBuffer.append("{ ?s a oa:Annotation . ?s oa:hasTarget <" + tgtUrl + "> }");
+					else if(tgtUrls.size()>0 && tgtFgt=="true")
+						queryBuffer.append("{?s oa:hasTarget <" + tgtUrl + "> } UNION {?s oa:hasTarget ?t. ?t a oa:SpecificResource. ?t oa:hasSource <" + tgtUrl + ">}")
+					first=true;
+				}
+			}
+		}
+		return true;
+	}
+	
+	private getTargetTitleFilter(queryBuffer, text) {
+		if(text==null) {
+			return false;
+		} else {
+			queryBuffer.append("{?s oa:hasTarget ?t2. ?t2 dct:title ?title1 FILTER regex(str(?title1), \""+ text + "\", \"i\")} UNION {?s oa:hasTarget ?t. ?t a oa:SpecificResource. ?t oa:hasSource ?s1. ?s1 dct:title ?title2 FILTER regex(str(?title2), \""+ text + "\", \"i\")}")
+		}
+	}
 	
 	private getSourcesFilter(queryBuffer, sources) {
 		if(sources!=null && sources.size()>0) {
@@ -92,10 +105,14 @@ class OpenAnnotationVirtuosoService {
 	//  BROWSE
 	// --------------------------------------------------------
 	
-	private getTextSearchFilter(queryBuffer, text, motivations) {
+	private getTextSearchFilter(queryBuffer, text, motivations, inclusions) {
 		if(text!=null && text.length()>0) {
 			queryBuffer.append("{");
 			getEmbeddedTextualBodyTextFilter(queryBuffer, text, motivations);
+			if(inclusions.contains("document title")) { 
+				queryBuffer.append(" UNION ");
+				getTargetTitleFilter(queryBuffer, text);
+			}
 			queryBuffer.append(" UNION ");
 			getSemanticTagTextFilter(queryBuffer, text, motivations);
 			getHighligthTextFilter(queryBuffer, text, motivations);
@@ -117,27 +134,30 @@ class OpenAnnotationVirtuosoService {
 	public int countAnnotationGraphs(apiKey, List<String> tgtUrls, tgtFgt, sources, motivations) {
 		log.info('[' + apiKey + '] Counting Annotation Graphs');
 		StringBuffer queryBuffer = new StringBuffer();
-		if(tgtUrls==null) { // Return any annotation
-			// If the tgtFgt is not true we need to filter out the
-			// annotations that target fragments
-			if(tgtFgt!="true") {
-				queryBuffer.append("FILTER NOT EXISTS { ?s oa:hasTarget ?sr. ?sr a oa:SpecificResource .}");
-			}
-		} else {
-			// No results
-			if(tgtUrls.size()==0) return 0;
-			else {
-				boolean first = false;
-				tgtUrls.each { tgtUrl ->
-					if(first) queryBuffer.append(" UNION ");
-					if(tgtFgt=="false")
-						queryBuffer.append("{ ?s oa:hasTarget <" + tgtUrl + "> }");
-					else if(tgtFgt=="true")
-						queryBuffer.append("{ ?s oa:hasTarget <" + tgtUrl + "> } UNION {?s oa:hasTarget ?t. ?t a oa:SpecificResource. ?t oa:hasSource <" + tgtUrl + ">}");
-					first=true;
-				}
-			}
-		}
+//		if(tgtUrls==null) { // Return any annotation
+//			// If the tgtFgt is not true we need to filter out the
+//			// annotations that target fragments
+//			if(tgtFgt!="true") {
+//				queryBuffer.append("FILTER NOT EXISTS { ?s oa:hasTarget ?sr. ?sr a oa:SpecificResource .}");
+//			}
+//		} else {
+//			// No results
+//			if(tgtUrls.size()==0) return 0;
+//			else {
+//				boolean first = false;
+//				tgtUrls.each { tgtUrl ->
+//					if(first) queryBuffer.append(" UNION ");
+//					if(tgtFgt=="false")
+//						queryBuffer.append("{ ?s oa:hasTarget <" + tgtUrl + "> }");
+//					else if(tgtFgt=="true")
+//						queryBuffer.append("{ ?s oa:hasTarget <" + tgtUrl + "> } UNION {?s oa:hasTarget ?t. ?t a oa:SpecificResource. ?t oa:hasSource <" + tgtUrl + ">}");
+//					first=true;
+//				}
+//			}
+//		}
+		
+		if(!getTargetFilter(queryBuffer, tgtUrls, tgtFgt)) return 0;
+		//if(!getTargetTitleFilter(queryBuffer, tgtUrls, tgtFgt)) return 0;
 		
 		getSourcesFilter(queryBuffer, sources);
 		getMotivationsFilter(queryBuffer, motivations);
@@ -176,27 +196,29 @@ class OpenAnnotationVirtuosoService {
 			' motivations:' + motivations;
 			
 		StringBuffer queryBuffer = new StringBuffer();
-		if(tgtUrls==null) { // Return any annotation
-			// If the tgtFgt is not true we need to filter out the
-			// annotations that target fragments
-			if(tgtFgt!="true") {
-				queryBuffer.append("FILTER NOT EXISTS { ?s oa:hasTarget ?sr. ?sr a oa:SpecificResource .}");
-			}
-		} else {
-			if(tgtUrls.size()==0) return new HashSet<String>();
-			// Returns annotations on the requested URLs (full resource)
-			else {
-				boolean first = false;
-				tgtUrls.each { tgtUrl ->
-					if(first) queryBuffer.append(" UNION ");
-					if(tgtUrls.size()>0 && tgtFgt=="false")
-						queryBuffer.append("{ ?s a oa:Annotation . ?s oa:hasTarget <" + tgtUrl + "> }");
-					else if(tgtUrls.size()>0 && tgtFgt=="true")
-						queryBuffer.append("{?s oa:hasTarget <" + tgtUrl + "> } UNION {?s oa:hasTarget ?t. ?t a oa:SpecificResource. ?t oa:hasSource <" + tgtUrl + ">}")
-					first=true;
-				}
-			}
-		}
+//		if(tgtUrls==null) { // Return any annotation
+//			// If the tgtFgt is not true we need to filter out the
+//			// annotations that target fragments
+//			if(tgtFgt!="true") {
+//				queryBuffer.append("FILTER NOT EXISTS { ?s oa:hasTarget ?sr. ?sr a oa:SpecificResource .}");
+//			}
+//		} else {
+//			if(tgtUrls.size()==0) return new HashSet<String>();
+//			// Returns annotations on the requested URLs (full resource)
+//			else {
+//				boolean first = false;
+//				tgtUrls.each { tgtUrl ->
+//					if(first) queryBuffer.append(" UNION ");
+//					if(tgtUrls.size()>0 && tgtFgt=="false")
+//						queryBuffer.append("{ ?s a oa:Annotation . ?s oa:hasTarget <" + tgtUrl + "> }");
+//					else if(tgtUrls.size()>0 && tgtFgt=="true")
+//						queryBuffer.append("{?s oa:hasTarget <" + tgtUrl + "> } UNION {?s oa:hasTarget ?t. ?t a oa:SpecificResource. ?t oa:hasSource <" + tgtUrl + ">}")
+//					first=true;
+//				}
+//			}
+//		}
+		
+		if(!getTargetFilter(queryBuffer, tgtUrls, tgtFgt)) return new HashSet<String>();
 		
 		getSourcesFilter(queryBuffer, sources);
 		getMotivationsFilter(queryBuffer, motivations);
@@ -238,36 +260,39 @@ class OpenAnnotationVirtuosoService {
 	 * 					If false, only the annotations on full resources will be returned.
 	 * @return The total number of annotations meeting the given criteria.
 	 */
-	public int countAnnotationGraphs(apiKey, List<String> tgtUrls, tgtFgt, text, sources, motivations) {
+	public int countAnnotationGraphs(apiKey, List<String> tgtUrls, tgtFgt, text, sources, motivations, inclusions) {
 		log.info('[' + apiKey + '] Counting Annotation Graphs');
 		StringBuffer queryBuffer = new StringBuffer();
-		if(tgtUrls==null) { // Return any annotation
-			// If the tgtFgt is not true we need to filter out the
-			// annotations that target fragments
-			if(tgtFgt!="true") {
-				queryBuffer.append("FILTER NOT EXISTS { ?s oa:hasTarget ?sr. ?sr a oa:SpecificResource .}");
-			}
-		} else {
-			// No results
-			if(tgtUrls.size()==0) return 0;
-			else {
-				boolean first = false;
-				tgtUrls.each { tgtUrl ->
-					if(first) queryBuffer.append(" UNION ");
-					if(tgtFgt=="false")
-						queryBuffer.append("{ ?s oa:hasTarget <" + tgtUrl + "> }");
-					else if(tgtFgt=="true")
-						queryBuffer.append("{ ?s oa:hasTarget <" + tgtUrl + "> } UNION {?s oa:hasTarget ?t. ?t a oa:SpecificResource. ?t oa:hasSource <" + tgtUrl + ">}");
-					first=true;
-				}
-			}
-		}
+//		if(tgtUrls==null) { // Return any annotation
+//			// If the tgtFgt is not true we need to filter out the
+//			// annotations that target fragments
+//			if(tgtFgt!="true") {
+//				queryBuffer.append("FILTER NOT EXISTS { ?s oa:hasTarget ?sr. ?sr a oa:SpecificResource .}");
+//			}
+//		} else {
+//			// No results
+//			if(tgtUrls.size()==0) return 0;
+//			else {
+//				boolean first = false;
+//				tgtUrls.each { tgtUrl ->
+//					if(first) queryBuffer.append(" UNION ");
+//					if(tgtFgt=="false")
+//						queryBuffer.append("{ ?s oa:hasTarget <" + tgtUrl + "> }");
+//					else if(tgtFgt=="true")
+//						queryBuffer.append("{ ?s oa:hasTarget <" + tgtUrl + "> } UNION {?s oa:hasTarget ?t. ?t a oa:SpecificResource. ?t oa:hasSource <" + tgtUrl + ">}");
+//					first=true;
+//				}
+//			}
+//		}
+		
+		if(!getTargetFilter(queryBuffer, tgtUrls, tgtFgt)) return 0;
 		
 		getSourcesFilter(queryBuffer, sources);
 		getMotivationsFilter(queryBuffer, motivations);
-		getTextSearchFilter(queryBuffer, text, motivations);
+		getTextSearchFilter(queryBuffer, text, motivations, inclusions);
+		//getTargetTitleFilter(queryBuffer, text);
 		
-		String queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> PREFIX  cnt:  <http://www.w3.org/2011/content#> PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>" +
+		String queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> PREFIX  cnt:  <http://www.w3.org/2011/content#> PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> PREFIX  dct:  <http://purl.org/dc/terms/> " +
 			"SELECT (COUNT(DISTINCT ?g) AS ?total) WHERE { GRAPH ?g { ?s a oa:Annotation. {" +
 				queryBuffer.toString() +
 			"}}}";
@@ -291,43 +316,46 @@ class OpenAnnotationVirtuosoService {
 	 * 					If false, only the annotations on full resources will be returned.
 	 * @return The graph names of the annotations meeting the given criteria.
 	 */
-	public Set<String> retrieveAnnotationGraphsNames(apiKey, max, offset, List<String> tgtUrls, tgtFgt, text, sources, motivations) {
+	public Set<String> retrieveAnnotationGraphsNames(apiKey, max, offset, List<String> tgtUrls, tgtFgt, text, sources, motivations, inclusions) {
 		log.info  '[' + apiKey + '] Retrieving annotation graphs names ' +
 			' max:' + max +
 			' offset:' + offset +
 			' tgtUrls:' + tgtUrls +
 			' tgtFgt:' + tgtFgt +
+			' text:' + text +
 			' sources:' + sources +
 			' motivations:' + motivations;
 			
 		StringBuffer queryBuffer = new StringBuffer();
-		if(tgtUrls==null) { // Return any annotation
-			// If the tgtFgt is not true we need to filter out the
-			// annotations that target fragments
-			if(tgtFgt!="true") {
-				queryBuffer.append("FILTER NOT EXISTS { ?s oa:hasTarget ?sr. ?sr a oa:SpecificResource .}");
-			}
-		} else {
-			if(tgtUrls.size()==0) return new HashSet<String>();
-			// Returns annotations on the requested URLs (full resource)
-			else {
-				boolean first = false;
-				tgtUrls.each { tgtUrl ->
-					if(first) queryBuffer.append(" UNION ");
-					if(tgtUrls.size()>0 && tgtFgt=="false")
-						queryBuffer.append("{ ?s a oa:Annotation . ?s oa:hasTarget <" + tgtUrl + "> }");
-					else if(tgtUrls.size()>0 && tgtFgt=="true")
-						queryBuffer.append("{?s oa:hasTarget <" + tgtUrl + "> } UNION {?s oa:hasTarget ?t. ?t a oa:SpecificResource. ?t oa:hasSource <" + tgtUrl + ">}")
-					first=true;
-				}
-			}
-		}
+//		if(tgtUrls==null) { // Return any annotation
+//			// If the tgtFgt is not true we need to filter out the
+//			// annotations that target fragments
+//			if(tgtFgt!="true") {
+//				queryBuffer.append("FILTER NOT EXISTS { ?s oa:hasTarget ?sr. ?sr a oa:SpecificResource .}");
+//			}
+//		} else {
+//			if(tgtUrls.size()==0) return new HashSet<String>();
+//			// Returns annotations on the requested URLs (full resource)
+//			else {
+//				boolean first = false;
+//				tgtUrls.each { tgtUrl ->
+//					if(first) queryBuffer.append(" UNION ");
+//					if(tgtUrls.size()>0 && tgtFgt=="false")
+//						queryBuffer.append("{ ?s a oa:Annotation . ?s oa:hasTarget <" + tgtUrl + "> }");
+//					else if(tgtUrls.size()>0 && tgtFgt=="true")
+//						queryBuffer.append("{?s oa:hasTarget <" + tgtUrl + "> } UNION {?s oa:hasTarget ?t. ?t a oa:SpecificResource. ?t oa:hasSource <" + tgtUrl + ">}")
+//					first=true;
+//				}
+//			}
+//		}
+		
+		if(!getTargetFilter(queryBuffer, tgtUrls, tgtFgt)) return new HashSet<String>();
 		
 		getSourcesFilter(queryBuffer, sources);
 		getMotivationsFilter(queryBuffer, motivations);
-		getTextSearchFilter(queryBuffer, text, motivations)
+		getTextSearchFilter(queryBuffer, text, motivations, inclusions)
 	
-		String queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> PREFIX  cnt:  <http://www.w3.org/2011/content#> PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> " +
+		String queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> PREFIX  cnt:  <http://www.w3.org/2011/content#> PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> PREFIX  dct:  <http://purl.org/dc/terms/>" +
 		"SELECT DISTINCT ?g WHERE { GRAPH ?g { ?s a oa:Annotation. " +
 			queryBuffer.toString() +
 		"}} ORDER BY DESC(?annotatedAt) LIMIT " + max + " OFFSET " + offset;
