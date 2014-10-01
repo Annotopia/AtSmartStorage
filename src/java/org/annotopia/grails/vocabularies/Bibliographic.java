@@ -44,4 +44,7 @@ public interface Bibliographic {
 	public static final String LABEL_DOI = "doi";
 	public static final String DOI 	= "http://prismstandard.org/namespaces/basic/2.0/doi";	
 	public static final String LABEL_URL = "url";
+	
+	public static final String LABEL_TITLE = "title";
+	public static final String TITLE = "http://purl.org/dc/terms/title";
 }
