@@ -430,20 +430,37 @@ class JenaVirtuosoStoreService implements ITripleStore {
 			//queryBuffer.append("<"+identifiers.get(Bibliographic.LABEL_URL)+"> <http://purl.org/vocab/frbr/core#embodimentOf> ?expression. ?expression ?ep ?eo . ");
 			queryBuffer.append("?s <http://purl.org/vocab/frbr/core#embodimentOf> ?expression. ?expression ?ep ?eo . ");
 			
+			boolean firstDone = false
+			
 			String doi = identifiers.get(Bibliographic.LABEL_DOI);
-			if(doi!=null) queryBuffer.append(" OPTIONAL { ?expression <" + Bibliographic.DOI + "> ?doi . FILTER (?doi = '" + doi + "')}");
+			if(doi!=null) {
+				queryBuffer.append("{");
+				queryBuffer.append("{ ?expression <" + Bibliographic.DOI + "> ?doi . FILTER (?doi = '" + doi + "')}");
+				firstDone = true;
+			}
 
 			String pmid = identifiers.get(Bibliographic.LABEL_PMID);
-			if(pmid!=null) queryBuffer.append(" OPTIONAL { ?expression <" + Bibliographic.PMID + "> ?pmid . FILTER (?pmid = '" + pmid + "')}");
+			if(pmid!=null) {
+				if(firstDone) queryBuffer.append(" UNION ");
+				queryBuffer.append("{ ?expression <" + Bibliographic.PMID + "> ?pmid . FILTER (?pmid = '" + pmid + "')}");
+				firstDone = true;
+			}
 
 			String pmcid = identifiers.get(Bibliographic.LABEL_PMCID);
-			if(pmcid!=null) queryBuffer.append(" OPTIONAL { ?expression <" + Bibliographic.PMCID + "> ?pmcid . FILTER (?pmcid = '" + pmcid + "')}");
+			if(pmcid!=null) {
+				if(firstDone) queryBuffer.append(" UNION ");
+				queryBuffer.append("{ ?expression <" + Bibliographic.PMCID + "> ?pmcid . FILTER (?pmcid = '" + pmcid + "')}");
+				firstDone = true;
+			}
 
 			String pii = identifiers.get(Bibliographic.LABEL_PII);
-			if(pii!=null) queryBuffer.append(" OPTIONAL { ?expression <" + Bibliographic.PII + "> ?pii . FILTER (?pii = '" + pii + "')}");
-
-//			String queryString = "CONSTRUCT { <"+identifiers.get(Bibliographic.LABEL_URL)+"> ?p ?o . ?expression ?ep ?eo. } FROM <" + metadataIdentifiersGraphUri + ">" +
-//				" WHERE { <"+identifiers.get(Bibliographic.LABEL_URL)+"> ?p ?o . <"+identifiers.get(Bibliographic.LABEL_URL)+"> <"+RDF.RDF_TYPE+"> <"+Bibliographic.WEB_PAGE+"> . " + queryBuffer.toString() + "}";
+			if(pii!=null) {
+				if(firstDone) queryBuffer.append(" UNION ");
+				queryBuffer.append("{ ?expression <" + Bibliographic.PII + "> ?pii . FILTER (?pii = '" + pii + "')}");
+				firstDone = true;
+			}
+			
+			if(firstDone) queryBuffer.append("}");
 			
 			String queryString = "CONSTRUCT { ?s ?p ?o . ?expression ?ep ?eo. } FROM <" + metadataIdentifiersGraphUri + ">" +
 			" WHERE { ?s ?p ?o . ?s <"+RDF.RDF_TYPE+"> <"+Bibliographic.WEB_PAGE+"> . " + queryBuffer.toString() + "}";
