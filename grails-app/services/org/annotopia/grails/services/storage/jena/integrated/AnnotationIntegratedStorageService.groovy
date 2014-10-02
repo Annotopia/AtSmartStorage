@@ -546,7 +546,7 @@ class AnnotationIntegratedStorageService {
 				if(identifiersModel.empty) {
 					graphIdentifiersMetadataService.getIdentifiersGraphMetadata(apiKey, annotationGraphs, identifierUri, identifiers);
 				} else {
-					graphIdentifiersMetadataService.updateIdentifiersGraphMetadata(apiKey, creationDataset, identifiersModel, identifiers);
+					graphIdentifiersMetadataService.updateIdentifiersGraphMetadata(apiKey, annotationGraphs, identifiersModel, identifiers);
 				}
 			}
 			
