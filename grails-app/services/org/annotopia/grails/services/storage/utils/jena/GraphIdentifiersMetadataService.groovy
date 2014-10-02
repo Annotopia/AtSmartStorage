@@ -65,7 +65,8 @@ class GraphIdentifiersMetadataService {
 		
 		if(identifiers.get(Bibliographic.LABEL_URL)!=null) {
 			// Definition of the expression
-			metaModel.add(expression, ResourceFactory.createProperty(RDF.RDF_TYPE), 
+			metaModel.add(expression, 
+				ResourceFactory.createProperty(RDF.RDF_TYPE), 
 				ResourceFactory.createResource(Bibliographic.EXPRESSION));
 			// Definition of the manifestation
 			addManifestation(expression, metaModel, identifiers);
@@ -122,6 +123,11 @@ class GraphIdentifiersMetadataService {
 			model.add(expression, ResourceFactory.createProperty(Bibliographic.PII),
 				ResourceFactory.createPlainLiteral(identifiers.get(Bibliographic.LABEL_PII)));
 		}
+		
+		if(identifiers.get(Bibliographic.LABEL_TITLE)!=null) {
+			model.add(expression, ResourceFactory.createProperty(Bibliographic.TITLE),
+				ResourceFactory.createPlainLiteral(identifiers.get(Bibliographic.LABEL_TITLE)));
+		}
 	}
 	
 	/**
@@ -142,7 +148,6 @@ class GraphIdentifiersMetadataService {
 			if(expression==null) expression = statement.getObject();
 			resources.add(statement.getSubject().toString());
 		}
-		println '**************** ' + resources;
 
 		if(!resources.contains(identifiers.get(Bibliographic.LABEL_URL))) {
 			addManifestation(expression, metaModel, identifiers);
@@ -152,6 +157,7 @@ class GraphIdentifiersMetadataService {
 		while(identifiersData.hasNext()) {
 			def statement = identifiersData.next();
 			def label = statement.getPredicate().toString();
+			
 			if(label==Bibliographic.DOI) {
 				if(identifiers.get(Bibliographic.LABEL_DOI)!=null) {
 					if(identifiers.get(Bibliographic.LABEL_DOI)!=statement.getObject().toString()) {
@@ -188,9 +194,19 @@ class GraphIdentifiersMetadataService {
 					identifiers.remove(Bibliographic.LABEL_PII);
 				}
 			}
+			if(label==Bibliographic.TITLE) {
+				if(identifiers.get(Bibliographic.LABEL_TITLE)!=null) {
+					if(identifiers.get(Bibliographic.LABEL_TITLE)!=statement.getObject().toString()) {
+						log.warn("Title inconsistency detected [old:" + statement.getObject().toString() +
+							", new:" + identifiers.get(Bibliographic.LABEL_TITLE) + "]");
+					}
+					//identifiers.remove(Bibliographic.LABEL_TITLE);
+				} 
+			}
 		}
 		
 		updateModelWithIdentifiers(expression, metaModel, identifiers)
+		println metaModel;
 		dataset.addNamedModel(grailsApplication.config.annotopia.storage.uri.graph.identifiers, metaModel);
 	}
 }
