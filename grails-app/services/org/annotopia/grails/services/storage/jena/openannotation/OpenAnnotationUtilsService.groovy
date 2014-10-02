@@ -238,9 +238,10 @@ class OpenAnnotationUtilsService {
 			"PREFIX prism: <http://prismstandard.org/namespaces/basic/2.0/> " +
 			"PREFIX oa: <http://www.w3.org/ns/oa#> " +
 			"PREFIX fabio:<http://purl.org/spar/fabio#> " +
-			"SELECT DISTINCT ?doi ?pmid ?pmcid ?pii ?target WHERE { " +
-			"{{ ?ann oa:hasTarget ?target . ?target frbr:embodimentOf ?s. OPTIONAL { ?s prism:doi ?doi .} OPTIONAL {?s fabio:hasPubMedId ?pmid .} OPTIONAL { ?s fabio:hasPII ?pii .} OPTIONAL { ?s fabio:hasPubMedCentralId ?pmcid . }} " +
-			"UNION { ?ann oa:hasTarget ?spt. ?spt oa:hasSource ?target. ?target frbr:embodimentOf ?s. OPTIONAL {?s prism:doi ?doi .} OPTIONAL {?s fabio:hasPubMedId ?pmid .} OPTIONAL {?s fabio:hasPII ?pii .} OPTIONAL {?s fabio:hasPubMedCentralId ?pmcid .} }}}"
+			"PREFIX dct:<http://purl.org/dc/terms/>" + 
+			"SELECT DISTINCT ?doi ?pmid ?pmcid ?pii ?target ?title WHERE { " +
+			"{{ ?ann oa:hasTarget ?target . ?target frbr:embodimentOf ?s. OPTIONAL { ?s dct:title ?title .} OPTIONAL { ?s prism:doi ?doi .} OPTIONAL {?s fabio:hasPubMedId ?pmid .} OPTIONAL { ?s fabio:hasPII ?pii .} OPTIONAL { ?s fabio:hasPubMedCentralId ?pmcid . }} " +
+			"UNION { ?ann oa:hasTarget ?spt. ?spt oa:hasSource ?target. ?target frbr:embodimentOf ?s. OPTIONAL {?s prism:doi ?doi .} OPTIONAL { ?s dct:title ?title .} OPTIONAL {?s fabio:hasPubMedId ?pmid .} OPTIONAL {?s fabio:hasPII ?pii .} OPTIONAL {?s fabio:hasPubMedCentralId ?pmcid .} }}}"
 			
 		QueryExecution gIdentifiers  = QueryExecutionFactory.create (QueryFactory.create(QUERY), dataset.getDefaultModel());
 		ResultSet rIdentifiers = gIdentifiers.execSelect();
@@ -262,6 +263,9 @@ class OpenAnnotationUtilsService {
 
 				RDFNode pii = querySolution.get(Bibliographic.LABEL_PII);
 				if(pii!=null) identifiers.put(Bibliographic.LABEL_PII, pii.toString());
+				
+				RDFNode title =  querySolution.get(Bibliographic.LABEL_TITLE);
+				if(title!=null) identifiers.put(Bibliographic.LABEL_TITLE, title.toString());
 			}
 		}
 	}
@@ -272,6 +276,7 @@ class OpenAnnotationUtilsService {
 			"PREFIX prism: <http://prismstandard.org/namespaces/basic/2.0/> " + 
 			"PREFIX oa: <http://www.w3.org/ns/oa#> " + 
 			"PREFIX fabio:<http://purl.org/spar/fabio#> " + 
+			"PREFIX dct:<http://purl.org/dc/terms/>" +
 			"SELECT DISTINCT ?doi ?pmid ?pmcid ?pii ?target WHERE {GRAPH ?g " + 
 			"{{ ?ann oa:hasTarget ?target . ?target frbr:embodimentOf ?s. ?s prism:doi ?doi . ?s fabio:hasPubMedId ?pmid . ?s fabio:hasPII ?pii . ?s fabio:hasPubMedCentralId ?pmcid . } " + 
 			"UNION { ?ann oa:hasTarget ?spt. ?spt oa:hasSource ?target. ?target frbr:embodimentOf ?s. ?s prism:doi ?doi . ?s fabio:hasPubMedId ?pmid . ?s fabio:hasPII ?pii . ?s fabio:hasPubMedCentralId ?pmcid . }}}"
