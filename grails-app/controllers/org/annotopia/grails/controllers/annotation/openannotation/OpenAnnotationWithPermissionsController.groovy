@@ -66,6 +66,7 @@ class OpenAnnotationWithPermissionsController extends BaseController {
 	def openAnnotationWithPermissionsVirtuosoService
 	def openAnnotationValidationService;
 	def apiKeyAuthenticationService;
+	def userAuthenticationService;
 	def jenaVirtuosoStoreService;
 
 	/*
@@ -87,7 +88,7 @@ class OpenAnnotationWithPermissionsController extends BaseController {
 			invalidApiKey(request.getRemoteAddr()); return;
 		}
 		
-		def userKey = "user:" + apiKeyAuthenticationService.getUserId(request.getRemoteAddr(), "");
+		def user = apiKeyAuthenticationService.gatUserIdentifiedByToken(request.getHeader("authorization"));
 		
 		// Response format parametrization and constraints
 		def outCmd = (request.JSON.outCmd!=null)?request.JSON.outCmd:OUTCMD_NONE;
@@ -116,6 +117,16 @@ class OpenAnnotationWithPermissionsController extends BaseController {
 			def tgtFgt = (request.JSON.tgtFgt!=null)?request.JSON.tgtFgt:"true";
 			if(params.tgtFgt!=null) tgtFgt = params.tgtFgt;
 			
+			// Facets
+			def permissions = request.JSON.permissions
+			if(params.permissions!=null) permissions = params.permissions;
+			def permissionsFacet = []
+			if(permissions) permissionsFacet = permissions.split(",");
+			def motivations = request.JSON.motivations
+			if(params.motivations!=null) motivations = params.motivations;
+			def motivationsFacet = []
+			if(motivations) motivationsFacet = motivations.split(",");
+			
 			// Currently unusued, planned
 			def tgtExt = request.JSON.tgtExt
 			def tgtIds = request.JSON.tgtIds
@@ -131,7 +142,7 @@ class OpenAnnotationWithPermissionsController extends BaseController {
 				((outCmd!=null) ? (" outCmd:" + outCmd):"") +
 				((incGph!=null) ? (" incGph:" + incGph):""));	
 			
-			int annotationsTotal = openAnnotationWithPermissionsVirtuosoService.countAnnotationGraphs(apiKey, userKey, tgtUrl, tgtFgt);
+			int annotationsTotal = openAnnotationWithPermissionsVirtuosoService.countAnnotationGraphs(apiKey, user, tgtUrl, tgtFgt, permissionsFacet, motivationsFacet);
 			int annotationsPages = (annotationsTotal/Integer.parseInt(max));		
 			if(annotationsTotal>0 && Integer.parseInt(offset)>0 && Integer.parseInt(offset)>=annotationsPages) {
 				def message = 'The requested page ' + offset + 
@@ -141,7 +152,7 @@ class OpenAnnotationWithPermissionsController extends BaseController {
 				return;
 			}
 			
-			Set<Dataset> annotationGraphs = openAnnotationWithPermissionsStorageService.listAnnotation(apiKey, userKey, max, offset, tgtUrl, tgtFgt, tgtExt, tgtIds, incGph);
+			Set<Dataset> annotationGraphs = openAnnotationWithPermissionsStorageService.listAnnotation(apiKey, user, max, offset, tgtUrl, tgtFgt, tgtExt, tgtIds, incGph, permissionsFacet, motivationsFacet);
 			def summaryPrefix = '"total":"' + annotationsTotal + '", ' +
 					'"pages":"' + annotationsPages + '", ' +
 					'"duration": "' + (System.currentTimeMillis()-startTime) + 'ms", ' +
@@ -278,9 +289,8 @@ class OpenAnnotationWithPermissionsController extends BaseController {
 			invalidApiKey(request.getRemoteAddr()); return;
 		}
 		
-		//def userKey = "user:http://orcid.org/0000-0002-5156-2703";
-		def userId = apiKeyAuthenticationService.getUserId(request.getRemoteAddr(), "");
-		def userKey = "user:" + userId;
+		def user = apiKeyAuthenticationService.gatUserIdentifiedByToken(request.getHeader("authorization"));
+		def userKey = "user:" + user.id;
 		
 		// Parsing the incoming parameters
 		def outCmd = (request.JSON.outCmd!=null)?request.JSON.outCmd:OUTCMD_NONE;
@@ -369,10 +379,8 @@ class OpenAnnotationWithPermissionsController extends BaseController {
 			invalidApiKey(request.getRemoteAddr()); return;
 		}
 		
-		//def userKey = "04377356465ddc0e01465ddc21d10001";
-		
-		def userId = apiKeyAuthenticationService.getUserId(request.getRemoteAddr(), "");
-		def userKey = "user:" + userId;
+		def user = apiKeyAuthenticationService.gatUserIdentifiedByToken(request.getHeader("authorization"));
+		def userKey = "user:" + user.id;
 		
 		def outCmd = (request.JSON.outCmd!=null)?request.JSON.outCmd:OUTCMD_NONE;
 		if(params.outCmd!=null) outCmd = params.outCmd;
@@ -541,9 +549,9 @@ class OpenAnnotationWithPermissionsController extends BaseController {
 		}
 		
 		//def userKey = "http://orcid.org/0000-0002-5156-2703";
-		//def userKey = "user:" + apiKeyAuthenticationService.getUserId(request.getRemoteAddr(), "");
+		//def userKey = "user:" + userAuthenticationService.getUserId(request.getRemoteAddr());
 		
-		def userId = apiKeyAuthenticationService.getUserId(request.getRemoteAddr(), "");
+		def userId = userAuthenticationService.getUserId(request.getRemoteAddr());
 		// def userKey = "user:" + userId;
 
 		def uri = (request.JSON.uri!=null)?request.JSON.uri:getCurrentUrl(request);
