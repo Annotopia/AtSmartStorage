@@ -58,36 +58,9 @@ class OpenAnnotationWithPermissionsVirtuosoService {
 		return buffer;
 	}
 	
-	public int countAnnotationGraphs(apiKey, userKey, tgtUrl, tgtFgt) {
+	public int countAnnotationGraphs(apiKey, user, tgtUrl, tgtFgt, permissions, motivations) {
 
-		def buffer = getReadPermissionQueryChunk(userKey);
-		
-//		def userIds = usersService.getUserAgentIdentifiers(userKey);
-//		def buffer = "?x <http://purl.org/annotopia#read> <" + userKey + ">.";
-//		StringBuffer sb = new StringBuffer();
-//		if(userIds!=null && userIds.size()>0) {
-//			sb.append("{");
-//			sb.append("?x <http://purl.org/annotopia#read> <" + userKey + ">.")
-//			sb.append("} UNION {")
-//			userIds.eachWithIndex{ userId, index ->
-//				sb.append("?x <http://purl.org/annotopia#read> <user:" + userId + ">.")
-//				if(index<userIds.size()-1) sb.append(" UNION ");
-//			}
-//			sb.append("}");
-//			buffer = sb.toString();
-//		}
-
-// Old query without user URIs
-//		String queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> " +
-//			"SELECT DISTINCT ?g WHERE { GRAPH ?g { ?s a oa:Annotation. " + buffer + " }} LIMIT " + max + " OFFSET " + offset;
-//		if(tgtUrl!=null && tgtFgt=="false") {
-//			queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> " +
-//				"SELECT DISTINCT ?g WHERE { GRAPH ?g { ?s a oa:Annotation . ?s oa:hasTarget <" + tgtUrl + ">. " + buffer + "  }} LIMIT " + max + " OFFSET " + offset;
-//		} else if(tgtUrl!=null && tgtFgt=="true") {
-//			queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> " +
-//				"SELECT DISTINCT ?g WHERE { GRAPH ?g { ?s a oa:Annotation . {?s oa:hasTarget <" + tgtUrl +
-//				"> } UNION {?s oa:hasTarget ?t. ?t a oa:SpecificResource. ?t oa:hasSource <" + tgtUrl + ">.}  " + buffer + " }} LIMIT " + max + " OFFSET " + offset;
-//		}
+		def buffer = getReadPermissionQueryChunk(user.id);
 		
 		String queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> " +
 			"SELECT (COUNT(DISTINCT ?g) AS ?total) WHERE { GRAPH ?g { ?s a oa:Annotation. " + buffer + " }}";		
@@ -99,6 +72,8 @@ class OpenAnnotationWithPermissionsVirtuosoService {
 				"SELECT (COUNT(DISTINCT ?g) AS ?total) WHERE { GRAPH ?g { ?s a oa:Annotation .  {?s oa:hasTarget <" + tgtUrl +
 				"> } UNION {?s oa:hasTarget ?t. ?t a oa:SpecificResource. ?t oa:hasSource <" + tgtUrl + ">.} " + buffer + " }}";
 		}	
+		
+		println '@@@@@@@@ ' + queryString
 			
 		int totalCount = jenaVirtuosoStoreService.count(apiKey, queryString);
 		log.info('[' + apiKey + '] Total accessible Annotation Graphs: ' + totalCount);
@@ -173,7 +148,7 @@ class OpenAnnotationWithPermissionsVirtuosoService {
 		enabled
 	}
 	
-	public Set<String> retrieveAnnotationGraphsNames(apiKey, userKey, userIds, max, offset, tgtUrl, tgtFgt) {
+	public Set<String> retrieveAnnotationGraphsNames(apiKey, userKey, userIds, max, offset, tgtUrl, tgtFgt, permissions, motivations) {
 		log.info  '[' + apiKey + '] Retrieving annotation graphs names ' +
 			' max:' + max +
 			' offset:' + offset +
