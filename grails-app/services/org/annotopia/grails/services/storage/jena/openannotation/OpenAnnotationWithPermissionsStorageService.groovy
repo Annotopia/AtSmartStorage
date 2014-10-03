@@ -166,6 +166,8 @@ class OpenAnnotationWithPermissionsStorageService {
 			throw new StoreServiceException(200, json, "text/json", "UTF-8");
 		}
 		
+		Map<String,String> identifiers = new HashMap<String,String>();
+		
 		String content; 
 		if(defaultGraphDetected) {
 			log.trace("[" + apiKey + "] Default graph detected.");
