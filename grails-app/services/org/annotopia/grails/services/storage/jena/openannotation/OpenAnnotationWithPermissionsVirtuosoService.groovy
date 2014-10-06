@@ -40,6 +40,14 @@ class OpenAnnotationWithPermissionsVirtuosoService {
 	def usersService;
 	def jenaVirtuosoStoreService
 	
+	/**
+	 * Injects the SPARQL query with a fragments that enable text search on the
+	 * specified documents including or excluding terget fragments.
+	 * @param queryBuffer	The buffer for constructing the query
+	 * @param tgtUrls		List of targets allowed in search results
+	 * @param tgtFgt		If true, target fragments will be included in search
+	 * @return  The query with or without the target filters.
+	 */
 	private boolean getTargetFilter(queryBuffer, tgtUrls, tgtFgt) {
 		if(tgtUrls==null) { // Return any annotation
 			// If the tgtFgt is not true we need to filter out the
