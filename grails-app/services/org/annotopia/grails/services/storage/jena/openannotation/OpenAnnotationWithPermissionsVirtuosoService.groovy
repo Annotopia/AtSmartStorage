@@ -124,8 +124,16 @@ class OpenAnnotationWithPermissionsVirtuosoService {
 	}
 	
 	// --------------------------------------------------------
-	//  BROWSE
+	//  TEXT SEARCH
 	// --------------------------------------------------------
+	/**
+	 *  Injects the SPARQL query with a fragments that enable text search 
+	 * @param queryBuffer	The buffer for constructing the query
+	 * @param text			The text to search for
+	 * @param motivations	The list of allowed motivations
+	 * @param inclusions	The list of fields included in the search.
+	 * @return The query including the fragments for text search.
+	 */
 	private getTextSearchFilter(queryBuffer, text, motivations, inclusions) {
 		if(text!=null && text.length()>0) {
 			queryBuffer.append("{");
@@ -141,9 +149,6 @@ class OpenAnnotationWithPermissionsVirtuosoService {
 		}
 	}
 	
-	// --------------------------------------------------------
-	//  TEXT SEARCH
-	// --------------------------------------------------------
 	private void getEmbeddedTextualBodyTextFilter(queryBuffer, text, motivations) {
 		queryBuffer.append("{ ?s oa:hasBody ?b1. ?b1 cnt:chars ?content. FILTER regex(?content, \"" + text + "\", \"i\")  }");
 	}
