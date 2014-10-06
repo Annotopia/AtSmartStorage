@@ -40,10 +40,6 @@ class OpenAnnotationWithPermissionsVirtuosoService {
 	def usersService;
 	def jenaVirtuosoStoreService
 	
-	// --------------------------------------------------------
-	//  GENERAL
-	// --------------------------------------------------------
-	
 	private boolean getTargetFilter(queryBuffer, tgtUrls, tgtFgt) {
 		if(tgtUrls==null) { // Return any annotation
 			// If the tgtFgt is not true we need to filter out the
@@ -127,7 +123,7 @@ class OpenAnnotationWithPermissionsVirtuosoService {
 	//  TEXT SEARCH
 	// --------------------------------------------------------
 	/**
-	 *  Injects the SPARQL query with a fragments that enable text search 
+	 * Injects the SPARQL query with a fragments that enable text search 
 	 * @param queryBuffer	The buffer for constructing the query
 	 * @param text			The text to search for
 	 * @param motivations	The list of allowed motivations
@@ -167,6 +163,13 @@ class OpenAnnotationWithPermissionsVirtuosoService {
 	// --------------------------------------------------------
 	//  PERMISSION FILTER
 	// --------------------------------------------------------
+	/**
+	 * Injects the SPARQL query with a fragments that defines the 
+	 * set of permission criteria for the annotation to search.
+	 * @param queryBuffer	The buffer for constructing the query
+	 * @param userKey
+	 * @return
+	 */
 	private String getReadPermissionQueryChunk(queryBuffer, def userKey) {
 		def userIds = usersService.getUserAgentIdentifiers(userKey);
 		def buffer = "{?x <http://purl.org/annotopia#read> <" + userKey + ">.}";
