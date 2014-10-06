@@ -88,6 +88,7 @@ class OpenAnnotationWithPermissionsStorageService {
 	public Set<Dataset> retrieveAnnotationGraphs(apiKey, user, max, offset, tgtUrl, tgtFgt, incGph,  permissions, motivations) {
 		log.info '[' + apiKey + '] Retrieving annotation graphs';
 	
+		
 		def userIds = usersService.getUserAgentIdentifiers(user.id);
 		
 		Set<Dataset> datasets = new HashSet<Dataset>();
@@ -123,6 +124,58 @@ class OpenAnnotationWithPermissionsStorageService {
 		}
 		return datasets;
 	}
+	
+
+	public listAnnotation(apiKey, user, max, offset, tgtUrl, tgtFgt, tgtExt, tgtIds, incGph, text, permissions, sources, motivations, inclusions) {
+		log.info '[' + apiKey + '] List annotations' +
+			' max:' + max +
+			' offset:' + offset +
+			' incGph:' + incGph +
+			' tgtUrl:' + tgtUrl +
+			' tgtFgt:' + tgtFgt;
+		retrieveAnnotationGraphs(apiKey, user, max, offset, tgtUrl, tgtFgt, incGph, text, permissions, sources, motivations, inclusions);
+	}
+	
+	public Set<Dataset> retrieveAnnotationGraphs(apiKey, user, max, offset, tgtUrl, tgtFgt, incGph, text, permissions, sources, motivations, inclusions) {
+		log.info '[' + apiKey + '] Retrieving annotation graphs';
+	
+		def userIds = usersService.getUserAgentIdentifiers(user.id);
+		
+		Set<Dataset> datasets = new HashSet<Dataset>();
+		
+		Set<String> graphNames = openAnnotationWithPermissionsVirtuosoService.retrieveAnnotationGraphsNames(apiKey, user, userIds, max, offset, tgtUrl, tgtFgt, text, permissions, sources, motivations, inclusions);
+		if(graphNames!=null) {
+			graphNames.each { graphName ->
+				Dataset ds = jenaVirtuosoStoreService.retrieveGraph(apiKey, graphName);
+				
+				if(ds!=null) {
+					List<Statement> statementsToRemove = new ArrayList<Statement>();
+					Set<Resource> subjectsToRemove = new HashSet<Resource>();
+					Iterator<String> names = ds.listNames();
+					names.each { name ->
+						Model m = ds.getNamedModel(name);
+						// Remove AnnotationSets data and leave oa:Annotation
+						StmtIterator statements = m.listStatements(null, ResourceFactory.createProperty(RDF.RDF_TYPE), ResourceFactory.createResource(AnnotopiaVocabulary.ANNOTATION_SET));
+						statements.each { statement ->
+							subjectsToRemove.add(statement.getSubject())
+						}
+						
+						subjectsToRemove.each { subjectToRemove ->
+							m.removeAll(subjectToRemove, null, null);
+						}
+					}
+				}
+				
+				if(incGph==INCGPH_YES) {
+					Model m = jenaVirtuosoStoreService.retrieveGraphMetadata(apiKey, graphName, grailsApplication.config.annotopia.storage.uri.graph.provenance);
+					if(m!=null) ds.setDefaultModel(m);
+				}
+				if(ds!=null) datasets.add(ds);
+			}
+		}
+		return datasets;
+	}
+	
 	
 	/**
 	 * Saves the annotation Dataset. The service now accept one single item

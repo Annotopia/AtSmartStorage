@@ -40,23 +40,198 @@ class OpenAnnotationWithPermissionsVirtuosoService {
 	def usersService;
 	def jenaVirtuosoStoreService
 	
-	private String getReadPermissionQueryChunk(def userKey) {
+	// --------------------------------------------------------
+	//  GENERAL
+	// --------------------------------------------------------
+	
+	private boolean getTargetFilter(queryBuffer, tgtUrls, tgtFgt) {
+		if(tgtUrls==null) { // Return any annotation
+			// If the tgtFgt is not true we need to filter out the
+			// annotations that target fragments
+			if(tgtFgt!="true") {
+				queryBuffer.append("FILTER NOT EXISTS { ?s oa:hasTarget ?sr. ?sr a oa:SpecificResource .}");
+			}
+		} else {
+			if(tgtUrls.size()==0) return false;
+			// Returns annotations on the requested URLs (full resource)
+			else {
+				boolean first = false;
+				tgtUrls.each { tgtUrl ->
+					if(first) queryBuffer.append(" UNION ");
+					if(tgtUrls.size()>0 && tgtFgt=="false")
+						queryBuffer.append("{ ?s a oa:Annotation . ?s oa:hasTarget <" + tgtUrl + "> }");
+					else if(tgtUrls.size()>0 && tgtFgt=="true")
+						queryBuffer.append("{?s oa:hasTarget <" + tgtUrl + "> } UNION {?s oa:hasTarget ?t. ?t a oa:SpecificResource. ?t oa:hasSource <" + tgtUrl + ">}")
+					first=true;
+				}
+			}
+		}
+		return true;
+	}
+	
+	private getTargetTitleFilter(queryBuffer, text) {
+		if(text==null) {
+			return false;
+		} else {
+			queryBuffer.append("{?s oa:hasTarget ?t2. ?t2 dct:title ?title1 FILTER regex(str(?title1), \""+ text + "\", \"i\")} UNION {?s oa:hasTarget ?t. ?t a oa:SpecificResource. ?t oa:hasSource ?s1. ?s1 dct:title ?title2 FILTER regex(str(?title2), \""+ text + "\", \"i\")}")
+		}
+	}
+	
+	private getSourcesFilter(queryBuffer, sources) {
+		if(sources!=null && sources.size()>0) {
+			boolean first = false;
+			sources.each { source ->
+				if(first) queryBuffer.append(" UNION ");
+				if(source!='others' && source!='unspecified') queryBuffer.append("{ ?s oa:serializedBy ?software. FILTER (str(?software) = 'urn:application:" + source + "') }")
+				else if(source=='other') {}
+				else queryBuffer.append("{ ?s a oa:Annotation . FILTER NOT EXISTS { ?s oa:serializedBy ?m. }}");
+				first=true;
+			}
+		}
+	}
+	
+	private getMotivationsFilter(queryBuffer, motivations) {
+		if(motivations!=null && motivations.size()>0) {
+			boolean first = false;
+			motivations.each { motivation ->
+				if(first) queryBuffer.append(" UNION ");
+				if(motivation!='unmotivated') queryBuffer.append("{ ?s oa:motivatedBy ?motivation. FILTER (str(?motivation) = 'http://www.w3.org/ns/oa#" + motivation + "') }")
+				else queryBuffer.append("{ ?s a oa:Annotation . FILTER NOT EXISTS { ?s oa:motivatedBy ?m. }}");
+				first=true;
+			}
+		}
+	}
+	
+	// --------------------------------------------------------
+	//  BROWSE
+	// --------------------------------------------------------
+	private getTextSearchFilter(queryBuffer, text, motivations, inclusions) {
+		if(text!=null && text.length()>0) {
+			queryBuffer.append("{");
+			getEmbeddedTextualBodyTextFilter(queryBuffer, text, motivations);
+			if(inclusions.contains("document title")) {
+				queryBuffer.append(" UNION ");
+				getTargetTitleFilter(queryBuffer, text);
+			}
+			queryBuffer.append(" UNION ");
+			getSemanticTagTextFilter(queryBuffer, text, motivations);
+			getHighligthTextFilter(queryBuffer, text, motivations);
+			queryBuffer.append("}");
+		}
+	}
+	
+	// --------------------------------------------------------
+	//  TEXT SEARCH
+	// --------------------------------------------------------
+	private void getEmbeddedTextualBodyTextFilter(queryBuffer, text, motivations) {
+		queryBuffer.append("{ ?s oa:hasBody ?b1. ?b1 cnt:chars ?content. FILTER regex(?content, \"" + text + "\", \"i\")  }");
+	}
+	
+	private void getSemanticTagTextFilter(queryBuffer, text, motivations) {
+		queryBuffer.append("{ ?s oa:hasBody ?b2. ?b2 rdfs:label ?content. FILTER regex(?content, \"" + text + "\", \"i\")  }");
+	}
+	
+	private void getHighligthTextFilter(queryBuffer, text, motivations) {
+		if(motivations!=null && motivations.size()>0 && ("highlighting" in motivations)) {
+			queryBuffer.append(" UNION ");
+			queryBuffer.append("{ ?s oa:motivatedBy ?motivation1. FILTER (str(?motivation1) = 'http://www.w3.org/ns/oa#highlighting'). ?s oa:hasTarget ?t1. ?t1 oa:hasSelector ?selector. ?selector a oa:TextQuoteSelector. ?selector oa:exact ?exact. FILTER regex(?exact, \"" + text + "\", \"i\")  }");
+		}
+	}
+
+	// --------------------------------------------------------
+	//  PERMISSION FILTER
+	// --------------------------------------------------------
+	private String getReadPermissionQueryChunk(queryBuffer, def userKey) {
 		def userIds = usersService.getUserAgentIdentifiers(userKey);
-		def buffer = "?x <http://purl.org/annotopia#read> <" + userKey + ">.";
+		def buffer = "{?x <http://purl.org/annotopia#read> <" + userKey + ">.}";
 		StringBuffer sb = new StringBuffer();
 		if(userIds!=null && userIds.size()>0) {
-			sb.append("{");
+			sb.append("{{");
 			sb.append("?x <http://purl.org/annotopia#read> <" + userKey + ">.")
 			sb.append("} UNION {")
 			userIds.eachWithIndex{ userId, index ->
 				sb.append("?x <http://purl.org/annotopia#read> <user:" + userId + ">.")
 				if(index<userIds.size()-1) sb.append(" UNION ");
 			}
-			sb.append("}");
+			sb.append("}}");
 			buffer = sb.toString();
+			queryBuffer.append(buffer);
 		}
 		return buffer;
 	}
+	
+	/**
+	 * Count for search services. Counts all the available results that meet
+	 * the specified criteria (including facets).
+	 * @param apiKey		The system api key
+	 * @param user			The user that performed the request
+	 * @param tgtUrls		The target urls if any
+	 * @param tgtFgt		If to include fragments or not
+	 * @param text			The text to search
+	 * @param permissions	The permissions facet values
+	 * @param sources		The sources facet values (originator system)
+	 * @param motivations	The motivations facet values
+	 * @param inclusions	The inclusions facet values
+	 * @return The count of the available annotations meeting the psecified criteria.
+	 */
+	public int countAnnotationGraphs(apiKey, user, List<String> tgtUrls, tgtFgt, text, permissions, sources, motivations, inclusions) {
+		
+		log.info('[' + apiKey + '] Counting Annotation Graphs');
+		StringBuffer queryBuffer = new StringBuffer();
+
+		if(!getTargetFilter(queryBuffer, tgtUrls, tgtFgt)) return 0;
+		//if(!getTargetTitleFilter(queryBuffer, tgtUrls, tgtFgt)) return 0;
+
+		getReadPermissionQueryChunk(queryBuffer, user.id);
+		getSourcesFilter(queryBuffer, sources);
+		getMotivationsFilter(queryBuffer, motivations);
+		getTextSearchFilter(queryBuffer, text, motivations, inclusions);
+		
+		String queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> PREFIX  cnt: <http://www.w3.org/2011/content#> PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>  PREFIX dct:  <http://purl.org/dc/terms/> " +
+			"SELECT (COUNT(DISTINCT ?g) AS ?total) WHERE { GRAPH ?g { ?s a oa:Annotation. " +
+				queryBuffer.toString() +
+			"}}";
+		
+		log.info('[' + apiKey + '] Query total accessible Annotation Graphs: ' + queryString);
+		int totalCount = jenaVirtuosoStoreService.count(apiKey, queryString);
+		log.info('[' + apiKey + '] Total accessible Annotation Graphs: ' + totalCount);
+		totalCount;	
+	}
+	
+	
+	public Set<String> retrieveAnnotationGraphsNames(apiKey, user, userIds, max, offset, tgtUrls, tgtFgt, text, permissions, sources, motivations, inclusions) {
+		log.info  '[' + apiKey + '] Retrieving annotation graphs names ' +
+			' max:' + max +
+			' offset:' + offset +
+			' tgtUrl:' + tgtUrls +
+			' tgtFgt:' + tgtFgt;
+			
+		StringBuffer queryBuffer = new StringBuffer();
+ 
+		if(!getTargetFilter(queryBuffer, tgtUrls, tgtFgt)) return 0;
+		//if(!getTargetTitleFilter(queryBuffer, tgtUrls, tgtFgt)) return 0;
+
+		getReadPermissionQueryChunk(queryBuffer, user.id);
+		getSourcesFilter(queryBuffer, sources);
+		getMotivationsFilter(queryBuffer, motivations);
+		getTextSearchFilter(queryBuffer, text, motivations, inclusions);
+			
+		String queryString = "PREFIX oa: <http://www.w3.org/ns/oa#> PREFIX  cnt: <http://www.w3.org/2011/content#> PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>  PREFIX dct:  <http://purl.org/dc/terms/> " +
+		"SELECT DISTINCT ?g WHERE { GRAPH ?g { ?s a oa:Annotation. " +
+			queryBuffer.toString() +
+		"}}";
+
+		log.info('[' + apiKey + '] Query Annotation Graphs: ' + queryString);
+		Set<String> graphs = jenaVirtuosoStoreService.retrieveGraphsNames(apiKey, queryString);
+		graphs
+	}
+	
+	
+	
+	
+	
+	
+	
 	
 	public int countAnnotationGraphs(apiKey, user, tgtUrl, tgtFgt, permissions, motivations) {
 
