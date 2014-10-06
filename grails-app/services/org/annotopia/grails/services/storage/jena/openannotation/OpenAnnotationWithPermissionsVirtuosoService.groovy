@@ -175,12 +175,11 @@ class OpenAnnotationWithPermissionsVirtuosoService {
 	 * @return The count of the available annotations meeting the psecified criteria.
 	 */
 	public int countAnnotationGraphs(apiKey, user, List<String> tgtUrls, tgtFgt, text, permissions, sources, motivations, inclusions) {
-		
-		log.info('[' + apiKey + '] Counting Annotation Graphs');
+		long start = System.currentTimeMillis();
+		log.info ('[' + apiKey + '] Counting Annotation Graphs');
 		StringBuffer queryBuffer = new StringBuffer();
 
 		if(!getTargetFilter(queryBuffer, tgtUrls, tgtFgt)) return 0;
-		//if(!getTargetTitleFilter(queryBuffer, tgtUrls, tgtFgt)) return 0;
 
 		getReadPermissionQueryChunk(queryBuffer, user.id);
 		getSourcesFilter(queryBuffer, sources);
@@ -192,9 +191,10 @@ class OpenAnnotationWithPermissionsVirtuosoService {
 				queryBuffer.toString() +
 			"}}";
 		
-		log.info('[' + apiKey + '] Query total accessible Annotation Graphs: ' + queryString);
+		log.info ('[' + apiKey + '] Query total accessible Annotation Graphs: ' + queryString);
 		int totalCount = jenaVirtuosoStoreService.count(apiKey, queryString);
-		log.info('[' + apiKey + '] Total accessible Annotation Graphs: ' + totalCount);
+		log.info ('[' + apiKey + '] Total accessible Annotation Graphs: ' + totalCount);
+		log.trace('[' + apiKey + '] TIME DURATION (countAnnotationGraphs): ' + (System.currentTimeMillis()-start));
 		totalCount;	
 	}
 	
