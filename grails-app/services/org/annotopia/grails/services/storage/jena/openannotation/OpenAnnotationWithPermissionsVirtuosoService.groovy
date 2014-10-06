@@ -69,6 +69,13 @@ class OpenAnnotationWithPermissionsVirtuosoService {
 		return true;
 	}
 	
+	/**
+	 * Injects the SPARQL query with a fragments that enable text search on the
+	 * title of the bibliographic data of the annotated resource.
+	 * @param queryBuffer	The buffer for constructing the query
+	 * @param text			The text to search
+	 * @return The query with or without the new fragment for searching the title.
+	 */
 	private getTargetTitleFilter(queryBuffer, text) {
 		if(text==null) {
 			return false;
@@ -77,6 +84,13 @@ class OpenAnnotationWithPermissionsVirtuosoService {
 		}
 	}
 	
+	/**
+	 * Injects the SPARQL query with a fragments that enable the search only
+	 * for annotation with the specified source.
+	 * @param queryBuffer	The buffer for constructing the query
+	 * @param sources		The list of allowed sources (usually clients)
+	 * @return The query with or without the new fragment for filtering on sources.
+	 */
 	private getSourcesFilter(queryBuffer, sources) {
 		if(sources!=null && sources.size()>0) {
 			boolean first = false;
@@ -90,6 +104,13 @@ class OpenAnnotationWithPermissionsVirtuosoService {
 		}
 	}
 	
+	/**
+	 * Injects the SPARQL query with a fragments that enable the search only
+	 * for annotation with the specified motivations.
+	 * @param queryBuffer	The buffer for constructing the query
+	 * @param motivations	The list of allowed motivations
+	 * @return The query with or without the new fragment for filtering on motivations.
+	 */
 	private getMotivationsFilter(queryBuffer, motivations) {
 		if(motivations!=null && motivations.size()>0) {
 			boolean first = false;
