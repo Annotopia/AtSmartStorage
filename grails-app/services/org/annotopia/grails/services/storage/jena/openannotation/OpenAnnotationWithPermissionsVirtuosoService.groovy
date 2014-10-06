@@ -175,12 +175,11 @@ class OpenAnnotationWithPermissionsVirtuosoService {
 	 * @return The count of the available annotations meeting the psecified criteria.
 	 */
 	public int countAnnotationGraphs(apiKey, user, List<String> tgtUrls, tgtFgt, text, permissions, sources, motivations, inclusions) {
+		log.debug('[' + apiKey + '] Counting total accessible Annotation Graphs');
 		long start = System.currentTimeMillis();
-		log.info ('[' + apiKey + '] Counting Annotation Graphs');
+		
 		StringBuffer queryBuffer = new StringBuffer();
-
 		if(!getTargetFilter(queryBuffer, tgtUrls, tgtFgt)) return 0;
-
 		getReadPermissionQueryChunk(queryBuffer, user.id);
 		getSourcesFilter(queryBuffer, sources);
 		getMotivationsFilter(queryBuffer, motivations);
@@ -191,26 +190,36 @@ class OpenAnnotationWithPermissionsVirtuosoService {
 				queryBuffer.toString() +
 			"}}";
 		
-		log.info ('[' + apiKey + '] Query total accessible Annotation Graphs: ' + queryString);
+		log.trace('[' + apiKey + '] Query total accessible Annotation Graphs: ' + queryString);
 		int totalCount = jenaVirtuosoStoreService.count(apiKey, queryString);
-		log.info ('[' + apiKey + '] Total accessible Annotation Graphs: ' + totalCount);
+		log.debug('[' + apiKey + '] Total accessible Annotation Graphs: ' + totalCount);
 		log.trace('[' + apiKey + '] TIME DURATION (countAnnotationGraphs): ' + (System.currentTimeMillis()-start));
 		totalCount;	
 	}
 	
-	
+	/**
+	 * Returns the names of all the graphs meeting the search criteria.
+	 * @param apiKey		The system api key
+	 * @param user			The user that performed the request
+	 * @param userIds		All the known IDs for the requesting user
+	 * @param max			The max number of results (pagination)
+	 * @param offset		The results offset (pagination)
+	 * @param tgtUrls		The target urls if an
+	 * @param tgtFgt		If to include fragments or not
+	 * @param text			The text to search
+	 * @param permissions	The permissions facet values
+	 * @param sources		The sources facet values (originator system)
+	 * @param motivations	The motivations facet values
+	 * @param inclusions	The inclusions facet values
+	 * @return 
+	 */
 	public Set<String> retrieveAnnotationGraphsNames(apiKey, user, userIds, max, offset, tgtUrls, tgtFgt, text, permissions, sources, motivations, inclusions) {
-		log.info  '[' + apiKey + '] Retrieving annotation graphs names ' +
-			' max:' + max +
-			' offset:' + offset +
-			' tgtUrl:' + tgtUrls +
-			' tgtFgt:' + tgtFgt;
-			
+		log.debug('[' + apiKey + '] Retrieving annotation graphs names ' +
+			' max:' + max + ' offset:' + offset + ' tgtUrl:' + tgtUrls + ' tgtFgt:' + tgtFgt);
+		long start = System.currentTimeMillis();
+		
 		StringBuffer queryBuffer = new StringBuffer();
- 
 		if(!getTargetFilter(queryBuffer, tgtUrls, tgtFgt)) return 0;
-		//if(!getTargetTitleFilter(queryBuffer, tgtUrls, tgtFgt)) return 0;
-
 		getReadPermissionQueryChunk(queryBuffer, user.id);
 		getSourcesFilter(queryBuffer, sources);
 		getMotivationsFilter(queryBuffer, motivations);
@@ -221,8 +230,9 @@ class OpenAnnotationWithPermissionsVirtuosoService {
 			queryBuffer.toString() +
 		"}}";
 
-		log.info('[' + apiKey + '] Query Annotation Graphs: ' + queryString);
+		log.trace('[' + apiKey + '] Query Annotation Graphs: ' + queryString);
 		Set<String> graphs = jenaVirtuosoStoreService.retrieveGraphsNames(apiKey, queryString);
+		log.trace('[' + apiKey + '] TIME DURATION (retrieveAnnotationGraphsNames): ' + (System.currentTimeMillis()-start));
 		graphs
 	}
 	
