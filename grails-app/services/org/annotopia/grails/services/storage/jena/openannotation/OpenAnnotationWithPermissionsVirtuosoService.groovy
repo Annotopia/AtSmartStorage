@@ -282,8 +282,27 @@ class OpenAnnotationWithPermissionsVirtuosoService {
 	
 	public int countAnnotationGraphs(apiKey, user, tgtUrl, tgtFgt, permissions, motivations) {
 
-		def buffer = getReadPermissionQueryChunk(user.id);
+		log.debug('[' + apiKey + '] Counting accessible annotation graphs ' +
+			 tgtUrl + ' tgtFgt:' + tgtFgt);
+		long start = System.currentTimeMillis();
 		
+		StringBuffer queryBuffer = new StringBuffer();
+		getReadPermissionQueryChunk(queryBuffer, user.id);
+		getMotivationsFilter(queryBuffer, motivations);
+		
+		String queryString = "PREFIX oa: <http://www.w3.org/ns/oa#> PREFIX  cnt: <http://www.w3.org/2011/content#> PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>  PREFIX dct:  <http://purl.org/dc/terms/> " +
+		"SELECT (COUNT(DISTINCT ?g) AS ?total) WHERE { GRAPH ?g { ?s a oa:Annotation. " +
+			queryBuffer.toString() +
+		"}}";
+		
+		log.trace('[' + apiKey + '] Query Accessible Annotation Graphs: ' + queryString);
+		int totalCount = jenaVirtuosoStoreService.count(apiKey, queryString);
+		log.trace('[' + apiKey + '] TIME DURATION (retrieveAnnotationGraphsNames): ' + (System.currentTimeMillis()-start));
+		totalCount
+		
+		//def buffer = getReadPermissionQueryChunk(user.id);
+		
+		/*
 		String queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> " +
 			"SELECT (COUNT(DISTINCT ?g) AS ?total) WHERE { GRAPH ?g { ?s a oa:Annotation. " + buffer + " }}";		
 		if(tgtUrl!=null && tgtFgt=="false") {
@@ -296,10 +315,67 @@ class OpenAnnotationWithPermissionsVirtuosoService {
 		}	
 		
 		println '@@@@@@@@ ' + queryString
+		
 			
 		int totalCount = jenaVirtuosoStoreService.count(apiKey, queryString);
 		log.info('[' + apiKey + '] Total accessible Annotation Graphs: ' + totalCount);
 		totalCount;
+		*/
+	}
+	
+	public Set<String> retrieveAnnotationGraphsNames(apiKey, user, userIds, max, offset, tgtUrl, tgtFgt, permissions, motivations) {
+		log.info  '[' + apiKey + '] Retrieving annotation graphs names ' +
+			' max:' + max +
+			' offset:' + offset +
+			' tgtUrl:' + tgtUrl +
+			' tgtFgt:' + tgtFgt;
+		long start = System.currentTimeMillis();
+		
+		StringBuffer queryBuffer = new StringBuffer();
+		getReadPermissionQueryChunk(queryBuffer, user.id);
+		getMotivationsFilter(queryBuffer, motivations);
+		
+		String queryString = "PREFIX oa: <http://www.w3.org/ns/oa#> PREFIX  cnt: <http://www.w3.org/2011/content#> PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>  PREFIX dct:  <http://purl.org/dc/terms/> " +
+		"SELECT DISTINCT ?g WHERE { GRAPH ?g { ?s a oa:Annotation. " +
+			queryBuffer.toString() +
+		"}}";
+
+		log.trace('[' + apiKey + '] Query Annotation Graphs: ' + queryString);
+		Set<String> graphs = jenaVirtuosoStoreService.retrieveGraphsNames(apiKey, queryString);
+		log.trace('[' + apiKey + '] TIME DURATION (retrieveAnnotationGraphsNames): ' + (System.currentTimeMillis()-start));
+		graphs
+			/*
+		def buffer = getReadPermissionQueryChunk(userKey);
+			
+//		def buffer = "?x <http://purl.org/annotopia#read> <" + userKey + ">.";
+//		StringBuffer sb = new StringBuffer();
+//		if(userIds!=null && userIds.size()>0) {
+//			sb.append("{");
+//			sb.append("?x <http://purl.org/annotopia#read> <" + userKey + ">.")
+//			sb.append("} UNION {")
+//			userIds.eachWithIndex{ userId, index ->
+//				sb.append("?x <http://purl.org/annotopia#read> <user:" + userId + ">.")
+//				if(index<userIds.size()-1) sb.append(" UNION ");
+//			}
+//			sb.append("}");
+//			buffer = sb.toString();
+//		}
+
+		String queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> " +
+			"SELECT DISTINCT ?g WHERE { GRAPH ?g { ?s a oa:Annotation. " + buffer + " }} LIMIT " + max + " OFFSET " + offset;
+
+		if(tgtUrl!=null && tgtFgt=="false") {
+			queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> " +
+				"SELECT DISTINCT ?g WHERE { GRAPH ?g { ?s a oa:Annotation . ?s oa:hasTarget <" + tgtUrl + ">. " + buffer + "  }} LIMIT " + max + " OFFSET " + offset;
+		} else if(tgtUrl!=null && tgtFgt=="true") {
+			queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> " +
+				"SELECT DISTINCT ?g WHERE { GRAPH ?g { ?s a oa:Annotation . {?s oa:hasTarget <" + tgtUrl +
+				"> } UNION {?s oa:hasTarget ?t. ?t a oa:SpecificResource. ?t oa:hasSource <" + tgtUrl + ">.}  " + buffer + " }} LIMIT " + max + " OFFSET " + offset;
+		}
+	
+		Set<String> graphs = jenaVirtuosoStoreService.retrieveGraphsNames(apiKey, queryString);
+		graphs
+		*/
 	}
 	
 	public int countAnnotationSetGraphs(apiKey, tgtUrl, tgtFgt) {
@@ -370,44 +446,7 @@ class OpenAnnotationWithPermissionsVirtuosoService {
 		enabled
 	}
 	
-	public Set<String> retrieveAnnotationGraphsNames(apiKey, userKey, userIds, max, offset, tgtUrl, tgtFgt, permissions, motivations) {
-		log.info  '[' + apiKey + '] Retrieving annotation graphs names ' +
-			' max:' + max +
-			' offset:' + offset +
-			' tgtUrl:' + tgtUrl +
-			' tgtFgt:' + tgtFgt;
-			
-		def buffer = getReadPermissionQueryChunk(userKey);
-			
-//		def buffer = "?x <http://purl.org/annotopia#read> <" + userKey + ">.";
-//		StringBuffer sb = new StringBuffer();
-//		if(userIds!=null && userIds.size()>0) {
-//			sb.append("{");
-//			sb.append("?x <http://purl.org/annotopia#read> <" + userKey + ">.") 
-//			sb.append("} UNION {")
-//			userIds.eachWithIndex{ userId, index ->
-//				sb.append("?x <http://purl.org/annotopia#read> <user:" + userId + ">.")
-//				if(index<userIds.size()-1) sb.append(" UNION ");
-//			}
-//			sb.append("}");
-//			buffer = sb.toString();
-//		} 
-
-		String queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> " +
-			"SELECT DISTINCT ?g WHERE { GRAPH ?g { ?s a oa:Annotation. " + buffer + " }} LIMIT " + max + " OFFSET " + offset;
-
-		if(tgtUrl!=null && tgtFgt=="false") {
-			queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> " +
-				"SELECT DISTINCT ?g WHERE { GRAPH ?g { ?s a oa:Annotation . ?s oa:hasTarget <" + tgtUrl + ">. " + buffer + "  }} LIMIT " + max + " OFFSET " + offset;
-		} else if(tgtUrl!=null && tgtFgt=="true") {
-			queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> " +
-				"SELECT DISTINCT ?g WHERE { GRAPH ?g { ?s a oa:Annotation . {?s oa:hasTarget <" + tgtUrl +
-				"> } UNION {?s oa:hasTarget ?t. ?t a oa:SpecificResource. ?t oa:hasSource <" + tgtUrl + ">.}  " + buffer + " }} LIMIT " + max + " OFFSET " + offset;
-		}
 	
-		Set<String> graphs = jenaVirtuosoStoreService.retrieveGraphsNames(apiKey, queryString);
-		graphs
-	}
 	
 	public Set<String> retrieveAnnotationSetsGraphsNames(apiKey, max, offset, tgtUrl, tgtFgt) {
 		log.info  '[' + apiKey + '] Retrieving annotation sets graphs names ' +

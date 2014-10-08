@@ -92,7 +92,7 @@ class OpenAnnotationWithPermissionsStorageService {
 		def userIds = usersService.getUserAgentIdentifiers(user.id);
 		
 		Set<Dataset> datasets = new HashSet<Dataset>();
-		Set<String> graphNames = openAnnotationWithPermissionsVirtuosoService.retrieveAnnotationGraphsNames(apiKey, user.id, userIds, max, offset, tgtUrl, tgtFgt, permissions, motivations);
+		Set<String> graphNames = openAnnotationWithPermissionsVirtuosoService.retrieveAnnotationGraphsNames(apiKey, user, userIds, max, offset, tgtUrl, tgtFgt, permissions, motivations);
 		if(graphNames!=null) {
 			graphNames.each { graphName ->
 				Dataset ds = jenaVirtuosoStoreService.retrieveGraph(apiKey, graphName);
