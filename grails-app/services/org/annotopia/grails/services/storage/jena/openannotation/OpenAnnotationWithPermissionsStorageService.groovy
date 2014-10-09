@@ -35,6 +35,7 @@ import org.apache.jena.riot.RDFLanguages
 import com.hp.hpl.jena.query.Dataset
 import com.hp.hpl.jena.query.DatasetFactory
 import com.hp.hpl.jena.rdf.model.Model
+import com.hp.hpl.jena.rdf.model.NodeIterator
 import com.hp.hpl.jena.rdf.model.Property
 import com.hp.hpl.jena.rdf.model.Resource
 import com.hp.hpl.jena.rdf.model.ResourceFactory

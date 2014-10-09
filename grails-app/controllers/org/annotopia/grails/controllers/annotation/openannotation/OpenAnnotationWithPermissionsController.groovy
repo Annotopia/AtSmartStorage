@@ -237,9 +237,9 @@ class OpenAnnotationWithPermissionsController extends BaseController {
 				} else {
 					if(contextJson==null) {
 						if(outCmd==OUTCMD_CONTEXT) {
-							contextJson = JsonUtils.fromInputStream(callExternalUrl(apiKey, grailsApplication.config.annotopia.jsonld.openannotation.context));
+							contextJson = JsonUtils.fromInputStream(callExternalUrl(apiKey, grailsApplication.config.annotopia.jsonld.annotopia.context));
 						} else if(outCmd==OUTCMD_FRAME) {
-							contextJson = JsonUtils.fromInputStream(callExternalUrl(apiKey,grailsApplication.config.annotopia.jsonld.openannotation.framing));						
+							contextJson = JsonUtils.fromInputStream(callExternalUrl(apiKey,grailsApplication.config.annotopia.jsonld.annotopia.framing));						
 						}
 					}
 				
@@ -620,9 +620,9 @@ class OpenAnnotationWithPermissionsController extends BaseController {
 		} else {
 			if(contextJson==null) {
 				if(outCmd==OUTCMD_CONTEXT) {
-					contextJson = JsonUtils.fromInputStream(callExternalUrl(apiKey, grailsApplication.config.annotopia.jsonld.openannotation.context));
+					contextJson = JsonUtils.fromInputStream(callExternalUrl(apiKey, grailsApplication.config.annotopia.jsonld.annotopia.context));
 				} else if(sizeDataset==1 && outCmd==OUTCMD_FRAME) {
-					contextJson = JsonUtils.fromInputStream(callExternalUrl(apiKey, grailsApplication.config.annotopia.jsonld.openannotation.framing));
+					contextJson = JsonUtils.fromInputStream(callExternalUrl(apiKey, grailsApplication.config.annotopia.jsonld.annotopia.framing));
 				}
 			}
 		
