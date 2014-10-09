@@ -370,6 +370,7 @@ class OpenAnnotationControllerTests extends GroovyTestCase {
 		
 		log.info("Verifying annotation id");
 		def respAnnUri = resp['result']['items'][0]['@graph'][0]['@id']
+		log.info( resp['result']['items'][0]['@graph'][0]['@id']);
 		assertEquals annUri, respAnnUri
 		
 		log.info("Verifying annotation motivation");
@@ -451,6 +452,7 @@ class OpenAnnotationControllerTests extends GroovyTestCase {
 		resp = JSON.parse(response.text);
 		
 		log.info("Verifying annotation id");
+		log.info(resp['result']['items'][0]['@graph'][0]['@id']);
 		def respAnnUri = resp['result']['items'][0]['@graph'][0]['@id']
 		assertEquals annUri, respAnnUri
 		

@@ -200,7 +200,7 @@ class OpenAnnotationWithPermissionsController extends BaseController {
 							Object compact = JsonLdProcessor.compact(JsonUtils.fromString(baos.toString()), contextJson,  new JsonLdOptions());
 							response.outputStream << JsonUtils.toPrettyString(compact)
 						}  else if(outCmd==OUTCMD_FRAME) {
-							Object framed =  JsonLdProcessor.frame(JsonUtils.fromString(baos.toString()), contextJson, new JsonLdOptions());
+							Object framed =  JsonLdProcessor.frame(JsonUtils.fromString(baos.toString().replace('"@id" : "urn:x-arq:DefaultGraphNode",','')), contextJson, new JsonLdOptions());
 							response.outputStream << JsonUtils.toPrettyString(framed)
 						}
 					}
@@ -255,7 +255,7 @@ class OpenAnnotationWithPermissionsController extends BaseController {
 						Object compact = JsonLdProcessor.compact(JsonUtils.fromString(baos.toString()), contextJson, new JsonLdOptions());
 						response.outputStream << JsonUtils.toPrettyString(compact)
 					}  else if(outCmd==OUTCMD_FRAME) {
-						Object framed =  JsonLdProcessor.frame(JsonUtils.fromString(baos.toString()),contextJson, new JsonLdOptions());
+						Object framed =  JsonLdProcessor.frame(JsonUtils.fromString(baos.toString().replace('"@id" : "urn:x-arq:DefaultGraphNode",','')),contextJson, new JsonLdOptions());
 						response.outputStream << JsonUtils.toPrettyString(framed)
 					}
 				} 			
@@ -633,7 +633,7 @@ class OpenAnnotationWithPermissionsController extends BaseController {
 				Object compact = JsonLdProcessor.compact(JsonUtils.fromString(baos.toString()), contextJson, new JsonLdOptions());
 				response.outputStream << JsonUtils.toPrettyString(compact)
 			} else if(sizeDataset==1 && outCmd==OUTCMD_FRAME) {
-				Object framed =  JsonLdProcessor.frame(JsonUtils.fromString(baos.toString()), contextJson, new JsonLdOptions());
+				Object framed =  JsonLdProcessor.frame(JsonUtils.fromString(baos.toString().replace('"@id" : "urn:x-arq:DefaultGraphNode",','')), contextJson, new JsonLdOptions());
 				response.outputStream << JsonUtils.toPrettyString(framed)
 			} 
 		}
