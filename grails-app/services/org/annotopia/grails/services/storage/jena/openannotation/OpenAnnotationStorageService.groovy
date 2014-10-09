@@ -342,7 +342,6 @@ class OpenAnnotationStorageService {
 			
 			// TODO Tags management
 			// TODO Extension points
-			println '?????????????????'
 			log.trace "*******1"
 			
 			// Minting of the URI for the Named Graph that will wrap the
@@ -365,7 +364,6 @@ class OpenAnnotationStorageService {
 				}
 			}
 			
-			println '=+++++++++' + creationDataset;
 			log.trace "*******2"
 			
 			// Creation of the metadata for the Graph wrapper
@@ -387,7 +385,6 @@ class OpenAnnotationStorageService {
 			// If multiple graphs are detected, the logic is different as there can be one 
 		    // or more graphs as bodies. 
 		    // NOTE: This is tested right now only for a single body
-			println '?????????????????dfsadfsas'
 			openAnnotationUtilsService.detectTargetIdentifiers(apiKey, dataset, identifiers);
 		
 			// Detecting Specific Resources
