@@ -201,9 +201,13 @@ class OpenAnnotationWithPermissionsVirtuosoService {
 		// Groups identifiers
 		def groups = groupsService.listUsersGroups(user);
 		if(groups!=null && groups.size()>0) {
+			
 			groups.eachWithIndex{ group, index ->
-				if(first) sb.append(" UNION ");
-				sb.append("{?x <http://purl.org/annotopia#read> ?agent . FILTER (str(?agent)=\"group:" + group.id + "\")}");
+				def groupIdentifiers = groupsService.getGroupAgentIdentifiers(group.id);
+				groupIdentifiers.each{ groupId ->
+					if(first) sb.append(" UNION ");
+					sb.append("{?x <http://purl.org/annotopia#read> ?agent . FILTER (str(?agent)=\"group:" + groupId + "\")}");
+				}
 				first = true;
 			}
 			
