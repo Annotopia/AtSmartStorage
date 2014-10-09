@@ -83,7 +83,5 @@
    }],
    "createdBy" : { 
       "@type": ["foaf:Person","prov:Software"]
-   },
-  "permissions": {
-  }
+   }
 }
