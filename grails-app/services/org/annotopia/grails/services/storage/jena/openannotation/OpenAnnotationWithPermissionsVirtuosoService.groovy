@@ -38,6 +38,7 @@ class OpenAnnotationWithPermissionsVirtuosoService {
 
 	def grailsApplication
 	def usersService;
+	def groupsService;
 	def jenaVirtuosoStoreService
 	
 	/**
@@ -178,23 +179,38 @@ class OpenAnnotationWithPermissionsVirtuosoService {
 	 * @param userKey
 	 * @return
 	 */
-	private String getReadPermissionQueryChunk(queryBuffer, def userKey) {
-		def userIds = usersService.getUserAgentIdentifiers(userKey);
-		def buffer = "{?x <http://purl.org/annotopia#read> <" + userKey + ">.}";
+	private void getReadPermissionQueryChunk(queryBuffer, def user) {
+		def userIds = usersService.getUserAgentIdentifiers(user.id);
+		def groupsIds = groupsService.listUserGroups(user);
+
+		boolean first = false;
+		def buffer = "{?x <http://purl.org/annotopia#read> <" + user.id + ">.}";
 		StringBuffer sb = new StringBuffer();
+		sb.append("{");
+		
+		// User identifiers
+		sb.append("{?x <http://purl.org/annotopia#read> <" + user.id + ">.}")
+		
 		if(userIds!=null && userIds.size()>0) {
-			sb.append("{{");
-			sb.append("?x <http://purl.org/annotopia#read> <" + userKey + ">.")
-			sb.append("} UNION {")
 			userIds.eachWithIndex{ userId, index ->
-				sb.append("?x <http://purl.org/annotopia#read> <user:" + userId + ">.")
-				if(index<userIds.size()-1) sb.append(" UNION ");
+				sb.append(" UNION ")
+				sb.append("{?x <http://purl.org/annotopia#read> <user:" + userId + ">.}")
+				first = true;
 			}
-			sb.append("}}");
-			buffer = sb.toString();
-			queryBuffer.append(buffer);
 		}
-		return buffer;
+
+		// Groups identifiers
+		if(groupsIds!=null && groupsIds.size()>0) {
+			groupsIds.eachWithIndex{ groupId, index ->
+				if(first) sb.append(" UNION ");
+				sb.append("{?x <http://purl.org/annotopia#read> <group:" + groupId + ">.}")
+				first = true;
+			}
+			
+		}	
+		
+		sb.append("}");
+		queryBuffer.append(sb.toString());
 	}
 	
 	/**
@@ -217,7 +233,7 @@ class OpenAnnotationWithPermissionsVirtuosoService {
 		
 		StringBuffer queryBuffer = new StringBuffer();
 		if(!getTargetFilter(queryBuffer, tgtUrls, tgtFgt)) return 0;
-		getReadPermissionQueryChunk(queryBuffer, user.id);
+		getReadPermissionQueryChunk(queryBuffer, user);
 		getSourcesFilter(queryBuffer, sources);
 		getMotivationsFilter(queryBuffer, motivations);
 		getTextSearchFilter(queryBuffer, text, motivations, inclusions);
@@ -257,7 +273,7 @@ class OpenAnnotationWithPermissionsVirtuosoService {
 		
 		StringBuffer queryBuffer = new StringBuffer();
 		if(!getTargetFilter(queryBuffer, tgtUrls, tgtFgt)) return 0;
-		getReadPermissionQueryChunk(queryBuffer, user.id);
+		getReadPermissionQueryChunk(queryBuffer, user);
 		getSourcesFilter(queryBuffer, sources);
 		getMotivationsFilter(queryBuffer, motivations);
 		getTextSearchFilter(queryBuffer, text, motivations, inclusions);
@@ -287,7 +303,7 @@ class OpenAnnotationWithPermissionsVirtuosoService {
 		long start = System.currentTimeMillis();
 		
 		StringBuffer queryBuffer = new StringBuffer();
-		getReadPermissionQueryChunk(queryBuffer, user.id);
+		getReadPermissionQueryChunk(queryBuffer, user);
 		getMotivationsFilter(queryBuffer, motivations);
 		
 		String queryString = "PREFIX oa: <http://www.w3.org/ns/oa#> PREFIX  cnt: <http://www.w3.org/2011/content#> PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>  PREFIX dct:  <http://purl.org/dc/terms/> " +
@@ -332,7 +348,7 @@ class OpenAnnotationWithPermissionsVirtuosoService {
 		long start = System.currentTimeMillis();
 		
 		StringBuffer queryBuffer = new StringBuffer();
-		getReadPermissionQueryChunk(queryBuffer, user.id);
+		getReadPermissionQueryChunk(queryBuffer, user);
 		getMotivationsFilter(queryBuffer, motivations);
 		
 		String queryString = "PREFIX oa: <http://www.w3.org/ns/oa#> PREFIX  cnt: <http://www.w3.org/2011/content#> PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>  PREFIX dct:  <http://purl.org/dc/terms/> " +
