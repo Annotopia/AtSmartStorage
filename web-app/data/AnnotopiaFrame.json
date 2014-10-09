@@ -63,7 +63,12 @@
 	    "hasChanged"    : "at:hasChanged",
 	    "annotations" 	: {"@type":"@id", "@id" : "at:annotations"},
 	    
-	    "permissions"	: "at:permissions"
+	    "permissions"	: "at:permissions",
+	    "read"			: "at:read",
+	    "admin"			: "at:admin",
+	    "update"		: "at:update",
+	    "delete"		: "at:delete",
+	    "comment"		: "at:comment"
   },
    "@type": "at:AnnotationSet",
    "annotations": [{
@@ -78,5 +83,7 @@
    }],
    "createdBy" : { 
       "@type": ["foaf:Person","prov:Software"]
-   }
+   },
+  "permissions": {
+  }
 }
