@@ -216,7 +216,6 @@ class OpenAnnotationController extends BaseController {
 							Object compact = JsonLdProcessor.compact(JsonUtils.fromString(baos.toString()), contextJson,  new JsonLdOptions());
 							response.outputStream << JsonUtils.toPrettyString(compact)
 						}  else if(outCmd==OUTCMD_FRAME) {
-						println 'dsafadsfsdfafasdf' + baos.toString().replace('"@id" : "urn:x-arq:DefaultGraphNode",','')
 							Object framed =  JsonLdProcessor.frame(JsonUtils.fromString(baos.toString().replace('"@id" : "urn:x-arq:DefaultGraphNode",','')), contextJson, new JsonLdOptions());
 							response.outputStream << JsonUtils.toPrettyString(framed)
 						}
