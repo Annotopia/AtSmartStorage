@@ -85,7 +85,8 @@ class OpenAnnotationWithPermissionsVirtuosoService {
 		if(text==null) {
 			return false;
 		} else {
-			queryBuffer.append("{?s oa:hasTarget ?t2. ?t2 dct:title ?title1 FILTER regex(str(?title1), \""+ text + "\", \"i\")} UNION {?s oa:hasTarget ?t. ?t a oa:SpecificResource. ?t oa:hasSource ?s1. ?s1 dct:title ?title2 FILTER regex(str(?title2), \""+ text + "\", \"i\")}")
+			//queryBuffer.append("{?s oa:hasTarget ?t2. ?t2 dct:title ?title1 FILTER regex(str(?title1), \""+ text + "\", \"i\")} UNION {?s oa:hasTarget ?t. ?t a oa:SpecificResource. ?t oa:hasSource ?s1. ?s1 dct:title ?title2 FILTER regex(str(?title2), \""+ text + "\", \"i\")}")
+			queryBuffer.append("{?s oa:hasTarget ?t2. ?t2 dct:title ?title1 FILTER contains(?title1, \""+ text + "\")} UNION {?s oa:hasTarget ?t. ?t a oa:SpecificResource. ?t oa:hasSource ?s1. ?s1 dct:title ?title2 FILTER contains(?title2, \""+ text + "\")}")
 		}
 	}
 	
@@ -101,7 +102,8 @@ class OpenAnnotationWithPermissionsVirtuosoService {
 			boolean first = false;
 			sources.each { source ->
 				if(first) queryBuffer.append(" UNION ");
-				if(source!='others' && source!='unspecified') queryBuffer.append("{ ?s oa:serializedBy ?software. FILTER (str(?software) = 'urn:application:" + source + "') }")
+				//if(source!='others' && source!='unspecified') queryBuffer.append("{ ?s oa:serializedBy ?software. FILTER (str(?software) = 'urn:application:" + source + "') }")
+				if(source!='others' && source!='unspecified') queryBuffer.append("{ ?s oa:serializedBy <urn:application:" + source + "> }")
 				else if(source=='other') {}
 				else queryBuffer.append("{ ?s a oa:Annotation . FILTER NOT EXISTS { ?s oa:serializedBy ?m. }}");
 				first=true;
@@ -121,7 +123,8 @@ class OpenAnnotationWithPermissionsVirtuosoService {
 			boolean first = false;
 			motivations.each { motivation ->
 				if(first) queryBuffer.append(" UNION ");
-				if(motivation!='unmotivated') queryBuffer.append("{ ?s oa:motivatedBy ?motivation. FILTER (str(?motivation) = 'http://www.w3.org/ns/oa#" + motivation + "') }")
+				//if(motivation!='unmotivated') queryBuffer.append("{ ?s oa:motivatedBy ?motivation. FILTER (str(?motivation) = 'http://www.w3.org/ns/oa#" + motivation + "') }")
+				if(motivation!='unmotivated') queryBuffer.append("{ ?s oa:motivatedBy <http://www.w3.org/ns/oa#" + motivation + "> }")
 				else queryBuffer.append("{ ?s a oa:Annotation . FILTER NOT EXISTS { ?s oa:motivatedBy ?m. }}");
 				first=true;
 			}
@@ -155,17 +158,20 @@ class OpenAnnotationWithPermissionsVirtuosoService {
 	}
 	
 	private void getEmbeddedTextualBodyTextFilter(queryBuffer, text, motivations) {
-		queryBuffer.append("{ ?s oa:hasBody ?b1. ?b1 cnt:chars ?content. FILTER regex(?content, \"" + text + "\", \"i\")  }");
+		//queryBuffer.append("{ ?s oa:hasBody ?b1. ?b1 cnt:chars ?content. FILTER regex(?content, \"" + text + "\", \"i\")  }");
+		queryBuffer.append("{ ?s oa:hasBody ?b1. ?b1 cnt:chars ?content. FILTER contains(UCASE(str(?content)), \"" + text.toUpperCase() + "\")  }");
 	}
 	
 	private void getSemanticTagTextFilter(queryBuffer, text, motivations) {
-		queryBuffer.append("{ ?s oa:hasBody ?b2. ?b2 rdfs:label ?content. FILTER regex(?content, \"" + text + "\", \"i\")  }");
+		//queryBuffer.append("{ ?s oa:hasBody ?b2. ?b2 rdfs:label ?content. FILTER regex(?content, \"" + text + "\", \"i\")  }");
+		queryBuffer.append("{ ?s oa:hasBody ?b2. ?b2 rdfs:label ?content. FILTER contains(UCASE(str(?content)), \"" + text.toUpperCase() + "\")  }");
 	}
 	
 	private void getHighligthTextFilter(queryBuffer, text, motivations) {
 		if(motivations!=null && motivations.size()>0 && ("highlighting" in motivations)) {
 			queryBuffer.append(" UNION ");
-			queryBuffer.append("{ ?s oa:motivatedBy ?motivation1. FILTER (str(?motivation1) = 'http://www.w3.org/ns/oa#highlighting'). ?s oa:hasTarget ?t1. ?t1 oa:hasSelector ?selector. ?selector a oa:TextQuoteSelector. ?selector oa:exact ?exact. FILTER regex(?exact, \"" + text + "\", \"i\")  }");
+			//queryBuffer.append("{ ?s oa:motivatedBy ?motivation1. FILTER (str(?motivation1) = 'http://www.w3.org/ns/oa#highlighting'). ?s oa:hasTarget ?t1. ?t1 oa:hasSelector ?selector. ?selector a oa:TextQuoteSelector. ?selector oa:exact ?exact. FILTER regex(?exact, \"" + text + "\", \"i\")  }");
+			queryBuffer.append("{ ?s oa:motivatedBy <http://www.w3.org/ns/oa#highlighting>. ?s oa:hasTarget ?t1. ?t1 oa:hasSelector ?selector. ?selector a oa:TextQuoteSelector. ?selector oa:exact ?exact. FILTER contains(?exact, \"" + text + "\")  }");
 		}
 	}
 
@@ -194,7 +200,8 @@ class OpenAnnotationWithPermissionsVirtuosoService {
 			if(userIds!=null && userIds.size()>0) {
 				userIds.eachWithIndex{ userId, index ->
 					sb.append(" UNION ")
-					sb.append("{?x <http://purl.org/annotopia#read> ?agent . FILTER (str(?agent)=\"user:" + userId + "\")}");
+					//sb.append("{?x <http://purl.org/annotopia#read> ?agent . FILTER (str(?agent)=\"user:" + userId + "\")}");
+					sb.append("{?x <http://purl.org/annotopia#read> ?agent . FILTER (contains(?agent, \"user:" + userId + "\"))}");
 					first = true;
 				}
 			}
