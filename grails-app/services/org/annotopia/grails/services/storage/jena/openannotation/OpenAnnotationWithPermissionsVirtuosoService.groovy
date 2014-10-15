@@ -241,7 +241,7 @@ class OpenAnnotationWithPermissionsVirtuosoService {
 	 * @return The count of the available annotations meeting the psecified criteria.
 	 */
 	public int countAnnotationGraphs(apiKey, user, List<String> tgtUrls, tgtFgt, text, permissions, sources, motivations, inclusions) {
-		log.debug('[' + apiKey + '] Counting total accessible Annotation Graphs');
+		log.debug('[' + apiKey + '] Counting total search accessible Annotation Graphs');
 		long start = System.currentTimeMillis();
 		
 		StringBuffer queryBuffer = new StringBuffer();
@@ -258,7 +258,7 @@ class OpenAnnotationWithPermissionsVirtuosoService {
 		
 		log.trace('[' + apiKey + '] Query total accessible Annotation Graphs: ' + queryString);
 		int totalCount = jenaVirtuosoStoreService.count(apiKey, queryString);
-		log.debug('[' + apiKey + '] Total accessible Annotation Graphs: ' + totalCount);
+		log.debug('[' + apiKey + '] Total search accessible Annotation Graphs: ' + totalCount);
 		log.trace('[' + apiKey + '] TIME DURATION (countAnnotationGraphs): ' + (System.currentTimeMillis()-start));
 		totalCount;	
 	}
@@ -305,45 +305,45 @@ class OpenAnnotationWithPermissionsVirtuosoService {
 
 	public int countAnnotationGraphs(apiKey, user, tgtUrl, tgtFgt, permissions, motivations) {
 
-		log.debug('[' + apiKey + '] Counting accessible annotation graphs ' +
-			 tgtUrl + ' tgtFgt:' + tgtFgt);
+		log.debug('[' + apiKey + '] Counting total accessible Annotation Graphs');
 		long start = System.currentTimeMillis();
 		
 		StringBuffer queryBuffer = new StringBuffer();
-		getReadPermissionQueryChunk(queryBuffer, user);
+		if(!getTargetFilter(queryBuffer, tgtUrl, tgtFgt)) return 0;
+		getReadPermissionQueryChunk(queryBuffer, permissions, user);
 		getMotivationsFilter(queryBuffer, motivations);
 		
+		String queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> PREFIX  cnt: <http://www.w3.org/2011/content#> PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>  PREFIX dct:  <http://purl.org/dc/terms/> " +
+			"SELECT (COUNT(DISTINCT ?g) AS ?total) WHERE { GRAPH ?g { ?s a oa:Annotation. " +
+				queryBuffer.toString() +
+			"}}";
+		
+		log.trace('[' + apiKey + '] Query total accessible Annotation Graphs: ' + queryString);
+		int totalCount = jenaVirtuosoStoreService.count(apiKey, queryString);
+		log.debug('[' + apiKey + '] Total search accessible Annotation Graphs: ' + totalCount);
+		log.trace('[' + apiKey + '] TIME DURATION (countAnnotationGraphs): ' + (System.currentTimeMillis()-start));
+		totalCount;
+	}
+	
+	public Set<String> retrieveAnnotationGraphsNames(apiKey, user, userIds, max, offset, tgtUrls, tgtFgt, permissions, motivations, inclusions) {
+		log.debug('[' + apiKey + '] Retrieving annotation graphs names ' +
+			' max:' + max + ' offset:' + offset + ' tgtUrl:' + tgtUrls + ' tgtFgt:' + tgtFgt);
+		long start = System.currentTimeMillis();
+		
+		StringBuffer queryBuffer = new StringBuffer();
+		if(!getTargetFilter(queryBuffer, tgtUrls, tgtFgt)) return 0;
+		getReadPermissionQueryChunk(queryBuffer, permissions, user);
+		getMotivationsFilter(queryBuffer, motivations);
+			
 		String queryString = "PREFIX oa: <http://www.w3.org/ns/oa#> PREFIX  cnt: <http://www.w3.org/2011/content#> PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>  PREFIX dct:  <http://purl.org/dc/terms/> " +
-		"SELECT (COUNT(DISTINCT ?g) AS ?total) WHERE { GRAPH ?g { ?s a oa:Annotation. " +
+		"SELECT DISTINCT ?g WHERE { GRAPH ?g { ?s a oa:Annotation. " +
 			queryBuffer.toString() +
 		"}}";
-		
-		log.trace('[' + apiKey + '] Query Accessible Annotation Graphs: ' + queryString);
-		int totalCount = jenaVirtuosoStoreService.count(apiKey, queryString);
+
+		log.trace('[' + apiKey + '] Query Annotation Graphs: ' + queryString);
+		Set<String> graphs = jenaVirtuosoStoreService.retrieveGraphsNames(apiKey, queryString);
 		log.trace('[' + apiKey + '] TIME DURATION (retrieveAnnotationGraphsNames): ' + (System.currentTimeMillis()-start));
-		totalCount
-		
-		//def buffer = getReadPermissionQueryChunk(user.id);
-		
-		/*
-		String queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> " +
-			"SELECT (COUNT(DISTINCT ?g) AS ?total) WHERE { GRAPH ?g { ?s a oa:Annotation. " + buffer + " }}";		
-		if(tgtUrl!=null && tgtFgt=="false") {
-			queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> " +
-				"SELECT (COUNT(DISTINCT ?g) AS ?total) WHERE { GRAPH ?g { ?s a oa:Annotation . ?s oa:hasTarget <" + tgtUrl + ">. " + buffer + " }}";
-		} else if(tgtUrl!=null && tgtFgt=="true") {
-			queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> " +
-				"SELECT (COUNT(DISTINCT ?g) AS ?total) WHERE { GRAPH ?g { ?s a oa:Annotation .  {?s oa:hasTarget <" + tgtUrl +
-				"> } UNION {?s oa:hasTarget ?t. ?t a oa:SpecificResource. ?t oa:hasSource <" + tgtUrl + ">.} " + buffer + " }}";
-		}	
-		
-		println '@@@@@@@@ ' + queryString
-		
-			
-		int totalCount = jenaVirtuosoStoreService.count(apiKey, queryString);
-		log.info('[' + apiKey + '] Total accessible Annotation Graphs: ' + totalCount);
-		totalCount;
-		*/
+		graphs
 	}
 	
 	public Set<String> retrieveAnnotationGraphsNames(apiKey, user, userIds, max, offset, tgtUrl, tgtFgt, permissions, motivations) {
@@ -355,9 +355,10 @@ class OpenAnnotationWithPermissionsVirtuosoService {
 		long start = System.currentTimeMillis();
 		
 		StringBuffer queryBuffer = new StringBuffer();
-		getReadPermissionQueryChunk(queryBuffer, user);
+		if(!getTargetFilter(queryBuffer, tgtUrl, tgtFgt)) return 0;
+		getReadPermissionQueryChunk(queryBuffer, permissions, user);
 		getMotivationsFilter(queryBuffer, motivations);
-		
+			
 		String queryString = "PREFIX oa: <http://www.w3.org/ns/oa#> PREFIX  cnt: <http://www.w3.org/2011/content#> PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>  PREFIX dct:  <http://purl.org/dc/terms/> " +
 		"SELECT DISTINCT ?g WHERE { GRAPH ?g { ?s a oa:Annotation. " +
 			queryBuffer.toString() +
