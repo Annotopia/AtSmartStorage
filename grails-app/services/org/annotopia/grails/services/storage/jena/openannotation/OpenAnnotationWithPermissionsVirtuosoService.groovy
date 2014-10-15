@@ -179,7 +179,7 @@ class OpenAnnotationWithPermissionsVirtuosoService {
 	 * @param userKey
 	 * @return
 	 */
-	private void getReadPermissionQueryChunk(queryBuffer, def user) {
+	private void getReadPermissionQueryChunk(queryBuffer, def permissions, def user) {
 		
 		boolean first = false;
 		//def buffer = "{?x <http://purl.org/annotopia#read> ?agent . FILTER (str(?agent)=\"" + user.id + "\")}";
@@ -189,29 +189,38 @@ class OpenAnnotationWithPermissionsVirtuosoService {
 		// User identifiers
 		sb.append("{?x <http://purl.org/annotopia#read> ?agent . FILTER (str(?agent)=\"user:" + user.id + "\")}");
 		
-		def userIds = usersService.getUserAgentIdentifiers(user.id);
-		if(userIds!=null && userIds.size()>0) {
-			userIds.eachWithIndex{ userId, index ->
-				sb.append(" UNION ")
-				sb.append("{?x <http://purl.org/annotopia#read> ?agent . FILTER (str(?agent)=\"user:" + userId + "\")}");
-				first = true;
+		if(permissions.contains("private")) {
+			def userIds = usersService.getUserAgentIdentifiers(user.id);
+			if(userIds!=null && userIds.size()>0) {
+				userIds.eachWithIndex{ userId, index ->
+					sb.append(" UNION ")
+					sb.append("{?x <http://purl.org/annotopia#read> ?agent . FILTER (str(?agent)=\"user:" + userId + "\")}");
+					first = true;
+				}
 			}
 		}
 
 		// Groups identifiers
-		def groups = groupsService.listUsersGroups(user);
-		if(groups!=null && groups.size()>0) {
-			
-			groups.eachWithIndex{ group, index ->
-				def groupIdentifiers = groupsService.getGroupAgentIdentifiers(group.id);
-				groupIdentifiers.each{ groupId ->
-					if(first) sb.append(" UNION ");
-					sb.append("{?x <http://purl.org/annotopia#read> ?agent . FILTER (str(?agent)=\"group:" + groupId + "\")}");
+		if(permissions.contains("groups")) {
+			def groups = groupsService.listUsersGroups(user);
+			if(groups!=null && groups.size()>0) {		
+				groups.eachWithIndex{ group, index ->
+					def groupIdentifiers = groupsService.getGroupAgentIdentifiers(group.id);
+					groupIdentifiers.each{ groupId ->
+						if(first) sb.append(" UNION ");
+						sb.append("{?x <http://purl.org/annotopia#read> ?agent . FILTER (str(?agent)=\"group:" + groupId + "\")}");
+					}
+					first = true;
 				}
-				first = true;
-			}
-			
-		}	
+				
+			}	
+		}
+		
+		// Public option
+		if(permissions.contains("public")) {
+			if(first) sb.append(" UNION ");
+			sb.append("{FILTER NOT EXISTS {?x <http://purl.org/annotopia#read> ?agent .} }");
+		}
 		
 		sb.append("}");
 		queryBuffer.append(sb.toString());
@@ -237,7 +246,7 @@ class OpenAnnotationWithPermissionsVirtuosoService {
 		
 		StringBuffer queryBuffer = new StringBuffer();
 		if(!getTargetFilter(queryBuffer, tgtUrls, tgtFgt)) return 0;
-		getReadPermissionQueryChunk(queryBuffer, user);
+		getReadPermissionQueryChunk(queryBuffer, permissions, user);
 		getSourcesFilter(queryBuffer, sources);
 		getMotivationsFilter(queryBuffer, motivations);
 		getTextSearchFilter(queryBuffer, text, motivations, inclusions);
@@ -277,7 +286,7 @@ class OpenAnnotationWithPermissionsVirtuosoService {
 		
 		StringBuffer queryBuffer = new StringBuffer();
 		if(!getTargetFilter(queryBuffer, tgtUrls, tgtFgt)) return 0;
-		getReadPermissionQueryChunk(queryBuffer, user);
+		getReadPermissionQueryChunk(queryBuffer, permissions, user);
 		getSourcesFilter(queryBuffer, sources);
 		getMotivationsFilter(queryBuffer, motivations);
 		getTextSearchFilter(queryBuffer, text, motivations, inclusions);
@@ -293,13 +302,7 @@ class OpenAnnotationWithPermissionsVirtuosoService {
 		graphs
 	}
 	
-	
-	
-	
-	
-	
-	
-	
+
 	public int countAnnotationGraphs(apiKey, user, tgtUrl, tgtFgt, permissions, motivations) {
 
 		log.debug('[' + apiKey + '] Counting accessible annotation graphs ' +
