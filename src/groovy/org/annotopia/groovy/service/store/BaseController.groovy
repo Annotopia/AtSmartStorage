@@ -72,7 +72,13 @@ class BaseController {
 		return sb.toString();
 	}
 	
-	private InputStream callExternalUrl(def apiKey, String URL) {
+	/**
+	 * Method for calling external URLs with or without proxy.
+	 * @param agentKey 	The agent key for logging
+	 * @param URL		The external URL to call
+	 * @return The InputStream of the external URL.
+	 */
+	private InputStream callExternalUrl(def agentKey, String URL) {
 		Proxy httpProxy = null;
 		if(grailsApplication.config.annotopia.server.proxy.host && grailsApplication.config.annotopia.server.proxy.port) {
 			String proxyHost = grailsApplication.config.annotopia.server.proxy.host; //replace with your proxy server name or IP
@@ -83,15 +89,14 @@ class BaseController {
 		
 		if(httpProxy!=null) {
 			long startTime = System.currentTimeMillis();
-			log.info ("[" + apiKey + "] " + "Proxy request: " + URL);
+			logInfo(agentKey, "Proxy request: " + URL);
 			URL url = new URL(URL);
-			//Pass the Proxy instance defined above, to the openConnection() method
 			URLConnection urlConn = url.openConnection(httpProxy);
 			urlConn.connect();
-			log.info ("[" + apiKey + "] " + "Proxy resolved in (" + (System.currentTimeMillis()-startTime) + "ms)");
+			logInfo(agentKey, "Proxy resolved in (" + (System.currentTimeMillis()-startTime) + "ms)");
 			return urlConn.getInputStream();
 		} else {
-			log.info ("[" + apiKey + "] " + "No proxy request: " + URL);
+			logInfo(agentKey, "No proxy request: " + URL);
 			return new URL(URL).openStream();
 		}
 	}
@@ -120,5 +125,21 @@ class BaseController {
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 		RDFDataMgr.write(outputStream, model, RDFLanguages.JSONLD);
 		return outputStream.toString();
+	}
+	
+	private def logInfo(def userId, message) {
+		log.info(":" + userId + ": " + message);
+	}
+	
+	private def logDebug(def userId, message) {
+		log.debug(":" + userId + ": " + message);
+	}
+	
+	private def logWarning(def userId, message) {
+		log.warn(":" + userId + ": " + message);
+	}
+	
+	private def logException(def userId, message) {
+		log.error(":" + userId + ": " + message);
 	}
 }

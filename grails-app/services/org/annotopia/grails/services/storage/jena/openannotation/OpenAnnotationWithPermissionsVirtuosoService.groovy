@@ -193,15 +193,16 @@ class OpenAnnotationWithPermissionsVirtuosoService {
 		sb.append("{");
 		
 		// User identifiers
-		sb.append("{?x <http://purl.org/annotopia#read> ?agent . FILTER (str(?agent)=\"user:" + user.id + "\")}");
+		//
 		
 		if(permissions.contains("private")) {
+			sb.append("{?x <http://purl.org/annotopia#read> ?agent . FILTER (str(?agent)=\"user:" + user.id + "\")}");
 			def userIds = usersService.getUserAgentIdentifiers(user.id);
 			if(userIds!=null && userIds.size()>0) {
 				userIds.eachWithIndex{ userId, index ->
 					sb.append(" UNION ")
 					//sb.append("{?x <http://purl.org/annotopia#read> ?agent . FILTER (str(?agent)=\"user:" + userId + "\")}");
-					sb.append("{?x <http://purl.org/annotopia#read> ?agent . FILTER (contains(?agent, \"user:" + userId + "\"))}");
+					sb.append("{?x <http://purl.org/annotopia#read> ?agent . FILTER (contains(str(?agent), \"user:" + userId + "\"))}");
 					first = true;
 				}
 			}
@@ -216,8 +217,8 @@ class OpenAnnotationWithPermissionsVirtuosoService {
 					groupIdentifiers.each{ groupId ->
 						if(first) sb.append(" UNION ");
 						sb.append("{?x <http://purl.org/annotopia#read> ?agent . FILTER (str(?agent)=\"group:" + groupId + "\")}");
-					}
-					first = true;
+						first = true;
+					}				
 				}
 				
 			}	
@@ -226,7 +227,14 @@ class OpenAnnotationWithPermissionsVirtuosoService {
 		// Public option
 		if(permissions.contains("public")) {
 			if(first) sb.append(" UNION ");
-			sb.append("{FILTER NOT EXISTS {?x <http://purl.org/annotopia#read> ?agent .} }");
+			sb.append("{?s <http://purl.org/annotopia#permissions> ?x . FILTER NOT EXISTS {?x <http://purl.org/annotopia#read> ?agent .} }");
+			first = true;
+		}
+		
+		// Public option
+		if(permissions.contains("unspecified")) {
+			if(first) sb.append(" UNION ");
+			sb.append("{?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> oa:Annotation . FILTER NOT EXISTS {?s <http://purl.org/annotopia#permissions> ?x .} }");
 		}
 		
 		sb.append("}");
