@@ -283,7 +283,7 @@ class OpenAnnotationWithPermissionsVirtuosoService {
 			sb.append("{?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> oa:Annotation . FILTER NOT EXISTS {?s <http://purl.org/annotopia#permissions> ?x .} }");
 		}
 		
-		if(sb.length>0) queryBuffer.append("{" + sb.toString() + "}");
+		if(sb.length()>0) queryBuffer.append("{" + sb.toString() + "}");
 	}
 	
 	/**
