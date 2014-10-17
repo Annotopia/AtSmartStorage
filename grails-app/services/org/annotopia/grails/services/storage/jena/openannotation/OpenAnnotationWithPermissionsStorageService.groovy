@@ -112,8 +112,8 @@ class OpenAnnotationWithPermissionsStorageService {
 	 * @param offset		Pagination offset
 	 * @param tgtUrl		The target urls if any
 	 * @param tgtFgt		If to include fragments or not
-	 * @param tgtExt		If to extend search to other manifestions of the requested URLs
-	 * @param tgtIds		List of document IDs to match as targets
+	 * @param tgtExt		If to extend search to other manifestions of the requested URLs (not used/implemented)
+	 * @param tgtIds		List of document IDs to match as targets (not used/implemented)
 	 * @param incGph		If to incldue the graph in the response
 	 * @param permissions	The permissions facet values
 	 * @param sources		The sources facet values (originator system)
@@ -131,8 +131,8 @@ class OpenAnnotationWithPermissionsStorageService {
 	 * @param offset		Pagination offset
 	 * @param tgtUrl		The target urls if any
 	 * @param tgtFgt		If to include fragments or not
-	 * @param tgtExt		If to extend search to other manifestions of the requested URLs
-	 * @param tgtIds		List of document IDs to match as targets
+	 * @param tgtExt		If to extend search to other manifestions of the requested URLs (not used/implemented)
+	 * @param tgtIds		List of document IDs to match as targets (not used/implemented)
 	 * @param tgtIds		List of document IDs to match as targets
 	 * @param text			Text query 
 	 * @param permissions	The permissions facet values
@@ -149,20 +149,16 @@ class OpenAnnotationWithPermissionsStorageService {
 			' incGph:' + incGph + ' tgtUrl:' + tgtUrl + ' tgtFgt:' + tgtFgt +
 			' permissions:' + permissions + ' sources:' + sources +
 			' motivations:' + motivations + ' inclusions:' + inclusions;
-		retrieveAnnotationGraphs(agentKey, user, max, offset, tgtUrl, tgtFgt, incGph, text, permissions, sources, motivations, inclusions);
-	}
-	
-	public Set<Dataset> retrieveAnnotationGraphs(apiKey, user, max, offset, tgtUrl, tgtFgt, incGph, text, permissions, sources, motivations, inclusions) {
-		log.info '[' + apiKey + '] Retrieving search annotation graphs';
 	
 		def userIds = usersService.getUserAgentIdentifiers(user.id);
 		
 		Set<Dataset> datasets = new HashSet<Dataset>();
 		
-		Set<String> graphNames = openAnnotationWithPermissionsVirtuosoService.retrieveAnnotationGraphsNames(apiKey, user, userIds, max, offset, tgtUrl, tgtFgt, text, permissions, sources, motivations, inclusions);
+		Set<String> graphNames = openAnnotationWithPermissionsVirtuosoService
+			.retrieveAnnotationGraphsNames(agentKey, user, userIds, max, offset, tgtUrl, tgtFgt, text, permissions, sources, motivations, inclusions);
 		if(graphNames!=null) {
 			graphNames.each { graphName ->
-				Dataset ds = jenaVirtuosoStoreService.retrieveGraph(apiKey, graphName);
+				Dataset ds = jenaVirtuosoStoreService.retrieveGraph(agentKey, graphName);
 				
 				if(ds!=null) {
 					List<Statement> statementsToRemove = new ArrayList<Statement>();
@@ -183,7 +179,7 @@ class OpenAnnotationWithPermissionsStorageService {
 				}
 				
 				if(incGph==INCGPH_YES) {
-					Model m = jenaVirtuosoStoreService.retrieveGraphMetadata(apiKey, graphName, grailsApplication.config.annotopia.storage.uri.graph.provenance);
+					Model m = jenaVirtuosoStoreService.retrieveGraphMetadata(agentKey, graphName, grailsApplication.config.annotopia.storage.uri.graph.provenance);
 					if(m!=null) ds.setDefaultModel(m);
 				}
 				if(ds!=null) datasets.add(ds);
@@ -191,105 +187,7 @@ class OpenAnnotationWithPermissionsStorageService {
 		}
 		return datasets;
 	}
-	
-/*
-	public Set<Dataset> retrieveAnnotationGraphs(apiKey, user, max, offset, tgtUrl, tgtFgt, incGph,  permissions, sources, motivations) {
-		log.info '[' + apiKey + '] Retrieving annotation graphs';
-	
-		
-		def userIds = usersService.getUserAgentIdentifiers(user.id);
-		
-		Set<Dataset> datasets = new HashSet<Dataset>();
-		Set<String> graphNames = openAnnotationWithPermissionsVirtuosoService.retrieveAnnotationGraphsNames(apiKey, user, userIds, max, offset, tgtUrl, tgtFgt, permissions, sources, motivations);
-		if(graphNames!=null) {
-			graphNames.each { graphName ->
-				Dataset ds = jenaVirtuosoStoreService.retrieveGraph(apiKey, graphName);
-				
-				if(ds!=null) {
-					List<Statement> statementsToRemove = new ArrayList<Statement>();
-					Set<Resource> subjectsToRemove = new HashSet<Resource>();
-					Iterator<String> names = ds.listNames();
-					names.each { name ->
-						Model m = ds.getNamedModel(name);
-						// Remove AnnotationSets data and leave oa:Annotation
-						StmtIterator statements = m.listStatements(null, ResourceFactory.createProperty(RDF.RDF_TYPE), ResourceFactory.createResource(AnnotopiaVocabulary.ANNOTATION_SET));
-						statements.each { statement ->
-							subjectsToRemove.add(statement.getSubject())
-						}		
-						
-						subjectsToRemove.each { subjectToRemove ->
-							m.removeAll(subjectToRemove, null, null);
-						}
-					}
-				}
-				
-				if(incGph==INCGPH_YES) {
-					Model m = jenaVirtuosoStoreService.retrieveGraphMetadata(apiKey, graphName, grailsApplication.config.annotopia.storage.uri.graph.provenance);
-					if(m!=null) ds.setDefaultModel(m);
-				}
-				if(ds!=null) datasets.add(ds);
-			}
-		}
-		return datasets;
-	}
-*/	
-	
 
-	
-	
-
-/*	
-	public listAnnotation(apiKey, user, max, offset, tgtUrl, tgtFgt, tgtExt, tgtIds, incGph, permissions, sources, motivations, inclusions) {
-		log.info '[' + apiKey + '] List annotations' +
-			' max:' + max +
-			' offset:' + offset +
-			' incGph:' + incGph +
-			' tgtUrl:' + tgtUrl +
-			' tgtFgt:' + tgtFgt;
-		retrieveAnnotationGraphs(apiKey, user, max, offset, tgtUrl, tgtFgt, incGph, permissions, sources, motivations, inclusions);
-	}
-	
-	public Set<Dataset> retrieveAnnotationGraphs(apiKey, user, max, offset, tgtUrl, tgtFgt, incGph, permissions, sources, motivations, inclusions) {
-		log.info '[' + apiKey + '] Retrieving annotation graphs';
-	
-		def userIds = usersService.getUserAgentIdentifiers(user.id);
-		
-		Set<Dataset> datasets = new HashSet<Dataset>();
-		
-		Set<String> graphNames = openAnnotationWithPermissionsVirtuosoService.retrieveAnnotationGraphsNames(apiKey, user, userIds, max, offset, tgtUrl, tgtFgt, permissions, sources, motivations, inclusions);
-		if(graphNames!=null) {
-			graphNames.each { graphName ->
-				Dataset ds = jenaVirtuosoStoreService.retrieveGraph(apiKey, graphName);
-				
-				if(ds!=null) {
-					List<Statement> statementsToRemove = new ArrayList<Statement>();
-					Set<Resource> subjectsToRemove = new HashSet<Resource>();
-					Iterator<String> names = ds.listNames();
-					names.each { name ->
-						Model m = ds.getNamedModel(name);
-						// Remove AnnotationSets data and leave oa:Annotation
-						StmtIterator statements = m.listStatements(null, ResourceFactory.createProperty(RDF.RDF_TYPE), ResourceFactory.createResource(AnnotopiaVocabulary.ANNOTATION_SET));
-						statements.each { statement ->
-							subjectsToRemove.add(statement.getSubject())
-						}
-						
-						subjectsToRemove.each { subjectToRemove ->
-							m.removeAll(subjectToRemove, null, null);
-						}
-					}
-				}
-				
-				if(incGph==INCGPH_YES) {
-					Model m = jenaVirtuosoStoreService.retrieveGraphMetadata(apiKey, graphName, grailsApplication.config.annotopia.storage.uri.graph.provenance);
-					if(m!=null) ds.setDefaultModel(m);
-				}
-				if(ds!=null) datasets.add(ds);
-			}
-		}
-		return datasets;
-	}
-*/	
-	
 	/**
 	 * Saves the annotation Dataset. The service now accept one single item
 	 * for each given request. However, the request can include multiple 
@@ -971,4 +869,105 @@ class OpenAnnotationWithPermissionsStorageService {
 		}		
 		model.removeAll(originalSubject, null, null);
 	}
+	
+	
+	
+	/*
+		public Set<Dataset> retrieveAnnotationGraphs(apiKey, user, max, offset, tgtUrl, tgtFgt, incGph,  permissions, sources, motivations) {
+			log.info '[' + apiKey + '] Retrieving annotation graphs';
+		
+			
+			def userIds = usersService.getUserAgentIdentifiers(user.id);
+			
+			Set<Dataset> datasets = new HashSet<Dataset>();
+			Set<String> graphNames = openAnnotationWithPermissionsVirtuosoService.retrieveAnnotationGraphsNames(apiKey, user, userIds, max, offset, tgtUrl, tgtFgt, permissions, sources, motivations);
+			if(graphNames!=null) {
+				graphNames.each { graphName ->
+					Dataset ds = jenaVirtuosoStoreService.retrieveGraph(apiKey, graphName);
+					
+					if(ds!=null) {
+						List<Statement> statementsToRemove = new ArrayList<Statement>();
+						Set<Resource> subjectsToRemove = new HashSet<Resource>();
+						Iterator<String> names = ds.listNames();
+						names.each { name ->
+							Model m = ds.getNamedModel(name);
+							// Remove AnnotationSets data and leave oa:Annotation
+							StmtIterator statements = m.listStatements(null, ResourceFactory.createProperty(RDF.RDF_TYPE), ResourceFactory.createResource(AnnotopiaVocabulary.ANNOTATION_SET));
+							statements.each { statement ->
+								subjectsToRemove.add(statement.getSubject())
+							}
+							
+							subjectsToRemove.each { subjectToRemove ->
+								m.removeAll(subjectToRemove, null, null);
+							}
+						}
+					}
+					
+					if(incGph==INCGPH_YES) {
+						Model m = jenaVirtuosoStoreService.retrieveGraphMetadata(apiKey, graphName, grailsApplication.config.annotopia.storage.uri.graph.provenance);
+						if(m!=null) ds.setDefaultModel(m);
+					}
+					if(ds!=null) datasets.add(ds);
+				}
+			}
+			return datasets;
+		}
+	*/
+		
+	
+		
+		
+	
+	/*
+		public listAnnotation(apiKey, user, max, offset, tgtUrl, tgtFgt, tgtExt, tgtIds, incGph, permissions, sources, motivations, inclusions) {
+			log.info '[' + apiKey + '] List annotations' +
+				' max:' + max +
+				' offset:' + offset +
+				' incGph:' + incGph +
+				' tgtUrl:' + tgtUrl +
+				' tgtFgt:' + tgtFgt;
+			retrieveAnnotationGraphs(apiKey, user, max, offset, tgtUrl, tgtFgt, incGph, permissions, sources, motivations, inclusions);
+		}
+		
+		public Set<Dataset> retrieveAnnotationGraphs(apiKey, user, max, offset, tgtUrl, tgtFgt, incGph, permissions, sources, motivations, inclusions) {
+			log.info '[' + apiKey + '] Retrieving annotation graphs';
+		
+			def userIds = usersService.getUserAgentIdentifiers(user.id);
+			
+			Set<Dataset> datasets = new HashSet<Dataset>();
+			
+			Set<String> graphNames = openAnnotationWithPermissionsVirtuosoService.retrieveAnnotationGraphsNames(apiKey, user, userIds, max, offset, tgtUrl, tgtFgt, permissions, sources, motivations, inclusions);
+			if(graphNames!=null) {
+				graphNames.each { graphName ->
+					Dataset ds = jenaVirtuosoStoreService.retrieveGraph(apiKey, graphName);
+					
+					if(ds!=null) {
+						List<Statement> statementsToRemove = new ArrayList<Statement>();
+						Set<Resource> subjectsToRemove = new HashSet<Resource>();
+						Iterator<String> names = ds.listNames();
+						names.each { name ->
+							Model m = ds.getNamedModel(name);
+							// Remove AnnotationSets data and leave oa:Annotation
+							StmtIterator statements = m.listStatements(null, ResourceFactory.createProperty(RDF.RDF_TYPE), ResourceFactory.createResource(AnnotopiaVocabulary.ANNOTATION_SET));
+							statements.each { statement ->
+								subjectsToRemove.add(statement.getSubject())
+							}
+							
+							subjectsToRemove.each { subjectToRemove ->
+								m.removeAll(subjectToRemove, null, null);
+							}
+						}
+					}
+					
+					if(incGph==INCGPH_YES) {
+						Model m = jenaVirtuosoStoreService.retrieveGraphMetadata(apiKey, graphName, grailsApplication.config.annotopia.storage.uri.graph.provenance);
+						if(m!=null) ds.setDefaultModel(m);
+					}
+					if(ds!=null) datasets.add(ds);
+				}
+			}
+			return datasets;
+		}
+	*/
+		
 }
