@@ -305,7 +305,7 @@ class OpenAnnotationWithPermissionsVirtuosoService {
 		long start = System.currentTimeMillis();
 		
 		StringBuffer queryBuffer = new StringBuffer();
-		if(!getTargetFilter(queryBuffer, tgtUrls, tgtFgt)) return 0;
+		getTargetFilter(queryBuffer, tgtUrls, tgtFgt);
 		getReadPermissionQueryChunk(queryBuffer, permissions, user);
 		getSourcesFilter(queryBuffer, sources);
 		getMotivationsFilter(queryBuffer, motivations);
@@ -345,7 +345,7 @@ class OpenAnnotationWithPermissionsVirtuosoService {
 		long start = System.currentTimeMillis();
 		
 		StringBuffer queryBuffer = new StringBuffer();
-		if(!getTargetFilter(queryBuffer, tgtUrls, tgtFgt)) return 0;
+		getTargetFilter(queryBuffer, tgtUrls, tgtFgt);
 		getReadPermissionQueryChunk(queryBuffer, permissions, user);
 		getSourcesFilter(queryBuffer, sources);
 		getMotivationsFilter(queryBuffer, motivations);
@@ -363,13 +363,14 @@ class OpenAnnotationWithPermissionsVirtuosoService {
 	}
 	
 
-	public int countAnnotationGraphs(apiKey, user, tgtUrl, tgtFgt, permissions, sources, motivations) {
+/*	
+   public int countAnnotationGraphs(apiKey, user, tgtUrl, tgtFgt, permissions, sources, motivations) {
 
 		log.debug('[' + apiKey + '] Counting total accessible Annotation Graphs');
 		long start = System.currentTimeMillis();
 		
 		StringBuffer queryBuffer = new StringBuffer();
-		if(!getTargetFilter(queryBuffer, tgtUrl, tgtFgt)) return 0;
+		getTargetFilter(queryBuffer, tgtUrl, tgtFgt);
 		getReadPermissionQueryChunk(queryBuffer, permissions, user);
 		getSourcesFilter(queryBuffer, sources);
 		getMotivationsFilter(queryBuffer, motivations);
@@ -385,6 +386,7 @@ class OpenAnnotationWithPermissionsVirtuosoService {
 		log.trace('[' + apiKey + '] TIME DURATION (countAnnotationGraphs): ' + (System.currentTimeMillis()-start));
 		totalCount;
 	}
+*/
 	
 	public Set<String> retrieveAnnotationGraphsNames(apiKey, user, userIds, max, offset, tgtUrls, tgtFgt, permissions, sources, motivations, inclusions) {
 		log.debug('[' + apiKey + '] Retrieving annotation graphs names ' +
@@ -392,7 +394,7 @@ class OpenAnnotationWithPermissionsVirtuosoService {
 		long start = System.currentTimeMillis();
 		
 		StringBuffer queryBuffer = new StringBuffer();
-		if(!getTargetFilter(queryBuffer, tgtUrls, tgtFgt)) return 0;
+		getTargetFilter(queryBuffer, tgtUrls, tgtFgt);
 		getReadPermissionQueryChunk(queryBuffer, permissions, user);
 		getSourcesFilter(queryBuffer, sources);
 		getMotivationsFilter(queryBuffer, motivations);
@@ -417,7 +419,7 @@ class OpenAnnotationWithPermissionsVirtuosoService {
 		long start = System.currentTimeMillis();
 		
 		StringBuffer queryBuffer = new StringBuffer();
-		if(!getTargetFilter(queryBuffer, tgtUrl, tgtFgt)) return 0;
+		getTargetFilter(queryBuffer, tgtUrl, tgtFgt);
 		getReadPermissionQueryChunk(queryBuffer, permissions, user);
 		getSourcesFilter(queryBuffer, sources);
 		getMotivationsFilter(queryBuffer, motivations);

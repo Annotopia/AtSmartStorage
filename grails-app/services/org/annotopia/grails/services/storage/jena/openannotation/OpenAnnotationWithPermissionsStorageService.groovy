@@ -24,6 +24,8 @@ import grails.converters.JSON
 
 import java.text.SimpleDateFormat
 
+import java.util.List;
+
 import org.annotopia.grails.vocabularies.AnnotopiaVocabulary
 import org.annotopia.grails.vocabularies.OA
 import org.annotopia.grails.vocabularies.PAV
@@ -64,6 +66,44 @@ class OpenAnnotationWithPermissionsStorageService {
 	def openAnnotationVirtuosoService;
 	def graphIdentifiersMetadataService;
 	def openAnnotationWithPermissionsVirtuosoService;
+		
+	/**
+	 * Count for search services. Counts all the available results that meet
+	 * the specified criteria (including facets).
+	 * @param apiKey		The system api key
+	 * @param user			The user that performed the request
+	 * @param tgtUrls		The target url if any
+	 * @param tgtFgt		If to include fragments or not
+	 * @param permissions	The permissions facet values
+	 * @param sources		The sources facet values (originator system)
+	 * @param motivations	The motivations facet values
+	 * @return The count of the available annotations meeting the specified criteria.
+	 */
+	public int countAnnotationGraphs(agentKey, user, tgtUrls, tgtFgt, permissions, sources, motivations) {
+		return countAnnotationGraphs(agentKey, user, tgtUrls, tgtFgt, null, permissions, sources, motivations, null);
+	}
+	
+	/**
+	 * Count for search services. Counts all the available results that meet
+	 * the specified criteria (including facets).
+	 * @param apiKey		The system api key
+	 * @param user			The user that performed the request
+	 * @param tgtUrls		The target urls if any
+	 * @param tgtFgt		If to include fragments or not
+	 * @param text			The text to search
+	 * @param permissions	The permissions facet values
+	 * @param sources		The sources facet values (originator system)
+	 * @param motivations	The motivations facet values
+	 * @param inclusions	The inclusions facet values
+	 * @return The count of the available annotations meeting the specified criteria.
+	 */
+	public int countAnnotationGraphs(agentKey, user, List<String> tgtUrls, tgtFgt, text, permissions, sources, motivations, inclusions) {
+		log.info '[' + agentKey + '] Count annotation graphs' +
+		' tgtUrls:' + tgtUrls + ' tgtFgt:' + tgtFgt + ' text:' + text +
+		' permissions:' + permissions + ' sources:' + sources + 
+		' motivations:' + motivations + ' inclusions:' + inclusions;
+		return openAnnotationWithPermissionsVirtuosoService.countAnnotationGraphs(agentKey, user, tgtUrls, tgtFgt, text, permissions, sources, motivations, inclusions);
+	}
 	
 	/**
 	 * Lists the ann...
