@@ -70,7 +70,7 @@ class OpenAnnotationWithPermissionsStorageService {
 	/**
 	 * Count for search services. Counts all the available results that meet
 	 * the specified criteria (including facets).
-	 * @param apiKey		The system api key
+	 * @param agentKey		The agent identifier
 	 * @param user			The user that performed the request
 	 * @param tgtUrls		The target url if any
 	 * @param tgtFgt		If to include fragments or not
@@ -86,7 +86,7 @@ class OpenAnnotationWithPermissionsStorageService {
 	/**
 	 * Count for search services. Counts all the available results that meet
 	 * the specified criteria (including facets).
-	 * @param apiKey		The system api key
+	 * @param agentKey		The agent identifier
 	 * @param user			The user that performed the request
 	 * @param tgtUrls		The target urls if any
 	 * @param tgtFgt		If to include fragments or not
@@ -98,7 +98,7 @@ class OpenAnnotationWithPermissionsStorageService {
 	 * @return The count of the available annotations meeting the specified criteria.
 	 */
 	public int countAnnotationGraphs(agentKey, user, List<String> tgtUrls, tgtFgt, text, permissions, sources, motivations, inclusions) {
-		log.info '[' + agentKey + '] Count annotation graphs' +
+		log.debug '[' + agentKey + '] Count annotation graphs' +
 			' tgtUrls:' + tgtUrls + ' tgtFgt:' + tgtFgt + ' text:' + text +
 			' permissions:' + permissions + ' sources:' + sources + 
 			' motivations:' + motivations + ' inclusions:' + inclusions;
@@ -106,8 +106,8 @@ class OpenAnnotationWithPermissionsStorageService {
 	}
 	
 	/**
-	 * Lists the ann...
-	 * @param apiKey
+	 * Lists the annotations according to the specified criteria.
+	 * @param agentKey
 	 * @param max			Page size (pagination)
 	 * @param offset		Pagination offset
 	 * @param tgtUrl		The target urls if any
@@ -125,8 +125,8 @@ class OpenAnnotationWithPermissionsStorageService {
 	}
 	
 	/**
-	 * Lists the ann...
-	 * @param apiKey
+	 * Lists the annotations according to the specified criteria.
+	 * @param agentKey
 	 * @param max			Page size (pagination)
 	 * @param offset		Pagination offset
 	 * @param tgtUrl		The target urls if any
@@ -143,8 +143,9 @@ class OpenAnnotationWithPermissionsStorageService {
 	 */
 	public listAnnotation(agentKey, user, max, offset, tgtUrl, tgtFgt, tgtExt, tgtIds, incGph, text, permissions, sources, motivations, inclusions) {
 		// tgtIds and tgtExt not implemented yet
-		log.info '[' + agentKey + '] List annotation graphs ' +
+		log.debug '[' + agentKey + '] List annotation graphs ' +
 			' max:' + max + ' offset:' + offset + // Pagination
+			' tgtExt:' + tgtExt + ' tgtIds:' + tgtIds +
 			' incGph:' + incGph + ' tgtUrl:' + tgtUrl + ' tgtFgt:' + tgtFgt +
 			' permissions:' + permissions + ' sources:' + sources +
 			' motivations:' + motivations + ' inclusions:' + inclusions;
@@ -237,7 +238,7 @@ class OpenAnnotationWithPermissionsStorageService {
 	
 	
 
-	
+/*	
 	public listAnnotation(apiKey, user, max, offset, tgtUrl, tgtFgt, tgtExt, tgtIds, incGph, permissions, sources, motivations, inclusions) {
 		log.info '[' + apiKey + '] List annotations' +
 			' max:' + max +
@@ -287,7 +288,7 @@ class OpenAnnotationWithPermissionsStorageService {
 		}
 		return datasets;
 	}
-	
+*/	
 	
 	/**
 	 * Saves the annotation Dataset. The service now accept one single item
