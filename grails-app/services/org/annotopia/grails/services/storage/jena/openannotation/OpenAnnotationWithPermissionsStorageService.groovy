@@ -76,24 +76,24 @@ class OpenAnnotationWithPermissionsStorageService {
 	 * @param tgtIds
 	 * @return
 	 */
-	public listAnnotation(apiKey, user, max, offset, tgtUrl, tgtFgt, tgtExt, tgtIds, incGph, permissions, motivations) {
+	public listAnnotation(apiKey, user, max, offset, tgtUrl, tgtFgt, tgtExt, tgtIds, incGph, permissions, sources, motivations) {
 		log.info '[' + apiKey + '] List annotations' +
 			' max:' + max +
 			' offset:' + offset +
 			' incGph:' + incGph +
 			' tgtUrl:' + tgtUrl +
 			' tgtFgt:' + tgtFgt;
-		retrieveAnnotationGraphs(apiKey, user, max, offset, tgtUrl, tgtFgt, incGph, permissions, motivations);
+		retrieveAnnotationGraphs(apiKey, user, max, offset, tgtUrl, tgtFgt, incGph, permissions, sources, motivations);
 	}
 	
-	public Set<Dataset> retrieveAnnotationGraphs(apiKey, user, max, offset, tgtUrl, tgtFgt, incGph,  permissions, motivations) {
+	public Set<Dataset> retrieveAnnotationGraphs(apiKey, user, max, offset, tgtUrl, tgtFgt, incGph,  permissions, sources, motivations) {
 		log.info '[' + apiKey + '] Retrieving annotation graphs';
 	
 		
 		def userIds = usersService.getUserAgentIdentifiers(user.id);
 		
 		Set<Dataset> datasets = new HashSet<Dataset>();
-		Set<String> graphNames = openAnnotationWithPermissionsVirtuosoService.retrieveAnnotationGraphsNames(apiKey, user, userIds, max, offset, tgtUrl, tgtFgt, permissions, motivations);
+		Set<String> graphNames = openAnnotationWithPermissionsVirtuosoService.retrieveAnnotationGraphsNames(apiKey, user, userIds, max, offset, tgtUrl, tgtFgt, permissions, sources, motivations);
 		if(graphNames!=null) {
 			graphNames.each { graphName ->
 				Dataset ds = jenaVirtuosoStoreService.retrieveGraph(apiKey, graphName);
@@ -177,24 +177,24 @@ class OpenAnnotationWithPermissionsStorageService {
 		return datasets;
 	}
 	
-	public listAnnotation(apiKey, user, max, offset, tgtUrl, tgtFgt, tgtExt, tgtIds, incGph, permissions, motivations, inclusions) {
+	public listAnnotation(apiKey, user, max, offset, tgtUrl, tgtFgt, tgtExt, tgtIds, incGph, permissions, sources, motivations, inclusions) {
 		log.info '[' + apiKey + '] List annotations' +
 			' max:' + max +
 			' offset:' + offset +
 			' incGph:' + incGph +
 			' tgtUrl:' + tgtUrl +
 			' tgtFgt:' + tgtFgt;
-		retrieveAnnotationGraphs(apiKey, user, max, offset, tgtUrl, tgtFgt, incGph, permissions, motivations, inclusions);
+		retrieveAnnotationGraphs(apiKey, user, max, offset, tgtUrl, tgtFgt, incGph, permissions, sources, motivations, inclusions);
 	}
 	
-	public Set<Dataset> retrieveAnnotationGraphs(apiKey, user, max, offset, tgtUrl, tgtFgt, incGph, permissions, motivations, inclusions) {
+	public Set<Dataset> retrieveAnnotationGraphs(apiKey, user, max, offset, tgtUrl, tgtFgt, incGph, permissions, sources, motivations, inclusions) {
 		log.info '[' + apiKey + '] Retrieving annotation graphs';
 	
 		def userIds = usersService.getUserAgentIdentifiers(user.id);
 		
 		Set<Dataset> datasets = new HashSet<Dataset>();
 		
-		Set<String> graphNames = openAnnotationWithPermissionsVirtuosoService.retrieveAnnotationGraphsNames(apiKey, user, userIds, max, offset, tgtUrl, tgtFgt, permissions, motivations, inclusions);
+		Set<String> graphNames = openAnnotationWithPermissionsVirtuosoService.retrieveAnnotationGraphsNames(apiKey, user, userIds, max, offset, tgtUrl, tgtFgt, permissions, sources, motivations, inclusions);
 		if(graphNames!=null) {
 			graphNames.each { graphName ->
 				Dataset ds = jenaVirtuosoStoreService.retrieveGraph(apiKey, graphName);

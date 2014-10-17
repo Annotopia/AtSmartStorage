@@ -59,7 +59,29 @@ class OpenAnnotationWithPermissionsVirtuosoService {
 		} else {
 			if(tgtUrls.size()==0) return false;
 			// Returns annotations on the requested URLs (full resource)
-			else {
+			else {		
+				if(tgtUrls.size()>0) {
+					StringBuffer buffer = new StringBuffer();
+					tgtUrls.eachWithIndex{ o, i ->
+						buffer.append("<" + o + ">");
+						if(i<tgtUrls.size()-1)buffer.append(',');
+					}
+					
+					if(tgtFgt=="false") {
+						queryBuffer.append("{ ?s a oa:Annotation . ?s oa:hasTarget ?targetA . FILTER ( ?targetA IN (");
+						queryBuffer.append(buffer.toString());
+						queryBuffer.append("))}");	
+					} else if(tgtFgt=="true") {
+						queryBuffer.append("{ ?s a oa:Annotation . ?s oa:hasTarget ?targetA . FILTER ( ?targetA IN (");
+						queryBuffer.append(buffer.toString());
+						queryBuffer.append("))}");
+						queryBuffer.append("UNION {?s oa:hasTarget ?t. ?t a oa:SpecificResource. ?t oa:hasSource ?targetB . FILTER ( ?targetB IN (");
+						queryBuffer.append(buffer.toString());
+						queryBuffer.append("))}");
+					}
+				}
+
+				/*
 				boolean first = false;
 				tgtUrls.each { tgtUrl ->
 					if(first) queryBuffer.append(" UNION ");
@@ -69,6 +91,7 @@ class OpenAnnotationWithPermissionsVirtuosoService {
 						queryBuffer.append("{?s oa:hasTarget <" + tgtUrl + "> } UNION {?s oa:hasTarget ?t. ?t a oa:SpecificResource. ?t oa:hasSource <" + tgtUrl + ">}")
 					first=true;
 				}
+				*/
 			}
 		}
 		return true;
@@ -215,8 +238,6 @@ class OpenAnnotationWithPermissionsVirtuosoService {
 		boolean first = false;
 		//def buffer = "{?x <http://purl.org/annotopia#read> ?agent . FILTER (str(?agent)=\"" + user.id + "\")}";
 		StringBuffer sb = new StringBuffer();
-		sb.append("{");
-		
 		// User identifiers
 		//
 		
@@ -262,8 +283,7 @@ class OpenAnnotationWithPermissionsVirtuosoService {
 			sb.append("{?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> oa:Annotation . FILTER NOT EXISTS {?s <http://purl.org/annotopia#permissions> ?x .} }");
 		}
 		
-		sb.append("}");
-		queryBuffer.append(sb.toString());
+		if(sb.length>0) queryBuffer.append("{" + sb.toString() + "}");
 	}
 	
 	/**
@@ -343,7 +363,7 @@ class OpenAnnotationWithPermissionsVirtuosoService {
 	}
 	
 
-	public int countAnnotationGraphs(apiKey, user, tgtUrl, tgtFgt, permissions, motivations) {
+	public int countAnnotationGraphs(apiKey, user, tgtUrl, tgtFgt, permissions, sources, motivations) {
 
 		log.debug('[' + apiKey + '] Counting total accessible Annotation Graphs');
 		long start = System.currentTimeMillis();
@@ -351,7 +371,7 @@ class OpenAnnotationWithPermissionsVirtuosoService {
 		StringBuffer queryBuffer = new StringBuffer();
 		if(!getTargetFilter(queryBuffer, tgtUrl, tgtFgt)) return 0;
 		getReadPermissionQueryChunk(queryBuffer, permissions, user);
-		//getSourcesFilter(queryBuffer, sources);
+		getSourcesFilter(queryBuffer, sources);
 		getMotivationsFilter(queryBuffer, motivations);
 		
 		String queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> PREFIX  cnt: <http://www.w3.org/2011/content#> PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>  PREFIX dct:  <http://purl.org/dc/terms/> " +
@@ -366,7 +386,7 @@ class OpenAnnotationWithPermissionsVirtuosoService {
 		totalCount;
 	}
 	
-	public Set<String> retrieveAnnotationGraphsNames(apiKey, user, userIds, max, offset, tgtUrls, tgtFgt, permissions, motivations, inclusions) {
+	public Set<String> retrieveAnnotationGraphsNames(apiKey, user, userIds, max, offset, tgtUrls, tgtFgt, permissions, sources, motivations, inclusions) {
 		log.debug('[' + apiKey + '] Retrieving annotation graphs names ' +
 			' max:' + max + ' offset:' + offset + ' tgtUrl:' + tgtUrls + ' tgtFgt:' + tgtFgt);
 		long start = System.currentTimeMillis();
@@ -374,6 +394,7 @@ class OpenAnnotationWithPermissionsVirtuosoService {
 		StringBuffer queryBuffer = new StringBuffer();
 		if(!getTargetFilter(queryBuffer, tgtUrls, tgtFgt)) return 0;
 		getReadPermissionQueryChunk(queryBuffer, permissions, user);
+		getSourcesFilter(queryBuffer, sources);
 		getMotivationsFilter(queryBuffer, motivations);
 			
 		String queryString = "PREFIX oa: <http://www.w3.org/ns/oa#> PREFIX  cnt: <http://www.w3.org/2011/content#> PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>  PREFIX dct:  <http://purl.org/dc/terms/> " +
@@ -387,7 +408,7 @@ class OpenAnnotationWithPermissionsVirtuosoService {
 		graphs
 	}
 	
-	public Set<String> retrieveAnnotationGraphsNames(apiKey, user, userIds, max, offset, tgtUrl, tgtFgt, permissions, motivations) {
+	public Set<String> retrieveAnnotationGraphsNames(apiKey, user, userIds, max, offset, tgtUrl, tgtFgt, permissions, sources, motivations) {
 		log.info  '[' + apiKey + '] Retrieving annotation graphs names ' +
 			' max:' + max +
 			' offset:' + offset +
@@ -398,6 +419,7 @@ class OpenAnnotationWithPermissionsVirtuosoService {
 		StringBuffer queryBuffer = new StringBuffer();
 		if(!getTargetFilter(queryBuffer, tgtUrl, tgtFgt)) return 0;
 		getReadPermissionQueryChunk(queryBuffer, permissions, user);
+		getSourcesFilter(queryBuffer, sources);
 		getMotivationsFilter(queryBuffer, motivations);
 			
 		String queryString = "PREFIX oa: <http://www.w3.org/ns/oa#> PREFIX  cnt: <http://www.w3.org/2011/content#> PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>  PREFIX dct:  <http://purl.org/dc/terms/> " +
