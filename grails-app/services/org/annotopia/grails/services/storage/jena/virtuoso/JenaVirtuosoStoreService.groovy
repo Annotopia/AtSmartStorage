@@ -67,6 +67,10 @@ class JenaVirtuosoStoreService implements ITripleStore {
 			configAccessService.getAsString("annotopia.storage.triplestore.pass"));
 	}
 	
+	private VirtModel model() {
+		return new VirtModel(graph());
+	}
+	
 	// -----------------------------------------------------------------------
 	//    COUNT
 	// -----------------------------------------------------------------------
@@ -251,8 +255,7 @@ class JenaVirtuosoStoreService implements ITripleStore {
 		if(dataset.getDefaultModel()!=null && dataset.getDefaultModel().size()>0) {
 			log.debug '[' + apiKey + '] Storing graph: * (default)'
 			log.debug configAccessService.getAsString("annotopia.storage.triplestore.host")
-			VirtGraph virtGraph = graph();
-			VirtModel virtModel = new VirtModel(virtGraph);
+			VirtModel virtModel = model();
 			virtModel.add(dataset.getDefaultModel())
 			printDebugData(dataset.getDefaultModel());
 		}
@@ -262,8 +265,7 @@ class JenaVirtuosoStoreService implements ITripleStore {
 			String name = names.next();
 			log.debug '[' + apiKey + '] Storing graph: ' + name
 			Model model = dataset.getNamedModel(name)
-			VirtGraph virtGraph = graph();
-			VirtModel virtModel = new VirtModel(virtGraph);
+			VirtModel virtModel = model();
 			virtModel.add(model);
 			printDebugData(model);
 		}
@@ -281,8 +283,7 @@ class JenaVirtuosoStoreService implements ITripleStore {
 		if(dataset.getDefaultModel()!=null && dataset.getDefaultModel().size()>0) {
 			log.debug '[' + apiKey + '] Storing graph: * (default)'
 			log.debug configAccessService.getAsString("annotopia.storage.triplestore.host")
-			VirtGraph virtGraph = graph();
-			VirtModel virtModel = new VirtModel(virtGraph);
+			VirtModel virtModel = model();
 			virtModel.add(dataset.getDefaultModel())
 			printDebugData(dataset.getDefaultModel());
 		}
@@ -293,8 +294,7 @@ class JenaVirtuosoStoreService implements ITripleStore {
 			
 			log.debug '[' + apiKey + '] Storing graph: ' + name
 			Model model = dataset.getNamedModel(name)
-			VirtGraph virtGraph = graph();
-			VirtModel virtModel = new VirtModel(virtGraph);
+			VirtModel virtModel = model();
 			virtModel.add(model);
 			printDebugData(model);
 		}
