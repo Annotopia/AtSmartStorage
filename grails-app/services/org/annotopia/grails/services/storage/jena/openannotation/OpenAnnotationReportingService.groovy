@@ -20,14 +20,6 @@
  */
 package org.annotopia.grails.services.storage.jena.openannotation
 
-import virtuoso.jena.driver.VirtGraph
-import virtuoso.jena.driver.VirtuosoQueryExecution
-import virtuoso.jena.driver.VirtuosoQueryExecutionFactory
-
-import com.hp.hpl.jena.query.Query
-import com.hp.hpl.jena.query.QueryFactory
-import com.hp.hpl.jena.query.QuerySolution
-import com.hp.hpl.jena.query.ResultSet
 
 /**
  * This service provides some basic statistics on the current open annotation 
