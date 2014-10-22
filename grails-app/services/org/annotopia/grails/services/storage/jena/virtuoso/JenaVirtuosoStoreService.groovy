@@ -60,15 +60,15 @@ class JenaVirtuosoStoreService implements ITripleStore {
 	 * triple store.
 	 * @return The Virtuoso graph.
 	 */
-	private VirtGraph graph() {
+	private VirtGraph getGraph() {
 		return new VirtGraph (
 			configAccessService.getAsString("annotopia.storage.triplestore.host"),
 			configAccessService.getAsString("annotopia.storage.triplestore.user"),
 			configAccessService.getAsString("annotopia.storage.triplestore.pass"));
 	}
 	
-	private VirtModel model() {
-		return new VirtModel(graph());
+	private VirtModel getModel() {
+		return new VirtModel(getGraph());
 	}
 	
 	// -----------------------------------------------------------------------
@@ -81,7 +81,7 @@ class JenaVirtuosoStoreService implements ITripleStore {
 	 * @return The count.
 	 */
 	public int count(apiKey, queryString, counter = "total") {
-		VirtGraph graph = graph();
+		VirtGraph graph = getGraph();
 		log.trace('[' + apiKey + '] ' +  queryString);
 			
 		int totalCount = 0;
@@ -95,7 +95,7 @@ class JenaVirtuosoStoreService implements ITripleStore {
 	}
 	
 	public Map<String, Integer> counters(apiKey, queryString, counters = ["total"]) {
-		VirtGraph graph = graph();
+		VirtGraph graph = getGraph();
 		log.trace('[' + apiKey + '] ' +  queryString);
 			
 		Map<String, Integer> map = new HashMap<String, Integer>();
@@ -123,7 +123,7 @@ class JenaVirtuosoStoreService implements ITripleStore {
 	 * @return The map of the counter for each item of the group.
 	 */
 	public Map<String, Integer> countAndGroupBy(apiKey, queryString, counter, groupBy) {
-		VirtGraph graph = graph();
+		VirtGraph graph = getGraph();
 		log.trace('[' + apiKey + '] ' + queryString);
 		
 		Map<String, Integer> map = new HashMap<String, Integer>();
@@ -140,7 +140,7 @@ class JenaVirtuosoStoreService implements ITripleStore {
 	}
 	
 	public Map<String, Integer> countAndGroupBys(apiKey, queryString, counter, groupBys) {
-		VirtGraph graph = graph();
+		VirtGraph graph = getGraph();
 		log.trace('[' + apiKey + '] ' + queryString);
 		
 		Map<String, Integer> map = new HashMap<String, Integer>();
@@ -168,7 +168,7 @@ class JenaVirtuosoStoreService implements ITripleStore {
 	 * @return The set of 'g' that have been selected.
 	 */
 	public Set<String> retrieveGraphsNames(apiKey, queryString) {
-		VirtGraph graph = graph();
+		VirtGraph graph = getGraph();
 		log.trace('[' + apiKey + '] retrieveGraphsNames: ' + queryString);
 		
 		Set<String> graphNames = new HashSet<String>();
@@ -191,7 +191,7 @@ class JenaVirtuosoStoreService implements ITripleStore {
 	 * @return The set of property values
 	 */
 	public Set<String> retrievePropertyValues(apiKey, queryString, variable) {
-		VirtGraph graph = graph();
+		VirtGraph graph = getGraph();
 		log.trace('[' + apiKey + '] retrievePropertyValues: ' + queryString);
 		
 		Set<String> propertyValues = new HashSet<String>();
@@ -255,7 +255,7 @@ class JenaVirtuosoStoreService implements ITripleStore {
 		if(dataset.getDefaultModel()!=null && dataset.getDefaultModel().size()>0) {
 			log.debug '[' + apiKey + '] Storing graph: * (default)'
 			log.debug configAccessService.getAsString("annotopia.storage.triplestore.host")
-			VirtModel virtModel = model();
+			VirtModel virtModel = getModel();
 			virtModel.add(dataset.getDefaultModel())
 			printDebugData(dataset.getDefaultModel());
 		}
@@ -265,7 +265,7 @@ class JenaVirtuosoStoreService implements ITripleStore {
 			String name = names.next();
 			log.debug '[' + apiKey + '] Storing graph: ' + name
 			Model model = dataset.getNamedModel(name)
-			VirtModel virtModel = model();
+			VirtModel virtModel = getModel();
 			virtModel.add(model);
 			printDebugData(model);
 		}
@@ -283,7 +283,7 @@ class JenaVirtuosoStoreService implements ITripleStore {
 		if(dataset.getDefaultModel()!=null && dataset.getDefaultModel().size()>0) {
 			log.debug '[' + apiKey + '] Storing graph: * (default)'
 			log.debug configAccessService.getAsString("annotopia.storage.triplestore.host")
-			VirtModel virtModel = model();
+			VirtModel virtModel = getModel();
 			virtModel.add(dataset.getDefaultModel())
 			printDebugData(dataset.getDefaultModel());
 		}
@@ -357,7 +357,7 @@ class JenaVirtuosoStoreService implements ITripleStore {
 	public Dataset retrieveGraph(String apiKey, String graphUri) {
 		log.info '[' + apiKey + '] Retrieving graph: ' + graphUri;
 		
-		VirtGraph set = graph();
+		VirtGraph set = getGraph();
 		
 		String queryString = "CONSTRUCT { ?s ?p ?o . } FROM <" + graphUri + ">" + 
 			" WHERE { ?s ?p ?o . }";
@@ -385,7 +385,7 @@ class JenaVirtuosoStoreService implements ITripleStore {
 	public Model retrieveGraphMetadata(String apiKey, String graphUri, String metadataGraphUri) {
 		log.info '[' + apiKey + '] Retrieving graph metadata: ' + graphUri;
 		
-		VirtGraph set = graph();
+		VirtGraph set = getGraph();
 		
 		String queryString = "CONSTRUCT { <"+graphUri+"> ?p ?o . } FROM <" + metadataGraphUri + ">" +
 			" WHERE { <"+graphUri+"> ?p ?o .}";
@@ -405,7 +405,7 @@ class JenaVirtuosoStoreService implements ITripleStore {
 	public Model retrieveGraphIdentifiersMetadata(String apiKey, Map<String,String> identifiers, String metadataIdentifiersGraphUri) {
 		log.info '[' + apiKey + '] Retrieving graph identifiers metadata: ' + identifiers;
 
-		VirtGraph set = graph();
+		VirtGraph set = getGraph();
 
 		if(identifiers.get(Bibliographic.LABEL_URL)!=null) {
 
@@ -464,7 +464,7 @@ class JenaVirtuosoStoreService implements ITripleStore {
 	public List<String> retrieveAllManifestationsByIdentifiers(String apiKey, Map<String,String> identifiers, String metadataIdentifiersGraphUri) {
 		log.info '[' + apiKey + '] Retrieving manifestations by identifiers: ' + identifiers;
 		
-		VirtGraph set = graph();
+		VirtGraph set = getGraph();
 		
 
 		boolean first = false;
@@ -566,7 +566,7 @@ class JenaVirtuosoStoreService implements ITripleStore {
 		log.info '[' + apiKey + '] Removing all triples with subject: ' + subjectUri + ' from: ' + graphUri;
 		
 		try {
-			VirtGraph graph = graph();
+			VirtGraph graph = getGraph();
 			String queryString = "DELETE WHERE { GRAPH <" + graphUri + ">" +
 				" { <"+subjectUri+"> ?p ?o .} }";
 			log.trace '[' + apiKey + '] removeAllTriples: ' + queryString
@@ -583,7 +583,7 @@ class JenaVirtuosoStoreService implements ITripleStore {
 		log.info '[' + apiKey + '] Removing graph: ' + graphUri;
 		
 		try {
-			VirtGraph graph = graph();
+			VirtGraph graph = getGraph();
 			String str = "DROP SILENT GRAPH <" + graphUri + ">";
 			VirtuosoUpdateRequest vur = VirtuosoUpdateFactory.create(str, graph);
 			vur.exec();
@@ -597,7 +597,7 @@ class JenaVirtuosoStoreService implements ITripleStore {
 		log.info '[' + apiKey + '] Clearing graph: ' + graphUri;
 		
 		try {
-			VirtGraph graph = graph();
+			VirtGraph graph = getGraph();
 			String str = "CLEAR GRAPH <" + graphUri + ">";
 			VirtuosoUpdateRequest vur = VirtuosoUpdateFactory.create(str, graph);
 			vur.exec();

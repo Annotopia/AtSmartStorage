@@ -47,7 +47,6 @@ class JenaUtilsService {
 	 * @return The set of all Named Graphs
 	 */
 	public Set<Resource> detectNamedGraphs(apiKey, Dataset dataset) {
-		// Detect all named graphs containing annotation
 		log.info("[" + apiKey + "] Named Graphs detection...");
 		Set<Resource> graphsUris = new HashSet<Resource>();
 		Query  sparqlGraphs = QueryFactory.create("SELECT DISTINCT ?g WHERE { GRAPH ?g { ?s ?p ?o . }}");
