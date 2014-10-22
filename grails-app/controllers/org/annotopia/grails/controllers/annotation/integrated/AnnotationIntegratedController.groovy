@@ -53,6 +53,8 @@ class AnnotationIntegratedController extends BaseController {
 	//String AT_FRAME_LIGHT = "https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/AnnotopiaFrameLight.json";
 	
 	def grailsApplication;
+	def configAccessService;
+	
 	def jenaUtilsService;
 	def jenaVirtuosoStoreService;
 	def apiKeyAuthenticationService;
@@ -140,7 +142,7 @@ class AnnotationIntegratedController extends BaseController {
 				tgtUrls.add(tgtUrl);
 			} else if(tgtIds!=null) {
 				tgtUrls = new ArrayList<String>();
-				tgtUrls = jenaVirtuosoStoreService.retrieveAllManifestationsByIdentifiers(apiKey, identifiers, grailsApplication.config.annotopia.storage.uri.graph.identifiers);
+				tgtUrls = jenaVirtuosoStoreService.retrieveAllManifestationsByIdentifiers(apiKey, identifiers, configAccessService.getAsString("annotopia.storage.uri.graph.identifiers"));
 			}
 			
 			int annotationSetsTotal = annotationIntegratedStorageService.countAnnotationSetGraphs(apiKey, tgtUrls, tgtFgt);
@@ -180,9 +182,9 @@ class AnnotationIntegratedController extends BaseController {
 						// This serializes with and according to the context
 						if(contextJson==null) {
 							if(outCmd=='context') {
-								contextJson = JsonUtils.fromInputStream(callExternalUrl(apiKey, grailsApplication.config.annotopia.jsonld.annotopia.context));
+								contextJson = JsonUtils.fromInputStream(callExternalUrl(apiKey, configAccessService.getAsString("annotopia.jsonld.annotopia.context")));
 							} else if(outCmd=='frame') {
-								contextJson = JsonUtils.fromInputStream(callExternalUrl(apiKey, grailsApplication.config.annotopia.jsonld.annotopia.framinglight));
+								contextJson = JsonUtils.fromInputStream(callExternalUrl(apiKey, configAccessService.getAsString(".annotopia.jsonld.annotopia.framinglight")));
 							}
 						}
 
@@ -273,9 +275,9 @@ class AnnotationIntegratedController extends BaseController {
 				} else {				
 					if(contextJson==null) {
 						if(outCmd=='context') {
-							contextJson = JsonUtils.fromInputStream(callExternalUrl(apiKey, grailsApplication.config.annotopia.jsonld.annotopia.context));
+							contextJson = JsonUtils.fromInputStream(callExternalUrl(apiKey, configAccessService.getAsString("annotopia.jsonld.annotopia.context")));
 						} else if(outCmd=='frame') {
-							contextJson = JsonUtils.fromInputStream(callExternalUrl(apiKey, grailsApplication.config.annotopia.jsonld.annotopia.framing));
+							contextJson = JsonUtils.fromInputStream(callExternalUrl(apiKey, configAccessService.getAsString("annotopia.jsonld.annotopia.framing")));
 						}
 					}
 				
@@ -511,9 +513,9 @@ class AnnotationIntegratedController extends BaseController {
 		} else {
 			if(contextJson==null) {
 				if(outCmd=='context') {
-					contextJson = JsonUtils.fromInputStream(callExternalUrl(apiKey, grailsApplication.config.annotopia.jsonld.annotopia.context));
+					contextJson = JsonUtils.fromInputStream(callExternalUrl(apiKey,  configAccessService.getAsString("annotopia.jsonld.annotopia.context")));
 				} else if(sizeDataset==1 && outCmd=='frame') {
-					contextJson = JsonUtils.fromInputStream(callExternalUrl(apiKey,grailsApplication.config.annotopia.jsonld.annotopia.framing));
+					contextJson = JsonUtils.fromInputStream(callExternalUrl(apiKey, configAccessService.getAsString("annotopia.jsonld.annotopia.framing")));
 				} 
 			}
 		

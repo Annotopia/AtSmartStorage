@@ -40,6 +40,7 @@ import com.hp.hpl.jena.rdf.model.StmtIterator
 class GraphIdentifiersMetadataService {
 
 	def grailsApplication
+	def configAccessService
 	
 	SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSz")
 	
@@ -56,11 +57,11 @@ class GraphIdentifiersMetadataService {
 
 		Resource expression = ResourceFactory.createResource(graphUri);
 		Model metaModel;
-		if(dataset.getNamedModel(grailsApplication.config.annotopia.storage.uri.graph.identifiers)!=null) {
-			 metaModel = dataset.getNamedModel(grailsApplication.config.annotopia.storage.uri.graph.identifiers);
+		if(dataset.getNamedModel(configAccessService.getAsString("annotopia.storage.uri.graph.identifiers"))!=null) {
+			 metaModel = dataset.getNamedModel(configAccessService.getAsString("annotopia.storage.uri.graph.identifiers"));
 		} else {
 			 metaModel = ModelFactory.createDefaultModel();
-			 dataset.addNamedModel(grailsApplication.config.annotopia.storage.uri.graph.identifiers, metaModel);
+			 dataset.addNamedModel(configAccessService.getAsString("annotopia.storage.uri.graph.identifiers"), metaModel);
 		}
 		
 		if(identifiers.get(Bibliographic.LABEL_URL)!=null) {
@@ -72,7 +73,7 @@ class GraphIdentifiersMetadataService {
 			addManifestation(expression, metaModel, identifiers);
 			// Update of the identifiers list
 			updateModelWithIdentifiers(expression, metaModel, identifiers);
-			dataset.addNamedModel(grailsApplication.config.annotopia.storage.uri.graph.identifiers, metaModel);
+			dataset.addNamedModel(configAccessService.getAsString("annotopia.storage.uri.graph.identifiers"), metaModel);
 		}
 		metaModel
 	}
@@ -207,6 +208,6 @@ class GraphIdentifiersMetadataService {
 		
 		updateModelWithIdentifiers(expression, metaModel, identifiers)
 		println metaModel;
-		dataset.addNamedModel(grailsApplication.config.annotopia.storage.uri.graph.identifiers, metaModel);
+		dataset.addNamedModel(configAccessService.getAsString("annotopia.storage.uri.graph.identifiers"), metaModel);
 	}
 }

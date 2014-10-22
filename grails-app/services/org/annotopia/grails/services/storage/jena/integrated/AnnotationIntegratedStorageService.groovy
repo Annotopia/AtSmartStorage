@@ -60,6 +60,7 @@ class AnnotationIntegratedStorageService {
 	
 	def jenaUtilsService
 	def grailsApplication
+	def configAccessService
 	def graphMetadataService
 	def jenaVirtuosoStoreService
 	def openAnnotationUtilsService
@@ -146,7 +147,7 @@ class AnnotationIntegratedStorageService {
 			graphNames.each { graphName ->
 				Dataset ds = retrieveAnnotationSetGraph(apiKey, graphName);
 				if(incGph=='true') {
-					Model m = jenaVirtuosoStoreService.retrieveGraphMetadata(apiKey, graphName, grailsApplication.config.annotopia.storage.uri.graph.provenance);
+					Model m = jenaVirtuosoStoreService.retrieveGraphMetadata(apiKey, graphName, configAccessService.getAsString("annotopia.storage.uri.graph.provenance"));
 					if(m!=null) ds.setDefaultModel(m);
 				}
 				if(ds!=null) datasets.add(ds);
@@ -218,9 +219,9 @@ class AnnotationIntegratedStorageService {
 		log.trace('[' + apiKey + '] ' + queryString);
 	
 		VirtGraph graph = new VirtGraph (
-			grailsApplication.config.annotopia.storage.triplestore.host,
-			grailsApplication.config.annotopia.storage.triplestore.user,
-			grailsApplication.config.annotopia.storage.triplestore.pass);
+			configAccessService.getAsString("annotopia.storage.triplestore.host"),
+			configAccessService.getAsString("annotopia.storage.triplestore.user"),
+			configAccessService.getAsString("annotopia.storage.triplestore.pass"));
 		
 		Dataset graphs;
 		try {
@@ -283,9 +284,9 @@ class AnnotationIntegratedStorageService {
 		log.info '[' + apiKey + '] Retrieving graph: ' + graphUri;
 		
 		VirtGraph set = new VirtGraph (graphUri,
-			grailsApplication.config.annotopia.storage.triplestore.host,
-			grailsApplication.config.annotopia.storage.triplestore.user,
-			grailsApplication.config.annotopia.storage.triplestore.pass);
+			configAccessService.getAsString("annotopia.storage.triplestore.host"),
+			configAccessService.getAsString("annotopia.storage.triplestore.user"),
+			configAccessService.getAsString("annotopia.storage.triplestore.pass"));
 		
 		String queryString = "CONSTRUCT { ?s ?p ?o . } FROM <" + graphUri + ">" +
 			" WHERE { ?s ?p ?o . }";
@@ -423,7 +424,7 @@ class AnnotationIntegratedStorageService {
 			openAnnotationUtilsService.detectTargetIdentifiersInDefaultGraph(apiKey, inMemoryDataset, identifiers)
 			
 			// identifiersModel can be null if no identifier is present.
-			Model identifiersModel = jenaVirtuosoStoreService.retrieveGraphIdentifiersMetadata(apiKey, identifiers, grailsApplication.config.annotopia.storage.uri.graph.identifiers);
+			Model identifiersModel = jenaVirtuosoStoreService.retrieveGraphIdentifiersMetadata(apiKey, identifiers, configAccessService.getAsString("annotopia.storage.uri.graph.identifiers"));
 			if(identifiersModel!=null) jenaUtilsService.getDatasetAsString(identifiersModel);
 			
 			
@@ -713,7 +714,7 @@ class AnnotationIntegratedStorageService {
 						Model m = ModelFactory.createDefaultModel()
 			
 						def annotation = array.get(j);
-						annotation.put("@context", grailsApplication.config.annotopia.jsonld.annotopia.context);
+						annotation.put("@context", configAccessService.getAsString("annotopia.jsonld.annotopia.context"));
 						
 						String annotationAsString = JsonUtils.toString(annotation);
 						
@@ -858,9 +859,9 @@ class AnnotationIntegratedStorageService {
 	 * @return The minted URI
 	 */
 	public String mintUri(uriType) {
-		return grailsApplication.config.grails.server.protocol + '://' +
-			grailsApplication.config.grails.server.host + ':' +
-			grailsApplication.config.grails.server.port + '/s/' + uriType + '/' +
+		return configAccessService.getAsString("grails.server.protocol") + '://' +
+			configAccessService.getAsString("grails.server.host") + ':' +
+			configAccessService.getAsString("grails.server.port") + '/s/' + uriType + '/' +
 			org.annotopia.grails.services.storage.utils.UUID.uuid();
 	}
 	

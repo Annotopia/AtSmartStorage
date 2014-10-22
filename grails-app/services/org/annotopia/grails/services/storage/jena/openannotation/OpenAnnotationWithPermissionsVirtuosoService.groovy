@@ -37,6 +37,7 @@ import com.hp.hpl.jena.rdf.model.RDFNode
 class OpenAnnotationWithPermissionsVirtuosoService {
 
 	def grailsApplication
+	def configAccessService
 	def usersService;
 	def groupsService;
 	def jenaVirtuosoStoreService
@@ -566,9 +567,9 @@ class OpenAnnotationWithPermissionsVirtuosoService {
 		log.trace('[' + apiKey + '] ' + queryString);
 	
 		VirtGraph graph = new VirtGraph (
-			grailsApplication.config.annotopia.storage.triplestore.host,
-			grailsApplication.config.annotopia.storage.triplestore.user,
-			grailsApplication.config.annotopia.storage.triplestore.pass);
+			configAccessService.getAsString("annotopia.storage.triplestore.host"),
+			configAccessService.getAsString("annotopia.storage.triplestore.user"),
+			configAccessService.getAsString("annotopia.storage.triplestore.pass"));
 		
 		Dataset graphs;
 		try {
@@ -615,9 +616,9 @@ class OpenAnnotationWithPermissionsVirtuosoService {
 		log.trace('[' + apiKey + '] ' + queryString);
 	
 		VirtGraph graph = new VirtGraph (
-			grailsApplication.config.annotopia.storage.triplestore.host,
-			grailsApplication.config.annotopia.storage.triplestore.user,
-			grailsApplication.config.annotopia.storage.triplestore.pass);
+			configAccessService.getAsString("annotopia.storage.triplestore.host"),
+			configAccessService.getAsString("annotopia.storage.triplestore.user"),
+			configAccessService.getAsString("annotopia.storage.triplestore.pass"));
 		
 		Dataset graphs;	
 		try {

@@ -29,6 +29,7 @@ import java.util.Set;
  */
 class SecretController {
 
+	def configAccessService;
 	def jenaVirtuosoStoreService;
 	def openAnnotationVirtuosoService;
 	def annotationIntegratedStorageService;
@@ -45,7 +46,7 @@ class SecretController {
 			jenaVirtuosoStoreService.dropGraph("secret", graph);
 		}
 		
-		jenaVirtuosoStoreService.dropGraph("secret", grailsApplication.config.annotopia.storage.uri.graph.provenance);
-		jenaVirtuosoStoreService.dropGraph("secret", grailsApplication.config.annotopia.storage.uri.graph.identifiers);
+		jenaVirtuosoStoreService.dropGraph("secret", configAccessService.getAsString("annotopia.storage.uri.graph.provenance"));
+		jenaVirtuosoStoreService.dropGraph("secret", configAccessService.getAsString("annotopia.storage.uri.graph.identifiers"));
 	}
 }

@@ -62,7 +62,7 @@ class BaseController {
 	public String getCurrentUrl(HttpServletRequest request){
 		StringBuilder sb = new StringBuilder()
 		int fromIndex = 7;
-		if(grailsApplication.config.grails.server.protocol.equals("https")) {fromIndex = 8;}
+		if(configAccessService.getAsString("grails.server.protocol").equals("https")) {fromIndex = 8;}
 		sb << request.getRequestURL().substring(0,request.getRequestURL().indexOf("/", fromIndex))
 		sb << request.getAttribute("javax.servlet.forward.request_uri")
 		if(request.getAttribute("javax.servlet.forward.query_string")){
@@ -81,8 +81,8 @@ class BaseController {
 	private InputStream callExternalUrl(def agentKey, String URL) {
 		Proxy httpProxy = null;
 		if(grailsApplication.config.annotopia.server.proxy.host && grailsApplication.config.annotopia.server.proxy.port) {
-			String proxyHost = grailsApplication.config.annotopia.server.proxy.host; //replace with your proxy server name or IP
-			int proxyPort = grailsApplication.config.annotopia.server.proxy.port.toInteger(); //your proxy server port
+			String proxyHost = configAccessService.getAsString("annotopia.server.proxy.host"); //replace with your proxy server name or IP
+			int proxyPort = configAccessService.getAsString("annotopia.server.proxy.port").toInteger(); //your proxy server port
 			SocketAddress addr = new InetSocketAddress(proxyHost, proxyPort);
 			httpProxy = new Proxy(Proxy.Type.HTTP, addr);
 		}

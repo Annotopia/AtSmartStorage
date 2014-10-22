@@ -37,6 +37,7 @@ import com.hp.hpl.jena.rdf.model.ResourceFactory
 class GraphMetadataService {
 	
 	def grailsApplication
+	def configAccessService
 	
 	SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSz")
 
@@ -45,11 +46,11 @@ class GraphMetadataService {
 		def graphRes = ResourceFactory.createResource(graphUri);
 		Model metaModel
 		
-		if(dataset.getNamedModel(grailsApplication.config.annotopia.storage.uri.graph.provenance)!=null) {
-			 metaModel = dataset.getNamedModel(grailsApplication.config.annotopia.storage.uri.graph.provenance);
+		if(dataset.getNamedModel(configAccessService.getAsString("annotopia.storage.uri.graph.provenance"))!=null) {
+			 metaModel = dataset.getNamedModel(configAccessService.getAsString("annotopia.storage.uri.graph.provenance"));
 		} else {
 			 metaModel = ModelFactory.createDefaultModel();
-			 dataset.addNamedModel(grailsApplication.config.annotopia.storage.uri.graph.provenance, metaModel);
+			 dataset.addNamedModel(configAccessService.getAsString("annotopia.storage.uri.graph.provenance, metaModel"));
 		}
 		metaModel.add(graphRes, ResourceFactory.createProperty(RDF.RDF_TYPE), ResourceFactory.createResource(AnnotopiaVocabulary.ANNOTATION_SET_GRAPH));
 		metaModel.add(graphRes, ResourceFactory.createProperty(PAV.PAV_CREATED_BY), ResourceFactory.createResource("annotopia:client:" + apiKey));
@@ -58,7 +59,7 @@ class GraphMetadataService {
 		metaModel.add(graphRes, ResourceFactory.createProperty(PAV.PAV_LAST_UPDATED_ON), ResourceFactory.createPlainLiteral(dateFormat.format(new Date())));
 		metaModel.add(graphRes, ResourceFactory.createProperty(PAV.PAV_LAST_UPDATED_BY), ResourceFactory.createResource("annotopia:client:" + apiKey));	
 		metaModel.add(graphRes, ResourceFactory.createProperty(AnnotopiaVocabulary.AT_STATUS), ResourceFactory.createPlainLiteral("current"));
-		dataset.addNamedModel(grailsApplication.config.annotopia.storage.uri.graph.provenance, metaModel);
+		dataset.addNamedModel(configAccessService.getAsString("annotopia.storage.uri.graph.provenance"), metaModel);
 		metaModel
 	}
 	
@@ -66,11 +67,11 @@ class GraphMetadataService {
 		//def metaGraphUri = getGraphUri();
 		def graphRes = ResourceFactory.createResource(graphUri);
 		Model metaModel 
-		if(dataset.getNamedModel(grailsApplication.config.annotopia.storage.uri.graph.provenance)!=null) {
-			 metaModel = dataset.getNamedModel(grailsApplication.config.annotopia.storage.uri.graph.provenance);
+		if(dataset.getNamedModel(configAccessService.getAsString("annotopia.storage.uri.graph.provenance"))!=null) {
+			 metaModel = dataset.getNamedModel(configAccessService.getAsString("annotopia.storage.uri.graph.provenance"));
 		} else {
 		 	 metaModel = ModelFactory.createDefaultModel();
-			 dataset.addNamedModel(grailsApplication.config.annotopia.storage.uri.graph.provenance, metaModel);
+			 dataset.addNamedModel(configAccessService.getAsString("annotopia.storage.uri.graph.provenance"), metaModel);
 		}
 		metaModel.add(graphRes, ResourceFactory.createProperty(RDF.RDF_TYPE), ResourceFactory.createResource(AnnotopiaVocabulary.ANNOTATION_GRAPH));
 		metaModel.add(graphRes, ResourceFactory.createProperty(PAV.PAV_CREATED_BY), ResourceFactory.createResource("annotopia:client:" + apiKey));
@@ -79,7 +80,7 @@ class GraphMetadataService {
 		metaModel.add(graphRes, ResourceFactory.createProperty(PAV.PAV_LAST_UPDATED_BY), ResourceFactory.createResource("annotopia:client:" + apiKey));
 		metaModel.add(graphRes, ResourceFactory.createProperty(PAV.PAV_CREATED_WITH), ResourceFactory.createResource("annotopia:test:001"));
 		metaModel.add(graphRes, ResourceFactory.createProperty(AnnotopiaVocabulary.AT_STATUS), ResourceFactory.createPlainLiteral("current"));
-		dataset.addNamedModel(grailsApplication.config.annotopia.storage.uri.graph.provenance, metaModel);
+		dataset.addNamedModel(configAccessService.getAsString("annotopia.storage.uri.graph.provenance"), metaModel);
 		metaModel
 	}
 	
@@ -87,11 +88,11 @@ class GraphMetadataService {
 		//xwdef metaGraphUri = getGraphUri();
 		def graphRes = ResourceFactory.createResource(graphUri);
 		Model metaModel 
-		if(dataset.getNamedModel(grailsApplication.config.annotopia.storage.uri.graph.provenance)!=null) {
-			 metaModel = dataset.getNamedModel(grailsApplication.config.annotopia.storage.uri.graph.provenance);
+		if(dataset.getNamedModel(configAccessService.getAsString("annotopia.storage.uri.graph.provenance"))!=null) {
+			 metaModel = dataset.getNamedModel(configAccessService.getAsString("annotopia.storage.uri.graph.provenance"));
 		} else {
 		 	 metaModel = ModelFactory.createDefaultModel();
-			 dataset.addNamedModel(grailsApplication.config.annotopia.storage.uri.graph.provenance, metaModel);
+			 dataset.addNamedModel(configAccessService.getAsString("annotopia.storage.uri.graph.provenance"), metaModel);
 		}
 		metaModel.add(graphRes, ResourceFactory.createProperty(RDF.RDF_TYPE), ResourceFactory.createResource(AnnotopiaVocabulary.BODY_GRAPH));
 		metaModel.add(graphRes, ResourceFactory.createProperty(PAV.PAV_CREATED_BY), ResourceFactory.createResource("annotopia:client:" + apiKey));
@@ -114,9 +115,9 @@ class GraphMetadataService {
 	}
 	
 	private String getGraphUri() {
-		return grailsApplication.config.grails.server.protocol + '://' + 
-			grailsApplication.config.grails.server.host + ':' +
-			grailsApplication.config.grails.server.port + '/s/graph/' +
+		return configAccessService.getAsString("grails.server.protocol") + '://' + 
+			configAccessService.getAsString("grails.server.host") + ':' +
+			configAccessService.getAsString("grails.server.port") + '/s/graph/' +
 			org.annotopia.grails.services.storage.utils.UUID.uuid();
 	}
 }

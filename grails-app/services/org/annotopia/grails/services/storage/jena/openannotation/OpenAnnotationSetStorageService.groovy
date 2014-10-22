@@ -51,6 +51,7 @@ class OpenAnnotationSetStorageService {
 	
 	def jenaUtilsService
 	def grailsApplication
+	def configAccessService
 	def graphMetadataService
 	def jenaVirtuosoStoreService
 	def openAnnotationUtilsService
@@ -78,7 +79,7 @@ class OpenAnnotationSetStorageService {
 			graphNames.each { graphName ->
 				Dataset ds = jenaVirtuosoStoreService.retrieveGraph(apiKey, graphName);
 				if(incGph=='true') {
-					Model m = jenaVirtuosoStoreService.retrieveGraphMetadata(apiKey, graphName, grailsApplication.config.annotopia.storage.uri.graph.provenance);
+					Model m = jenaVirtuosoStoreService.retrieveGraphMetadata(apiKey, graphName, configAccessService.getAsString("annotopia.storage.uri.graph.provenance"));
 					if(m!=null) ds.setDefaultModel(m);
 				}
 				if(ds!=null) datasets.add(ds);

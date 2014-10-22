@@ -18,33 +18,22 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.annotopia.grails.services.storage.authentication
+package org.annotopia.grails.services.storage
 
 /**
- * This service manages access through API keys that are assigned to 
- * applications or users that want to make use of the Smart Storage.
- *
  * @author Paolo Ciccarese <paolo.ciccarese@gmail.com>
  */
-class ApiKeyAuthenticationService {
+class ConfigAccessService {
 
-	def grailsApplication
-	def configAccessService
+	def grailsApplication;
 	
-	/**
-	 * Returns true if the tested apiKey is valid. At the moment this validates
-	 * the testing ApiKey only. Later it will test the validity against real 
-	 * API keys.
-	 * @param apiKey	The ApiKey assigned to a client
-	 * @return True if the client is authorized
-	 */
-	def isApiKeyValid(def ip, def apiKey) {
-		log.info("Validating API key [" + apiKey + "] on request from IP: " + ip);
-		// Validation mockup for testing mode
-		boolean allowed = (
-			configAccessService.getAsString("annotopia.storage.testing.enabled")=='true' &&
-			apiKey==configAccessService.getAsString("annotopia.storage.testing.apiKey")
-		);
-	 	return allowed;
+	public String getAsString(String key) {
+		def buffer = grailsApplication.config;
+		List tokens = key.tokenize('.');
+		tokens.each { token ->
+			buffer = buffer[token];
+		}
+		if(buffer!=null) return buffer.toString().trim();
+		else return "";
 	}
 }

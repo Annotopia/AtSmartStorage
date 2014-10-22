@@ -61,6 +61,7 @@ class OpenAnnotationStorageService {
 	
 	def jenaUtilsService
 	def grailsApplication
+	def configAccessService
 	def graphMetadataService
 	def jenaVirtuosoStoreService
 	def openAnnotationUtilsService
@@ -117,7 +118,7 @@ class OpenAnnotationStorageService {
 				}
 				
 				if(incGph==INCGPH_YES) {
-					Model m = jenaVirtuosoStoreService.retrieveGraphMetadata(apiKey, graphName, grailsApplication.config.annotopia.storage.uri.graph.provenance);
+					Model m = jenaVirtuosoStoreService.retrieveGraphMetadata(apiKey, graphName, configAccessService.getAsString("annotopia.storage.uri.graph.provenance"));
 					if(m!=null) ds.setDefaultModel(m);
 				}
 				if(ds!=null) datasets.add(ds);
@@ -175,7 +176,7 @@ class OpenAnnotationStorageService {
 				}
 				
 				if(incGph==INCGPH_YES) {
-					Model m = jenaVirtuosoStoreService.retrieveGraphMetadata(apiKey, graphName, grailsApplication.config.annotopia.storage.uri.graph.provenance);
+					Model m = jenaVirtuosoStoreService.retrieveGraphMetadata(apiKey, graphName, configAccessService.getAsString("annotopia.storage.uri.graph.provenance"));
 					if(m!=null) ds.setDefaultModel(m);
 				}
 				if(ds!=null) datasets.add(ds);
@@ -353,7 +354,7 @@ class OpenAnnotationStorageService {
 			// Identity management
 			def identifierUri = mintUri("expression");
 			openAnnotationUtilsService.detectTargetIdentifiersInDefaultGraph(apiKey, dataset, identifiers)		
-			Model identifiersModel = jenaVirtuosoStoreService.retrieveGraphIdentifiersMetadata(apiKey, identifiers, grailsApplication.config.annotopia.storage.uri.graph.identifiers);
+			Model identifiersModel = jenaVirtuosoStoreService.retrieveGraphIdentifiersMetadata(apiKey, identifiers, configAccessService.getAsString("annotopia.storage.uri.graph.identifiers"));
 			//jenaUtilsService.getDatasetAsString(identifiersModel);
 			// If no identifiers are found for this resource we create the identifiers metadata.
 			if(identifiersModel!=null) {
@@ -618,13 +619,13 @@ class OpenAnnotationStorageService {
 					def annotationGraphUri;
 					storedAnnotationDataset.listNames().each { annotationGraphUri = it }
 					
-					Model metaModel = jenaVirtuosoStoreService.retrieveGraphMetadata(apiKey, annotationGraphUri, grailsApplication.config.annotopia.storage.uri.graph.provenance);
+					Model metaModel = jenaVirtuosoStoreService.retrieveGraphMetadata(apiKey, annotationGraphUri, configAccessService.getAsString("annotopia.storage.uri.graph.provenance"));
 					graphMetadataService.getAnnotationGraphUpdateMetadata(apiKey, metaModel, annotationGraphUri);					
-					updateDataset.addNamedModel(grailsApplication.config.annotopia.storage.uri.graph.provenance, metaModel);
+					updateDataset.addNamedModel(configAccessService.getAsString("annotopia.storage.uri.graph.provenance"), metaModel);
 
 					//println jenaUtilsService.getDatasetAsString(updateDataset);
 					
-					jenaVirtuosoStoreService.updateGraphMetadata(apiKey, metaModel, annotationGraphUri, grailsApplication.config.annotopia.storage.uri.graph.provenance)
+					jenaVirtuosoStoreService.updateGraphMetadata(apiKey, metaModel, annotationGraphUri, configAccessService.getAsString("annotopia.storage.uri.graph.provenance"))
 					
 					jenaVirtuosoStoreService.updateDataset(apiKey, updateDataset);
 					
@@ -659,9 +660,9 @@ class OpenAnnotationStorageService {
 	 * @return The minted URI
 	 */
 	public String mintUri(uriType) {
-		return grailsApplication.config.grails.server.protocol + '://' + 
-			grailsApplication.config.grails.server.host + ':' +
-			grailsApplication.config.grails.server.port + '/s/' + uriType + '/' + 
+		return configAccessService.getAsString("grails.server.protocol") + "://" +
+			configAccessService.getAsString("grails.server.host") + ":" +
+			configAccessService.getAsString("grails.server.port") + "/s/${uriType}/" +
 			org.annotopia.grails.services.storage.utils.UUID.uuid();
 	}
 	

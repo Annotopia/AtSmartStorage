@@ -25,7 +25,8 @@ import virtuoso.jena.driver.VirtGraph
 
 class BootStrap {
 
-	def grailsApplication
+	def grailsApplication;
+	def configAccessService;
 	
 	def init = { servletContext ->
 		log.info  '========================================================================';
@@ -66,24 +67,24 @@ class BootStrap {
 		if(grailsApplication.config.annotopia.server.proxy.host &&
 				grailsApplication.config.annotopia.server.proxy.port &&
 				grailsApplication.config.annotopia.server.proxy.protocol) {
-			log.info  ' ip         : ' + grailsApplication.config.annotopia.server.proxy.host ;
-			log.info  ' port       : ' + grailsApplication.config.annotopia.server.proxy.port ;
-			log.info  ' protocol   : ' + grailsApplication.config.annotopia.server.proxy.protocol ;
+			log.info  ' ip         : ' + configAccessService.getAsString("server.proxy.host") ;
+			log.info  ' port       : ' + configAccessService.getAsString("server.proxy.port") ;
+			log.info  ' protocol   : ' + configAccessService.getAsString("server.proxy.protocol") ;
 		} else {
 			log.info  ' No proxy configuration';
 		}
 		
 		separator();
 		log.info  '** Virtuoso Configuration';
-		log.info  ' url        : ' + grailsApplication.config.annotopia.storage.triplestore.host ;
-		log.info  ' user       : ' + grailsApplication.config.annotopia.storage.triplestore.user ;
-		log.info  ' password   : ' + grailsApplication.config.annotopia.storage.triplestore.pass ;
+		log.info  ' url        : ' + configAccessService.getAsString("annotopia.storage.triplestore.host") ;
+		log.info  ' user       : ' + configAccessService.getAsString("annotopia.storage.triplestore.user") ;
+		log.info  ' password   : ' + configAccessService.getAsString("annotopia.storage.triplestore.pass") ;
 		log.info  '** Virtuoso Checking Connection';
 		try {
 			VirtGraph virtGraph = new VirtGraph (
-				grailsApplication.config.annotopia.storage.triplestore.host,
-				grailsApplication.config.annotopia.storage.triplestore.user,
-				grailsApplication.config.annotopia.storage.triplestore.pass);
+				configAccessService.getAsString("annotopia.storage.triplestore.host"),
+				configAccessService.getAsString("annotopia.storage.triplestore.user"),
+				configAccessService.getAsString("annotopia.storage.triplestore.pass"));
 			log.info  ' ...connection active!'
 		} catch (Exception e) {
 			log.error e.getMessage();
@@ -111,8 +112,8 @@ class BootStrap {
 		}
 		
 		separator();
-		log.info  'Server at http://' + grailsApplication.config.grails.server.host + 
-			":" + grailsApplication.config.grails.server.port
+		log.info  'Server at http://' + configAccessService.getAsString("grails.server.host") + 
+			":" + configAccessService.getAsString("grails.server.port")
 		
 		separator();
 		log.info  'Bootstrapping complete!'

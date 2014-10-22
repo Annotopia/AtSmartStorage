@@ -131,9 +131,9 @@ class OpenAnnotationSetsVirtuosoService {
 		log.trace('[' + apiKey + '] ' + queryString);
 	
 		VirtGraph graph = new VirtGraph (
-			grailsApplication.config.annotopia.storage.triplestore.host,
-			grailsApplication.config.annotopia.storage.triplestore.user,
-			grailsApplication.config.annotopia.storage.triplestore.pass);
+			configAccessService.getAsString("annotopia.storage.triplestore.host"),
+			configAccessService.getAsString("annotopia.storage.triplestore.user"),
+			configAccessService.getAsString("annotopia.storage.triplestore.pass"));
 		
 		Dataset graphs;
 		try {

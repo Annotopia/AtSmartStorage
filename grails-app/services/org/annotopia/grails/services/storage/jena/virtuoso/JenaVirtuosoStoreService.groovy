@@ -53,6 +53,7 @@ import com.hp.hpl.jena.rdf.model.RDFNode
 class JenaVirtuosoStoreService implements ITripleStore {
 	
 	def grailsApplication
+	def configAccessService
 	
 	/**
 	 * Returns a Virtuoso Graph for connecting to the Virtuoso
@@ -61,9 +62,9 @@ class JenaVirtuosoStoreService implements ITripleStore {
 	 */
 	private VirtGraph graph() {
 		return new VirtGraph (
-			grailsApplication.config.annotopia.storage.triplestore.host,
-			grailsApplication.config.annotopia.storage.triplestore.user,
-			grailsApplication.config.annotopia.storage.triplestore.pass);
+			configAccessService.getAsString("annotopia.storage.triplestore.host"),
+			configAccessService.getAsString("annotopia.storage.triplestore.user"),
+			configAccessService.getAsString("annotopia.storage.triplestore.pass"));
 	}
 	
 	// -----------------------------------------------------------------------
@@ -249,11 +250,11 @@ class JenaVirtuosoStoreService implements ITripleStore {
 		// Default graph management
 		if(dataset.getDefaultModel()!=null && dataset.getDefaultModel().size()>0) {
 			log.debug '[' + apiKey + '] Storing graph: * (default)'
-			log.debug grailsApplication.config.annotopia.storage.triplestore.host
+			log.debug configAccessService.getAsString("annotopia.storage.triplestore.host")
 			VirtGraph virtGraph = new VirtGraph (
-				grailsApplication.config.annotopia.storage.triplestore.host,
-				grailsApplication.config.annotopia.storage.triplestore.user,
-				grailsApplication.config.annotopia.storage.triplestore.pass);
+				configAccessService.getAsString("annotopia.storage.triplestore.host"),
+				configAccessService.getAsString("annotopia.storage.triplestore.user"),
+				configAccessService.getAsString("annotopia.storage.triplestore.pass"));
 			VirtModel virtModel = new VirtModel(virtGraph);
 			virtModel.add(dataset.getDefaultModel())
 			printDebugData(dataset.getDefaultModel());
@@ -265,9 +266,9 @@ class JenaVirtuosoStoreService implements ITripleStore {
 			log.debug '[' + apiKey + '] Storing graph: ' + name
 			Model model = dataset.getNamedModel(name)
 			VirtGraph virtGraph = new VirtGraph (name,
-				grailsApplication.config.annotopia.storage.triplestore.host,
-				grailsApplication.config.annotopia.storage.triplestore.user,
-				grailsApplication.config.annotopia.storage.triplestore.pass);
+				configAccessService.getAsString("annotopia.storage.triplestore.host"),
+				configAccessService.getAsString("annotopia.storage.triplestore.user"),
+				configAccessService.getAsString("annotopia.storage.triplestore.pass"));
 			VirtModel virtModel = new VirtModel(virtGraph);
 			virtModel.add(model);
 			printDebugData(model);
@@ -285,11 +286,11 @@ class JenaVirtuosoStoreService implements ITripleStore {
 		// Default graph management
 		if(dataset.getDefaultModel()!=null && dataset.getDefaultModel().size()>0) {
 			log.debug '[' + apiKey + '] Storing graph: * (default)'
-			log.debug grailsApplication.config.annotopia.storage.triplestore.host
+			log.debug configAccessService.getAsString("annotopia.storage.triplestore.host")
 			VirtGraph virtGraph = new VirtGraph (
-				grailsApplication.config.annotopia.storage.triplestore.host,
-				grailsApplication.config.annotopia.storage.triplestore.user,
-				grailsApplication.config.annotopia.storage.triplestore.pass);
+				configAccessService.getAsString("annotopia.storage.triplestore.host"),
+				configAccessService.getAsString("annotopia.storage.triplestore.user"),
+				configAccessService.getAsString("annotopia.storage.triplestore.pass"));
 			VirtModel virtModel = new VirtModel(virtGraph);
 			virtModel.add(dataset.getDefaultModel())
 			printDebugData(dataset.getDefaultModel());
@@ -302,9 +303,9 @@ class JenaVirtuosoStoreService implements ITripleStore {
 			log.debug '[' + apiKey + '] Storing graph: ' + name
 			Model model = dataset.getNamedModel(name)
 			VirtGraph virtGraph = new VirtGraph (name,
-				grailsApplication.config.annotopia.storage.triplestore.host,
-				grailsApplication.config.annotopia.storage.triplestore.user,
-				grailsApplication.config.annotopia.storage.triplestore.pass);
+				configAccessService.getAsString("annotopia.storage.triplestore.host"),
+				configAccessService.getAsString("annotopia.storage.triplestore.user"),
+				configAccessService.getAsString("annotopia.storage.triplestore.pass"));
 			VirtModel virtModel = new VirtModel(virtGraph);
 			virtModel.add(model);
 			printDebugData(model);
@@ -313,7 +314,7 @@ class JenaVirtuosoStoreService implements ITripleStore {
 	
 	private printDebugData(def data) {
 		if (Environment.current == Environment.DEVELOPMENT && grailsApplication.config.annotopia.debug.storage.environment.trace.data &&
-				Boolean.parseBoolean(grailsApplication.config.annotopia.debug.storage.environment.trace.data)) {
+				Boolean.parseBoolean(configAccessService.getAsString("annotopia.debug.storage.environment.trace.data"))) {
 			println '-----START-DEVELOPMENT-DEBUG-DATA-----';
 			RDFDataMgr.write(System.out, data, RDFFormat.JSONLD);
 			println '\n-----END-DEVELOPMENT-DEBUG-DATA-----';
@@ -397,9 +398,9 @@ class JenaVirtuosoStoreService implements ITripleStore {
 		log.info '[' + apiKey + '] Retrieving graph metadata: ' + graphUri;
 		
 		VirtGraph set = new VirtGraph (graphUri,
-			grailsApplication.config.annotopia.storage.triplestore.host,
-			grailsApplication.config.annotopia.storage.triplestore.user,
-			grailsApplication.config.annotopia.storage.triplestore.pass);
+			configAccessService.getAsString("annotopia.storage.triplestore.host"),
+			configAccessService.getAsString("annotopia.storage.triplestore.user"),
+			configAccessService.getAsString("annotopia.storage.triplestore.pass"));
 		
 		String queryString = "CONSTRUCT { <"+graphUri+"> ?p ?o . } FROM <" + metadataGraphUri + ">" +
 			" WHERE { <"+graphUri+"> ?p ?o .}";
@@ -420,9 +421,9 @@ class JenaVirtuosoStoreService implements ITripleStore {
 		log.info '[' + apiKey + '] Retrieving graph identifiers metadata: ' + identifiers;
 
 		VirtGraph set = new VirtGraph (metadataIdentifiersGraphUri,
-			grailsApplication.config.annotopia.storage.triplestore.host,
-			grailsApplication.config.annotopia.storage.triplestore.user,
-			grailsApplication.config.annotopia.storage.triplestore.pass);
+			configAccessService.getAsString("annotopia.storage.triplestore.host"),
+			configAccessService.getAsString("annotopia.storage.triplestore.user"),
+			configAccessService.getAsString("annotopia.storage.triplestore.pass"));
 
 		if(identifiers.get(Bibliographic.LABEL_URL)!=null) {
 
@@ -482,9 +483,9 @@ class JenaVirtuosoStoreService implements ITripleStore {
 		log.info '[' + apiKey + '] Retrieving manifestations by identifiers: ' + identifiers;
 		
 		VirtGraph set = new VirtGraph (metadataIdentifiersGraphUri,
-			grailsApplication.config.annotopia.storage.triplestore.host,
-			grailsApplication.config.annotopia.storage.triplestore.user,
-			grailsApplication.config.annotopia.storage.triplestore.pass);
+			configAccessService.getAsString("annotopia.storage.triplestore.host"),
+			configAccessService.getAsString("annotopia.storage.triplestore.user"),
+			configAccessService.getAsString("annotopia.storage.triplestore.pass"));
 		
 
 		boolean first = false;
@@ -590,9 +591,9 @@ class JenaVirtuosoStoreService implements ITripleStore {
 		
 		try {
 			VirtGraph graph = new VirtGraph (
-				grailsApplication.config.annotopia.storage.triplestore.host,
-				grailsApplication.config.annotopia.storage.triplestore.user,
-				grailsApplication.config.annotopia.storage.triplestore.pass);
+				configAccessService.getAsString("annotopia.storage.triplestore.host"),
+				configAccessService.getAsString("annotopia.storage.triplestore.user"),
+				configAccessService.getAsString("annotopia.storage.triplestore.pass"));
 			String queryString = "DELETE WHERE { GRAPH <" + graphUri + ">" +
 				" { <"+subjectUri+"> ?p ?o .} }";
 			log.trace '[' + apiKey + '] removeAllTriples: ' + queryString
@@ -610,9 +611,9 @@ class JenaVirtuosoStoreService implements ITripleStore {
 		
 		try {
 			VirtGraph graph = new VirtGraph (
-				grailsApplication.config.annotopia.storage.triplestore.host,
-				grailsApplication.config.annotopia.storage.triplestore.user,
-				grailsApplication.config.annotopia.storage.triplestore.pass);
+				configAccessService.getAsString("annotopia.storage.triplestore.host"),
+				configAccessService.getAsString("annotopia.storage.triplestore.user"),
+				configAccessService.getAsString("annotopia.storage.triplestore.pass"));
 			String str = "DROP SILENT GRAPH <" + graphUri + ">";
 			VirtuosoUpdateRequest vur = VirtuosoUpdateFactory.create(str, graph);
 			vur.exec();
@@ -627,9 +628,9 @@ class JenaVirtuosoStoreService implements ITripleStore {
 		
 		try {
 			VirtGraph graph = new VirtGraph (
-				grailsApplication.config.annotopia.storage.triplestore.host,
-				grailsApplication.config.annotopia.storage.triplestore.user,
-				grailsApplication.config.annotopia.storage.triplestore.pass);
+				configAccessService.getAsString("annotopia.storage.triplestore.host"),
+				configAccessService.getAsString("annotopia.storage.triplestore.user"),
+				configAccessService.getAsString("annotopia.storage.triplestore.pass"));
 			String str = "CLEAR GRAPH <" + graphUri + ">";
 			VirtuosoUpdateRequest vur = VirtuosoUpdateFactory.create(str, graph);
 			vur.exec();

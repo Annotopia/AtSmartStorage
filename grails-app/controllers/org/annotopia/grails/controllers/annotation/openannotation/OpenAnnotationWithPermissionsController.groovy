@@ -60,6 +60,7 @@ class OpenAnnotationWithPermissionsController extends BaseController {
 	private final INCGPH_YES = "true";
 	private final INCGPH_NO = "false";
 
+	def configAccessService;
 	def openAnnotationVirtuosoService;
 	def annotationJenaStorageService;
 	def openAnnotationWithPermissionsStorageService
@@ -180,9 +181,9 @@ class OpenAnnotationWithPermissionsController extends BaseController {
 						// This serializes with and according to the context
 						if(contextJson==null) {
 							if(outCmd==OUTCMD_CONTEXT) {
-								contextJson = JsonUtils.fromInputStream(callExternalUrl(apiKey, grailsApplication.config.annotopia.jsonld.openannotation.context));
+								contextJson = JsonUtils.fromInputStream(callExternalUrl(apiKey, configAccessService.getAsString("annotopia.jsonld.openannotation.context")));
 							} else if(outCmd==OUTCMD_FRAME) {
-								contextJson = JsonUtils.fromInputStream(callExternalUrl(apiKey, grailsApplication.config.annotopia.jsonld.openannotation.framing));						
+								contextJson = JsonUtils.fromInputStream(callExternalUrl(apiKey,configAccessService.getAsString("annotopia.jsonld.openannotation.framing")));						
 							}
 						}
 
@@ -237,9 +238,9 @@ class OpenAnnotationWithPermissionsController extends BaseController {
 				} else {
 					if(contextJson==null) {
 						if(outCmd==OUTCMD_CONTEXT) {
-							contextJson = JsonUtils.fromInputStream(callExternalUrl(apiKey, grailsApplication.config.annotopia.jsonld.annotopia.context));
+							contextJson = JsonUtils.fromInputStream(callExternalUrl(apiKey, configAccessService.getAsString("annotopia.jsonld.annotopia.context")));
 						} else if(outCmd==OUTCMD_FRAME) {
-							contextJson = JsonUtils.fromInputStream(callExternalUrl(apiKey,grailsApplication.config.annotopia.jsonld.openannotation.framing));						
+							contextJson = JsonUtils.fromInputStream(callExternalUrl(apiKey, configAccessService.getAsString("annotopia.jsonld.openannotation.framing")));						
 						}
 					}
 				
@@ -620,9 +621,9 @@ class OpenAnnotationWithPermissionsController extends BaseController {
 		} else {
 			if(contextJson==null) {
 				if(outCmd==OUTCMD_CONTEXT) {
-					contextJson = JsonUtils.fromInputStream(callExternalUrl(apiKey, grailsApplication.config.annotopia.jsonld.annotopia.context));
+					contextJson = JsonUtils.fromInputStream(callExternalUrl(apiKey, configAccessService.getAsString("annotopia.jsonld.annotopia.context")));
 				} else if(sizeDataset==1 && outCmd==OUTCMD_FRAME) {
-					contextJson = JsonUtils.fromInputStream(callExternalUrl(apiKey, grailsApplication.config.annotopia.jsonld.openannotation.framing));
+					contextJson = JsonUtils.fromInputStream(callExternalUrl(apiKey, configAccessService.getAsString("annotopia.jsonld.openannotation.framing")));
 				}
 			}
 		

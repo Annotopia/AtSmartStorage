@@ -60,6 +60,8 @@ class OpenAnnotationController extends BaseController {
 	private final INCGPH_YES = "true";
 	private final INCGPH_NO = "false";
 	
+	def configAccessService;
+	
 	def openAnnotationVirtuosoService;
 	def annotationJenaStorageService;
 	def openAnnotationStorageService
@@ -154,7 +156,7 @@ class OpenAnnotationController extends BaseController {
 				tgtUrls.add(tgtUrl);
 			} else if(tgtIds!=null) {
 				tgtUrls = new ArrayList<String>();
-				tgtUrls = jenaVirtuosoStoreService.retrieveAllManifestationsByIdentifiers(apiKey, identifiers, grailsApplication.config.annotopia.storage.uri.graph.identifiers);
+				tgtUrls = jenaVirtuosoStoreService.retrieveAllManifestationsByIdentifiers(apiKey, identifiers, configAccessService.getAsString("annotopia.storage.uri.graph.identifiers"));
 			}
 			
 			int annotationsTotal = openAnnotationVirtuosoService.countAnnotationGraphs(apiKey, tgtUrls, tgtFgt, sourcesFacet, motivationsFacet);			
@@ -196,9 +198,9 @@ class OpenAnnotationController extends BaseController {
 						// This serializes with and according to the context
 						if(contextJson==null) {
 							if(outCmd==OUTCMD_CONTEXT) {
-								contextJson = JsonUtils.fromInputStream(callExternalUrl(apiKey, grailsApplication.config.annotopia.jsonld.annotopia.context));
+								contextJson = JsonUtils.fromInputStream(callExternalUrl(apiKey, configAccessService.getAsString("annotopia.jsonld.annotopia.context")));
 							} else if(outCmd==OUTCMD_FRAME) {
-								contextJson = JsonUtils.fromInputStream(callExternalUrl(apiKey, grailsApplication.config.annotopia.jsonld.openannotation.framing));						
+								contextJson = JsonUtils.fromInputStream(callExternalUrl(apiKey, configAccessService.getAsString("annotopia.jsonld.openannotation.framing")));						
 							}
 						}
 
@@ -253,9 +255,9 @@ class OpenAnnotationController extends BaseController {
 				} else {
 					if(contextJson==null) {
 						if(outCmd==OUTCMD_CONTEXT) {
-							contextJson = JsonUtils.fromInputStream(callExternalUrl(apiKey, grailsApplication.config.annotopia.jsonld.openannotation.context));
+							contextJson = JsonUtils.fromInputStream(callExternalUrl(apiKey, configAccessService.getAsString("annotopia.jsonld.openannotation.context")));
 						} else if(outCmd==OUTCMD_FRAME) {
-							contextJson = JsonUtils.fromInputStream(callExternalUrl(apiKey,grailsApplication.config.annotopia.jsonld.openannotation.framing));						
+							contextJson = JsonUtils.fromInputStream(callExternalUrl(apiKey, configAccessService.getAsString("annotopia.jsonld.openannotation.framing")));						
 						}
 					}
 				
@@ -566,7 +568,7 @@ class OpenAnnotationController extends BaseController {
 			graphs.listNames().each {
 				log.trace("[" + apiKey + "] Deleting graph " + it);
 				jenaVirtuosoStoreService.dropGraph(apiKey, it);
-				jenaVirtuosoStoreService.removeAllTriples(apiKey, grailsApplication.config.annotopia.storage.uri.graph.provenance, it);
+				jenaVirtuosoStoreService.removeAllTriples(apiKey, configAccessService.getAsString("annotopia.storage.uri.graph.provenance"), it);
 			}
 			def message = "Annotation deleted";
 			render(status: 200, text: returnMessage(apiKey, "deleted", message, startTime), contentType: "text/json", encoding: "UTF-8");
@@ -609,9 +611,9 @@ class OpenAnnotationController extends BaseController {
 		} else {
 			if(contextJson==null) {
 				if(outCmd==OUTCMD_CONTEXT) {
-					contextJson = JsonUtils.fromInputStream(callExternalUrl(apiKey, grailsApplication.config.annotopia.jsonld.openannotation.context));
+					contextJson = JsonUtils.fromInputStream(callExternalUrl(apiKey, configAccessService.getAsString("annotopia.jsonld.openannotation.context")));
 				} else if(sizeDataset==1 && outCmd==OUTCMD_FRAME) {
-					contextJson = JsonUtils.fromInputStream(callExternalUrl(apiKey, grailsApplication.config.annotopia.jsonld.openannotation.framing));
+					contextJson = JsonUtils.fromInputStream(callExternalUrl(apiKey, configAccessService.getAsString("annotopia.jsonld.openannotation.framing")));
 				}
 			}
 		
