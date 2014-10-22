@@ -21,19 +21,42 @@
 package org.annotopia.grails.services.storage
 
 /**
+ * This class mediates the access to the Grails configuration. When retrieving
+ * configuration values the getAsString() method should be used to make sure 
+ * the returned value is a String.
+ * 
  * @author Paolo Ciccarese <paolo.ciccarese@gmail.com>
  */
 class ConfigAccessService {
 
 	def grailsApplication;
 	
-	public String getAsString(String key) {
+	/**
+	 * Returns the value identified by the requested key in
+	 * the Grails configuraiton.
+	 * @param key	The requested key.
+	 * @return The Grails configuration property value or null if no property is found.
+	 */
+	public String getAsString(key) {
 		def buffer = grailsApplication.config;
 		List tokens = key.tokenize('.');
-		tokens.each { token ->
-			buffer = buffer[token];
+		tokens.each { token -> buffer = buffer[token]; }
+		if(buffer.isEmpty()) return null;
+		buffer.toString();
+	}
+	
+	/**
+	 * Private method for simplifying the retrieval of specific properties.
+	 * If the property is not present, an exception is thrown.
+	 * @param key			The key of the requested property
+	 * @return The value of the requested property if present.
+	 */
+	public String getPropertyAsStringNotNull(key) {
+		String value = getAsString(key);
+		if(value==null) {
+			log.error("Parameter not found: " + key);
+			throw new IllegalArgumentException(key + " not found.");
 		}
-		if(buffer!=null) return buffer.toString().trim();
-		else return "";
+		return value;
 	}
 }
