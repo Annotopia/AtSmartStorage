@@ -71,6 +71,14 @@ class JenaVirtuosoStoreService implements ITripleStore {
 		return new VirtModel(getGraph());
 	}
 	
+	private VirtGraph getGraph(String name) {
+		return new VirtGraph (
+			name,
+			configAccessService.getAsString("annotopia.storage.triplestore.host"),
+			configAccessService.getAsString("annotopia.storage.triplestore.user"),
+			configAccessService.getAsString("annotopia.storage.triplestore.pass"));
+	}
+	
 	// -----------------------------------------------------------------------
 	//    COUNT
 	// -----------------------------------------------------------------------
@@ -265,7 +273,7 @@ class JenaVirtuosoStoreService implements ITripleStore {
 			String name = names.next();
 			log.debug '[' + apiKey + '] Storing graph: ' + name
 			Model model = dataset.getNamedModel(name)
-			VirtModel virtModel = getModel();
+			VirtModel virtModel = new VirtModel(getGraph(name));
 			virtModel.add(model);
 			printDebugData(model);
 		}
@@ -294,7 +302,7 @@ class JenaVirtuosoStoreService implements ITripleStore {
 			
 			log.debug '[' + apiKey + '] Storing graph: ' + name
 			Model model = dataset.getNamedModel(name)
-			VirtModel virtModel = model();
+			VirtModel virtModel = model(name);
 			virtModel.add(model);
 			printDebugData(model);
 		}
@@ -385,7 +393,7 @@ class JenaVirtuosoStoreService implements ITripleStore {
 	public Model retrieveGraphMetadata(String apiKey, String graphUri, String metadataGraphUri) {
 		log.info '[' + apiKey + '] Retrieving graph metadata: ' + graphUri;
 		
-		VirtGraph set = getGraph();
+		VirtGraph set = getGraph(graphUri);
 		
 		String queryString = "CONSTRUCT { <"+graphUri+"> ?p ?o . } FROM <" + metadataGraphUri + ">" +
 			" WHERE { <"+graphUri+"> ?p ?o .}";
@@ -405,7 +413,7 @@ class JenaVirtuosoStoreService implements ITripleStore {
 	public Model retrieveGraphIdentifiersMetadata(String apiKey, Map<String,String> identifiers, String metadataIdentifiersGraphUri) {
 		log.info '[' + apiKey + '] Retrieving graph identifiers metadata: ' + identifiers;
 
-		VirtGraph set = getGraph();
+		VirtGraph set = getGraph(metadataIdentifiersGraphUri);
 
 		if(identifiers.get(Bibliographic.LABEL_URL)!=null) {
 
@@ -464,7 +472,7 @@ class JenaVirtuosoStoreService implements ITripleStore {
 	public List<String> retrieveAllManifestationsByIdentifiers(String apiKey, Map<String,String> identifiers, String metadataIdentifiersGraphUri) {
 		log.info '[' + apiKey + '] Retrieving manifestations by identifiers: ' + identifiers;
 		
-		VirtGraph set = getGraph();
+		VirtGraph set = getGraph(metadataIdentifiersGraphUri);
 		
 
 		boolean first = false;

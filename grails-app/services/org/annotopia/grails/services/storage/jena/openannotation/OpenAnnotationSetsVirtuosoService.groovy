@@ -38,6 +38,7 @@ import com.hp.hpl.jena.rdf.model.RDFNode
 class OpenAnnotationSetsVirtuosoService {
 
 	def grailsApplication;
+	def configAccessService;
 	def jenaVirtuosoStoreService;
 	
 	/**
