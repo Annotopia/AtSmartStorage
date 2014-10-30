@@ -702,7 +702,8 @@ class AnnotationIntegratedStorageService {
 
 					//Set<Model> annotationsModels = new HashSet<Model>();
 					Object json = JsonUtils.fromString(set);
-					JSONArray array = json.getAt("annotations");
+
+				    List array = json.getAt("annotations");
 					
 					Model bareSetModel = ModelFactory.createDefaultModel()
 					Object bareSetJson = json;
@@ -768,10 +769,13 @@ class AnnotationIntegratedStorageService {
 								// Annotation to ignore (graph is already in the storage, does not change)
 								println 'UNCHANGED ' + annotationUri
 								unchangedAnnotations.add(annotationUri);
+								println 'UNCHANGED 1'
 								m.removeAll(ResourceFactory.createResource(annotationUri), ResourceFactory.createProperty(AnnotopiaVocabulary.HAS_CHANGED), null);
+								println 'UNCHANGED 2'
 								m.removeAll(ResourceFactory.createResource(annotationSetUri), ResourceFactory.createProperty(PAV.PAV_PREVIOUS_VERSION), null);
-								
+								println 'UNCHANGED 3'
 								datasetToRender.addNamedModel(annotationToAnnotationGraphMap.get(annotationUri), m);
+								println 'UNCHANGED 4'
 							}
 						} 
 					}
