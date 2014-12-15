@@ -74,6 +74,7 @@
    "annotations": [{
 	  "@type": "oa:Annotation",
 	  "hasBody": {
+	    "@type": ["cnt:ContentAsText","oa:SemanticTag"]
 	  },
 	  "hasTarget": {
 	  },
