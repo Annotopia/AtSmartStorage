@@ -170,7 +170,7 @@ class OpenAnnotationSetsUtilsService {
 			sizeDataset++;
 			iterator.next();
 		}
-		
+
 		Dataset datasetToRender = DatasetFactory.createMem();
 		if(sizeDataset==1) datasetToRender.setDefaultModel(annotationSet.getNamedModel(annotationSet.listNames().next()));
 		
@@ -182,10 +182,9 @@ class OpenAnnotationSetsUtilsService {
 
 		def annGraphUris = [];
 		Dataset annotationGraphs = DatasetFactory.createMem();
-		
 		if(framed.get("@graph").getAt(0).getAt("annotations") instanceof java.util.ArrayList) {
 			for(int i=0; i<framed.get("@graph").getAt(0).getAt("annotations").size(); i++) {
-	
+	            println 'annotation ' + i + " - "
 				def annotation = framed.get("@graph").getAt(0).getAt("annotations").get(i);
 				annotation.put("@context", configAccessService.getAsString("annotopia.jsonld.annotopia.context"));
 	
@@ -195,7 +194,7 @@ class OpenAnnotationSetsUtilsService {
 				
 				RDFDataMgr.read(model, new ByteArrayInputStream(JsonUtils.toString(annotation).getBytes("UTF-8")), RDFLanguages.JSONLD);
 				annotationGraphs.addNamedModel(graphUri, model);
-				framed.get("@graph").getAt(0).getAt("annotations").clear();
+				framed.get("@graph").getAt(0).getAt("annotations").get(i).clear();
 			}
 		} else {
 			def annotation = framed.get("@graph").getAt(0).getAt("annotations");
