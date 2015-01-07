@@ -18,32 +18,30 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.annotopia.grails.controllers.storage
-
-import java.util.Set;
+package org.annotopia.grails.services.storage
 
 /**
- * This has to be used with caution and only for development/testing reasons.
- * 
  * @author Paolo Ciccarese <paolo.ciccarese@gmail.com>
  */
-class SecretController {
+class CleanUpService {
 
-	def cleanUpService;
-	def configAccessService;
-	def jenaVirtuosoStoreService;
-	def openAnnotationVirtuosoService;
-	def annotationIntegratedStorageService;
+	def annotationIntegratedStorageService
+	def openAnnotationVirtuosoService
+	def jenaVirtuosoStoreService
+	def configAccessService
 	
 	def clearAllGraphs = {
-		cleanUpService.clearAllGraphs();
-		
-		try {
-			Thread.currentThread().sleep(1000);                 //1000 milliseconds is one second.
-		} catch(InterruptedException ex) {
-			Thread.currentThread().interrupt();
+		Set<String> annotationSetsGraphNames = annotationIntegratedStorageService.retrieveAnnotationSetsGraphsNames("secret", 100, 0, null, "true");
+		annotationSetsGraphNames.each { graph ->
+			jenaVirtuosoStoreService.dropGraph("secret", graph);
 		}
-			
-		redirect(uri:'/')
+		
+		Set<String> annotationGraphNames = openAnnotationVirtuosoService.retrieveAnnotationGraphsNames("secret", 100, 0, null, "true", null, null);
+		annotationGraphNames.each { graph ->
+			jenaVirtuosoStoreService.dropGraph("secret", graph);
+		}
+		
+		jenaVirtuosoStoreService.dropGraph("secret", configAccessService.getAsString("annotopia.storage.uri.graph.provenance"));
+		jenaVirtuosoStoreService.dropGraph("secret", configAccessService.getAsString("annotopia.storage.uri.graph.identifiers"));
 	}
 }
