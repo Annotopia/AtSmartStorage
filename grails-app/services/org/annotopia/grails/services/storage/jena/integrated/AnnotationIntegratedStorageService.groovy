@@ -211,7 +211,7 @@ class AnnotationIntegratedStorageService {
 	}
 	
 	public Dataset retrieveAnnotationSet(apiKey, uri) {
-		log.info '[' + apiKey + '] Retrieving annotation sets ' + uri;
+		log.info '[' + apiKey + '] Retrieving annotation set ' + uri;
 		
 		String queryString = "PREFIX at:  <http://purl.org/annotopia#> " +
 			"SELECT DISTINCT ?g WHERE { GRAPH ?g { <" + uri + "> a at:AnnotationSet }}";
@@ -609,10 +609,13 @@ class AnnotationIntegratedStorageService {
 			
 				String annotationSetUri = annotationSetUris.iterator().next();
 				
+				println "==============================================================="
+				println ">>> ANNOTATION SET URI " + annotationSetUri
 				// Retrieve the graph name from the storage
 				String QUERY = "PREFIX at: <http://purl.org/annotopia#> SELECT DISTINCT ?s ?g WHERE { GRAPH ?g { <" + annotationSetUri + "> a at:AnnotationSet . }}"
 				Set<String> annotationSetsGraphNames = jenaVirtuosoStoreService.retrieveGraphsNames(apiKey, QUERY);
 				
+				println ">>> ANNOTATION SET GRAPH " + annotationSetsGraphNames
 				if(annotationSetsGraphNames.size()==1) {
 					log.info("[" + apiKey + "] found Annotation Set graph " + annotationSetsGraphNames);
 					def gName = annotationSetsGraphNames.iterator().next();
@@ -625,16 +628,23 @@ class AnnotationIntegratedStorageService {
 						annotationGraphs.add(sIt.nextStatement().getObject().asResource().getURI());
 					}
 					
+					println ">>> ANNOTATION GRAPHs " + annotationGraphs					
+					println "==============================================================="
+					
 					def annotationGraphToModelMap = [:]
 					def annotationToAnnotationGraphMap = [:]
 					annotationGraphs.each { nGraph ->
-						def gg = jenaVirtuosoStoreService.retrieveGraph(apiKey, nGraph);
-						StmtIterator sIt1 = gg.getNamedModel(nGraph).listStatements(null, 
-							ResourceFactory.createProperty(RDF.RDF_TYPE), ResourceFactory.createResource(OA.ANNOTATION));
-						if(sIt1.hasNext()) {
-							def uri = sIt1.nextStatement().getSubject().getURI();
-							annotationToAnnotationGraphMap.put(uri, nGraph);
-							annotationGraphToModelMap.put(nGraph, gg.getNamedModel(nGraph));
+						if(nGraph!=null) {
+							println ">>> RETRIEVING ANNOTATION GRAPH " + nGraph
+							def gg = jenaVirtuosoStoreService.retrieveGraph(apiKey, nGraph);
+							println ">>> ANNOTATION GRAPH " + gg.getNamedModel(nGraph)
+							StmtIterator sIt1 = gg.getNamedModel(nGraph).listStatements(null, 
+								ResourceFactory.createProperty(RDF.RDF_TYPE), ResourceFactory.createResource(OA.ANNOTATION));
+							if(sIt1.hasNext()) {
+								def uri = sIt1.nextStatement().getSubject().getURI();
+								annotationToAnnotationGraphMap.put(uri, nGraph);
+								annotationGraphToModelMap.put(nGraph, gg.getNamedModel(nGraph));
+							}
 						}
 					}
 					
@@ -646,14 +656,13 @@ class AnnotationIntegratedStorageService {
 					Object json = JsonUtils.fromString(set);
 
 				    List array = json.getAt("annotations");
+					println ">>> ANNOTATION SIZE " + array.size();
 					
-					Model bareSetModel = ModelFactory.createDefaultModel()
+					Model setWithoutAnnotationModel = ModelFactory.createDefaultModel()
 					Object bareSetJson = json;
-					bareSetJson.getAt("annotations").clear();
-					String annotationSetAsString = JsonUtils.toString(bareSetJson);
-					RDFDataMgr.read(bareSetModel, new ByteArrayInputStream(annotationSetAsString.getBytes("UTF-8")), RDFLanguages.JSONLD);
 					
 					for(int j=0; j<array.size(); j++) {
+						println ">>> ANNOTATION " + j
 						Model m = ModelFactory.createDefaultModel()
 			
 						def annotation = array.get(j);
@@ -661,10 +670,9 @@ class AnnotationIntegratedStorageService {
 						
 						String annotationAsString = JsonUtils.toString(annotation);
 						
-						println annotationAsString
+						println ">>> ANNOTATION STRING " + annotationAsString
 						
 						RDFDataMgr.read(m, new ByteArrayInputStream(annotationAsString.getBytes("UTF-8")), RDFLanguages.JSONLD);
-						//annotationsModels.add(m)
 
 						def annotationUri;
 						StmtIterator annotationUriIterator = m.listStatements(null, 
@@ -722,23 +730,31 @@ class AnnotationIntegratedStorageService {
 						} 
 					}
 					
+					// Clears the annotation object to insert the graph name
+					bareSetJson.getAt("annotations").clear();
+					println ">>> ANNOTATION SIZE " + array.size();
+					
+					// Read the annotation
+					String annotationSetAsString = JsonUtils.toString(bareSetJson);
+					RDFDataMgr.read(setWithoutAnnotationModel, new ByteArrayInputStream(annotationSetAsString.getBytes("UTF-8")), RDFLanguages.JSONLD);
+					
 					// Set Last saved on
-					bareSetModel.removeAll(ResourceFactory.createResource(annotationSetUri), ResourceFactory.createProperty(PAV.PAV_LAST_UPDATED_ON), null);
-					bareSetModel.add(ResourceFactory.createResource(annotationSetUri), ResourceFactory.createProperty(PAV.PAV_LAST_UPDATED_ON),
+					setWithoutAnnotationModel.removeAll(ResourceFactory.createResource(annotationSetUri), ResourceFactory.createProperty(PAV.PAV_LAST_UPDATED_ON), null);
+					setWithoutAnnotationModel.add(ResourceFactory.createResource(annotationSetUri), ResourceFactory.createProperty(PAV.PAV_LAST_UPDATED_ON),
 						ResourceFactory.createPlainLiteral(dateFormat.format(new Date())));
 					
 					// Set Version
-					bareSetModel.removeAll(ResourceFactory.createResource(annotationSetUri), ResourceFactory.createProperty(PAV.PAV_VERSION), null);
-					bareSetModel.add(ResourceFactory.createResource(annotationSetUri), ResourceFactory.createProperty(PAV.PAV_VERSION),
+					setWithoutAnnotationModel.removeAll(ResourceFactory.createResource(annotationSetUri), ResourceFactory.createProperty(PAV.PAV_VERSION), null);
+					setWithoutAnnotationModel.add(ResourceFactory.createResource(annotationSetUri), ResourceFactory.createProperty(PAV.PAV_VERSION),
 						ResourceFactory.createPlainLiteral("1"));
 					
 					Iterator<String> iterator = datasetToRender.listNames();
 					while(iterator.hasNext()) {
-						bareSetModel.add(ResourceFactory.createResource(annotationSetUri), ResourceFactory.createProperty(AnnotopiaVocabulary.ANNOTATIONS),
+						setWithoutAnnotationModel.add(ResourceFactory.createResource(annotationSetUri), ResourceFactory.createProperty(AnnotopiaVocabulary.ANNOTATIONS),
 							ResourceFactory.createProperty(iterator.next()));
 					}
 					
-					datasetToRender.addNamedModel(gName, bareSetModel);
+					datasetToRender.addNamedModel(gName, setWithoutAnnotationModel);
 					
 					jenaVirtuosoStoreService.updateDataset(apiKey, datasetToRender);
 					
