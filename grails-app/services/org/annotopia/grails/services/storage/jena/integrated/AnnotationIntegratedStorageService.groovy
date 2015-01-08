@@ -526,8 +526,10 @@ class AnnotationIntegratedStorageService {
 			statements.each { statementsToRemove.add(it)}
 			statementsToRemove.each { statement ->
 				annotationModel.remove(statement);
-				annotationModel.add(ResourceFactory.createResource(oldNewAnnotationUriMapping.get(oldAnnotation)),
-					statement.getPredicate(), statement.getObject());
+				if(!statement.getPredicate().toString().equals("http://purl.org/annotopia#hasChanged")) {
+					annotationModel.add(ResourceFactory.createResource(oldNewAnnotationUriMapping.get(oldAnnotation)),
+						statement.getPredicate(), statement.getObject());
+				}
 			}
 			
 			annotationModel.removeAll(ResourceFactory.createResource(oldNewAnnotationUriMapping.get(oldAnnotation)), ResourceFactory.createProperty(PAV.PAV_PREVIOUS_VERSION), null);
@@ -724,6 +726,7 @@ class AnnotationIntegratedStorageService {
 								println 'UNCHANGED 2'
 								m.removeAll(ResourceFactory.createResource(annotationSetUri), ResourceFactory.createProperty(PAV.PAV_PREVIOUS_VERSION), null);
 								println 'UNCHANGED 3'
+								println 'UNCHANGED 3 ' + annotationToAnnotationGraphMap.get(annotationUri)
 								datasetToRender.addNamedModel(annotationToAnnotationGraphMap.get(annotationUri), m);
 								println 'UNCHANGED 4'
 							}
