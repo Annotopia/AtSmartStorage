@@ -645,6 +645,7 @@ class AnnotationIntegratedStorageService {
 							if(sIt1.hasNext()) {
 								def uri = sIt1.nextStatement().getSubject().getURI();
 								annotationToAnnotationGraphMap.put(uri, nGraph);
+								println ">>> ADDING ANNOTATION ID " + uri;
 								annotationGraphToModelMap.put(nGraph, gg.getNamedModel(nGraph));
 							}
 						}
@@ -659,6 +660,7 @@ class AnnotationIntegratedStorageService {
 
 				    List array = json.getAt("annotations");
 					println ">>> ANNOTATION SIZE " + array.size();
+					println ">>> EXISTING ANNOTATION SIZE " + annotationToAnnotationGraphMap.size();
 					
 					Model setWithoutAnnotationModel = ModelFactory.createDefaultModel()
 					Object bareSetJson = json;
@@ -715,7 +717,10 @@ class AnnotationIntegratedStorageService {
 									println 'UPDATE ' + annotationUri
 									// Updated last saved on	
 									def lGraph = annotationToAnnotationGraphMap.get(annotationUri);
-									datasetToRender.addNamedModel(annotationUri, annotationGraphToModelMap.get(lGraph));
+									println lGraph
+									println annotationGraphToModelMap.get(lGraph)
+									//datasetToRender.addNamedModel(lGraph, annotationGraphToModelMap.get(lGraph));
+									datasetToRender.addNamedModel(lGraph, m);
 								}		
 							} else {
 								// Annotation to ignore (graph is already in the storage, does not change)
