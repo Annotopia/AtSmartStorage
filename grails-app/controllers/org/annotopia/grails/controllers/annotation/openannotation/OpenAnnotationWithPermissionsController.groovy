@@ -417,7 +417,7 @@ class OpenAnnotationWithPermissionsController extends BaseController {
 			
 			Dataset updatedAnnotation;
 			try {
-				updatedAnnotation = openAnnotationWithPermissionsStorageService.updateAnnotationDataset(apiKey, userId, startTime, Boolean.parseBoolean(incGph), inMemoryDataset);
+				updatedAnnotation = openAnnotationWithPermissionsStorageService.updateAnnotationDataset(apiKey, userKey, startTime, Boolean.parseBoolean(incGph), inMemoryDataset);
 			} catch(StoreServiceException exception) {
 				render(status: exception.status, text: exception.text, contentType: exception.contentType, encoding: exception.encoding);
 				return;
@@ -542,24 +542,21 @@ class OpenAnnotationWithPermissionsController extends BaseController {
 	
 	def delete = {
 		long startTime = System.currentTimeMillis();
-
+		
 		// Verifying the API key
 		def apiKey = request.JSON.apiKey;
 		if(!apiKeyAuthenticationService.isApiKeyValid(request.getRemoteAddr(), apiKey)) {
 			invalidApiKey(request.getRemoteAddr()); return;
 		}
 		
-		//def userKey = "http://orcid.org/0000-0002-5156-2703";
-		//def userKey = "user:" + userAuthenticationService.getUserId(request.getRemoteAddr());
+		def user = apiKeyAuthenticationService.gatUserIdentifiedByToken(request.getHeader("authorization"));
+		def userKey = "user:" + user.id;
 		
-		def userId = userAuthenticationService.getUserId(request.getRemoteAddr());
-		// def userKey = "user:" + userId;
-
 		def uri = (request.JSON.uri!=null)?request.JSON.uri:getCurrentUrl(request);
 		log.info("[" + apiKey + "] Deleting annotation " + uri);
 		
 		try {
-			if(openAnnotationWithPermissionsStorageService.deleteAnnotationDataset(apiKey, userId, startTime, uri)) {
+			if(openAnnotationWithPermissionsStorageService.deleteAnnotationDataset(apiKey, userKey, startTime, uri)) {
 				def message = "Annotation deleted";
 				render(status: 200, text: returnMessage(apiKey, "deleted", message, startTime), contentType: "text/json", encoding: "UTF-8");
 			} else {
@@ -571,22 +568,6 @@ class OpenAnnotationWithPermissionsController extends BaseController {
 			render(status: exception.status, text: exception.text, contentType: exception.contentType, encoding: exception.encoding);
 			return;
 		}
-		/*
-		Dataset graphs =  openAnnotationVirtuosoService.retrieveAnnotation(apiKey, uri);
-		if(graphs!=null) {
-			graphs.listNames().each {
-				log.trace("[" + apiKey + "] Deleting graph " + it);
-				jenaVirtuosoStoreService.dropGraph(apiKey, it);
-				jenaVirtuosoStoreService.removeAllTriples(apiKey, grailsApplication.config.annotopia.storage.uri.graph.provenance, it);
-			}
-			def message = "Annotation deleted";
-			render(status: 200, text: returnMessage(apiKey, "deleted", message, startTime), contentType: "text/json", encoding: "UTF-8");
-		}  else {
-			// Annotation Set not found
-			def message = "Annotation not found";
-			render(status: 200, text: returnMessage(apiKey, "notfound", message, startTime), contentType: "text/json", encoding: "UTF-8");
-		}
-		*/
 	}
 	
 	private void renderSavedNamedGraphsDataset(def apiKey, long startTime, String outCmd, String status, HttpServletResponse response, Dataset dataset) {
