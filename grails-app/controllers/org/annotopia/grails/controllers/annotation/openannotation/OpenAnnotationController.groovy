@@ -571,11 +571,11 @@ class OpenAnnotationController extends BaseController {
 				jenaVirtuosoStoreService.removeAllTriples(apiKey, configAccessService.getAsString("annotopia.storage.uri.graph.provenance"), it);
 			}
 			def message = "Annotation deleted";
-			render(status: 200, text: returnMessage(apiKey, "deleted", message, startTime), contentType: "text/json", encoding: "UTF-8");
+			render(status: 410, text: returnMessage(apiKey, "deleted", message, startTime), contentType: "text/json", encoding: "UTF-8");
 		}  else {
-			// Annotation Set not found
+			// Annotation not found (but that's OK)
 			def message = "Annotation not found";
-			render(status: 200, text: returnMessage(apiKey, "notfound", message, startTime), contentType: "text/json", encoding: "UTF-8");
+			render(status: 404, text: returnMessage(apiKey, "notfound", message, startTime), contentType: "text/json", encoding: "UTF-8");
 		}
 	}
 	
