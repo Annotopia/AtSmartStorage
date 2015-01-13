@@ -261,6 +261,7 @@ class JenaVirtuosoStoreService implements ITripleStore {
 	public storeDataset(String apiKey, Dataset dataset) {
 		// Default graph management
 		if(dataset.getDefaultModel()!=null && dataset.getDefaultModel().size()>0) {
+			// TODO: Should probably not allow write to virtuoso's default graph!
 			log.debug '[' + apiKey + '] Storing graph: * (default)'
 			log.debug configAccessService.getAsString("annotopia.storage.triplestore.host")
 			VirtModel virtModel = getModel();
@@ -356,6 +357,7 @@ class JenaVirtuosoStoreService implements ITripleStore {
 	
 	public updateGraphMetadata(String apiKey, Model graphMetadata, String graphUri, String metadataGraph) {
 		removeAllTriples(apiKey, metadataGraph, graphUri);
+		// TODO: ... and insert the new triples
 	}
 
 	// -----------------------------------------------------------------------

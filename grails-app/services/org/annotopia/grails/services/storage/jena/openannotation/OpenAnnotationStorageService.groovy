@@ -522,8 +522,10 @@ class OpenAnnotationStorageService {
 
 		// Detection of default graph
 		Set<Resource> annotationUris = new HashSet<Resource>();
+
 		int annotationsInDefaultGraphsCounter = openAnnotationUtilsService.detectAnnotationsInDefaultGraph(apiKey, dataset, annotationUris, null)
 		boolean defaultGraphDetected = (annotationsInDefaultGraphsCounter>0);
+		// TODO: Check that annotationURI match the resource that was PUT to
 		
 		// Query for graphs containing annotation
 		// See: https://www.mail-archive.com/wikidata-l@lists.wikimedia.org/msg00370.html
@@ -630,6 +632,8 @@ class OpenAnnotationStorageService {
 					jenaVirtuosoStoreService.updateDataset(apiKey, updateDataset);
 					
 					if(incGph) return updateDataset;
+					// FIXME: extract storedDataset here instead of relying on Jena not
+					// making a copy of newDefaultModel
 					else return storedDataset;
 				} else {
 					// Annotation not found
@@ -802,11 +806,13 @@ class OpenAnnotationStorageService {
 		if(!originalSubject.isAnon()) {
 			model.add(model.createStatement(newSubject,
 				ResourceFactory.createProperty(PAV.PAV_PREVIOUS_VERSION),
+				// TODO: Should be a resource, not a literal
 				ResourceFactory.createPlainLiteral(originalSubject.toString())
 				));
 		} else {
 			model.add(model.createStatement(newSubject,
 				ResourceFactory.createProperty(PAV.PAV_PREVIOUS_VERSION),
+				// TODO: Should be a resource (bnode), not a literal
 				ResourceFactory.createPlainLiteral("blank")
 				));
 		}

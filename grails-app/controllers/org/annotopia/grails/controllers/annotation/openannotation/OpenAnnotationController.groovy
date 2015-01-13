@@ -218,6 +218,7 @@ class OpenAnnotationController extends BaseController {
 							Object compact = JsonLdProcessor.compact(JsonUtils.fromString(baos.toString()), contextJson,  new JsonLdOptions());
 							response.outputStream << JsonUtils.toPrettyString(compact)
 						}  else if(outCmd==OUTCMD_FRAME) {
+							// TODO: Remove .replace() hack when using Jena 2.12.2 or later (JENA-794)
 							Object framed =  JsonLdProcessor.frame(JsonUtils.fromString(baos.toString().replace('"@id" : "urn:x-arq:DefaultGraphNode",','')), contextJson, new JsonLdOptions());
 							response.outputStream << JsonUtils.toPrettyString(framed)
 						}
@@ -332,6 +333,8 @@ class OpenAnnotationController extends BaseController {
 			// Reads the inputs in a dataset
 			Dataset inMemoryDataset = DatasetFactory.createMem();
 			try {
+				// TODO: Proxy configuration for external contexts?
+				// TODO: Cache standard context URIs
 				RDFDataMgr.read(inMemoryDataset, new ByteArrayInputStream(item.toString().getBytes("UTF-8")), RDFLanguages.JSONLD);
 			} catch (Exception ex) {
 				log.error("[" + apiKey + "] " + ex.getMessage());
@@ -564,6 +567,7 @@ class OpenAnnotationController extends BaseController {
 		def uri = (request.JSON.uri!=null)?request.JSON.uri:getCurrentUrl(request);
 		log.info("[" + apiKey + "] Deleting annotation " + uri);
 		Dataset graphs =  openAnnotationVirtuosoService.retrieveAnnotation(apiKey, uri);
+		// TODO: Also delete provenance (pass in to OpenAnnotationStorageService)
 		if(graphs!=null) {
 			graphs.listNames().each {
 				log.trace("[" + apiKey + "] Deleting graph " + it);
@@ -624,6 +628,7 @@ class OpenAnnotationController extends BaseController {
 				Object compact = JsonLdProcessor.compact(JsonUtils.fromString(baos.toString()), contextJson, new JsonLdOptions());
 				response.outputStream << JsonUtils.toPrettyString(compact)
 			} else if(sizeDataset==1 && outCmd==OUTCMD_FRAME) {
+			// FIXME: avoid replace() in Jena 2.12.2
 				Object framed =  JsonLdProcessor.frame(JsonUtils.fromString(baos.toString().replace('"@id" : "urn:x-arq:DefaultGraphNode",','')), contextJson, new JsonLdOptions());
 				response.outputStream << JsonUtils.toPrettyString(framed)
 			} 
