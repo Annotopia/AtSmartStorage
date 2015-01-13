@@ -2,3 +2,4 @@ target
 .settings
 logs
 scripts
+plugin.xml
