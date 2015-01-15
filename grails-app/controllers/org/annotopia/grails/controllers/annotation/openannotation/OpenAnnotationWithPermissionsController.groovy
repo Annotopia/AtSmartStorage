@@ -89,7 +89,7 @@ class OpenAnnotationWithPermissionsController extends BaseController {
 			invalidApiKey(request.getRemoteAddr()); return;
 		}
 		
-		def user = apiKeyAuthenticationService.gatUserIdentifiedByToken(request.getHeader("authorization"));
+		def user = apiKeyAuthenticationService.getUserIdentifiedByToken(request.getHeader("authorization"));
 		
 		// Response format parametrization and constraints
 		def outCmd = (request.JSON.outCmd!=null)?request.JSON.outCmd:OUTCMD_NONE;
@@ -290,7 +290,7 @@ class OpenAnnotationWithPermissionsController extends BaseController {
 			invalidApiKey(request.getRemoteAddr()); return;
 		}
 		
-		def user = apiKeyAuthenticationService.gatUserIdentifiedByToken(request.getHeader("authorization"));
+		def user = apiKeyAuthenticationService.getUserIdentifiedByToken(request.getHeader("authorization"));
 		def userKey = "user:" + user.id;
 		
 		// Parsing the incoming parameters
@@ -380,7 +380,7 @@ class OpenAnnotationWithPermissionsController extends BaseController {
 			invalidApiKey(request.getRemoteAddr()); return;
 		}
 		
-		def user = apiKeyAuthenticationService.gatUserIdentifiedByToken(request.getHeader("authorization"));
+		def user = apiKeyAuthenticationService.getUserIdentifiedByToken(request.getHeader("authorization"));
 		def userKey = "user:" + user.id;
 		
 		def outCmd = (request.JSON.outCmd!=null)?request.JSON.outCmd:OUTCMD_NONE;
@@ -549,7 +549,7 @@ class OpenAnnotationWithPermissionsController extends BaseController {
 			invalidApiKey(request.getRemoteAddr()); return;
 		}
 		
-		def user = apiKeyAuthenticationService.gatUserIdentifiedByToken(request.getHeader("authorization"));
+		def user = apiKeyAuthenticationService.getUserIdentifiedByToken(request.getHeader("authorization"));
 		def userKey = "user:" + user.id;
 		
 		def uri = (request.JSON.uri!=null)?request.JSON.uri:getCurrentUrl(request);
