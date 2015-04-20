@@ -20,6 +20,8 @@
  */
 package org.annotopia.grails.services.storage.jena.openannotation
 
+import javax.servlet.http.HttpServletResponse;
+
 import grails.converters.JSON
 
 import org.apache.jena.riot.RDFDataMgr
@@ -241,5 +243,59 @@ class OpenAnnotationSetsUtilsService {
 			
 			model.add(annotationResource, predicate, object);
 		}
+	}
+	
+	
+	public void renderSavedNamedGraphsDataset(def apiKey, long startTime, String outCmd, String status, HttpServletResponse response, Dataset dataset) {
+		response.contentType = "text/json;charset=UTF-8"
+		
+		// Count graphs
+		int sizeDataset = 0;
+		Iterator iterator = dataset.listNames();
+		while(iterator.hasNext()) {
+			sizeDataset++;
+			iterator.next();
+		}
+		
+		if(sizeDataset>1 && outCmd=='frame') {
+			log.warn("[" + apiKey + "] Invalid options, framing does not currently support Named Graphs");
+			def message = 'Invalid options, framing does not currently support Named Graphs';
+			render(status: 401, text: returnMessage(apiKey, "rejected", message, startTime),
+				contentType: "text/json", encoding: "UTF-8");
+			return;
+		}
+		
+		Dataset datasetToRender = DatasetFactory.createMem();
+		if(sizeDataset==1) datasetToRender.setDefaultModel(dataset.getNamedModel(dataset.listNames().next()));
+		else datasetToRender = dataset;
+		
+		def summaryPrefix = '"duration": "' + (System.currentTimeMillis()-startTime) + 'ms","graphs":"' + sizeDataset +  '",' + '"set":[';
+		response.outputStream << '{"status":"' + status + '", "result": {' + summaryPrefix
+		
+		Object contextJson = null;
+		if(outCmd=='none') {
+			RDFDataMgr.write(response.outputStream, datasetToRender, RDFLanguages.JSONLD);
+		} else {
+			if(contextJson==null) {
+				if(outCmd=='context') {
+					contextJson = JsonUtils.fromInputStream(callExternalUrl(apiKey,  configAccessService.getAsString("annotopia.jsonld.annotopia.context")));
+				} else if(sizeDataset==1 && outCmd=='frame') {
+					contextJson = JsonUtils.fromInputStream(callExternalUrl(apiKey, configAccessService.getAsString("annotopia.jsonld.annotopia.framing")));
+				}
+			}
+		
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			RDFDataMgr.write(baos, datasetToRender, RDFLanguages.JSONLD);
+			
+			if(outCmd=='context') {
+				Object compact = JsonLdProcessor.compact(JsonUtils.fromString(baos.toString()), contextJson, new JsonLdOptions());
+				response.outputStream << JsonUtils.toPrettyString(compact)
+			}  else if(sizeDataset==1 && outCmd=='frame') {
+				Object framed =  JsonLdProcessor.frame(JsonUtils.fromString(baos.toString().replace('"@id" : "urn:x-arq:DefaultGraphNode",','')), contextJson, new JsonLdOptions());
+				response.outputStream << JsonUtils.toPrettyString(framed)
+			}
+		}
+		response.outputStream << ']}}'
+		response.outputStream.flush()
 	}
 }
