@@ -34,7 +34,7 @@ class OpenAnnotationSetRESTController extends BaseController {
 		startTime = System.currentTimeMillis()
 		
 		// Authenticate
-		Matcher matcher = request.getHeader("Authorization") =~ /.*key=\"([^\"]*)\".*/
+		Matcher matcher = request.getHeader("Authorization") =~ /.*annotopia-api-key\s+([-0-9a-fA-F]*).*/
         if(matcher.matches())
 		  apiKey = matcher.group(1)
 	  	else

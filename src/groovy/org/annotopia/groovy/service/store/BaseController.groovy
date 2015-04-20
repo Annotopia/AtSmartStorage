@@ -51,6 +51,7 @@ class BaseController {
 	public void invalidApiKey(def ip) {
 		log.warn("Unauthorized request performed by IP: " + ip)
 		def json = JSON.parse('{"status":"rejected" ,"message":"Api Key missing or invalid"}');
+		response.setHeader('WWW-Authenticate', 'annotopia-api-key');
 		render(status: 401, text: json, contentType: "text/json", encoding: "UTF-8");
 	}
 	
