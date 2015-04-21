@@ -20,6 +20,8 @@
  */
 package org.annotopia.grails.services.storage.authentication
 
+import java.util.regex.Matcher
+
 /**
  * This service manages access through API keys that are assigned to 
  * applications or users that want to make use of the Smart Storage.
@@ -46,5 +48,19 @@ class ApiKeyAuthenticationService {
 			apiKey==configAccessService.getAsString("annotopia.storage.testing.apiKey")
 		);
 	 	return allowed;
+	}
+	
+	/**
+	 * Returns the API key used to authorize the request. First checks the "Authorization" header,
+	 * then checks for a URL parameter named "apiKey". Returns null if no API key found.
+	 * @param request	The HTTP request object
+	 * @return API key in a String, or null
+	 */
+	def getApiKey(def request) {
+		Matcher matcher = request.getHeader("Authorization") =~ /.*annotopia-api-key\s+([-0-9a-fA-F]*).*/
+		if(matcher.matches())
+			return matcher.group(1)
+		else
+			return request.getParameter("apiKey")
 	}
 }

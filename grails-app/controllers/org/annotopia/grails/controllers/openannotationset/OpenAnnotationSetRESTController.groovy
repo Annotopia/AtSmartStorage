@@ -34,17 +34,11 @@ class OpenAnnotationSetRESTController extends BaseController {
 		startTime = System.currentTimeMillis()
 		
 		// Authenticate
-		Matcher matcher = request.getHeader("Authorization") =~ /.*annotopia-api-key\s+([-0-9a-fA-F]*).*/
-        if(matcher.matches())
-		  apiKey = matcher.group(1)
-	  	else
-		  apiKey = params.apiKey
-
+		apiKey = apiKeyAuthenticationService.getApiKey(request)
 		if(!apiKeyAuthenticationService.isApiKeyValid(request.getRemoteAddr(), apiKey)) {
 			invalidApiKey(request.getRemoteAddr())
 			return false // Returning false stops the actual controller action from being called
 		}
-
 		log.info("API key [" + apiKey + "]")
 
 		// Figure out the URL of the annotation set
