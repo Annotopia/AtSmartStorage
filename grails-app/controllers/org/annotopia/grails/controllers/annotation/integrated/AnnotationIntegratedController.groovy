@@ -93,7 +93,7 @@ class AnnotationIntegratedController extends BaseController {
 			def message = 'Invalid options, framing does not currently support Named Graphs';
 			render(status: 401, text: returnMessage(apiKey, "rejected", message, startTime),
 				contentType: "text/json", encoding: "UTF-8");
-			return;
+			return false;
 		}
 	}
 
