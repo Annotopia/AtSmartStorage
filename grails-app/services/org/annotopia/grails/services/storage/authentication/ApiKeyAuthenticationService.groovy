@@ -52,15 +52,22 @@ class ApiKeyAuthenticationService {
 	
 	/**
 	 * Returns the API key used to authorize the request. First checks the "Authorization" header,
-	 * then checks for a URL parameter named "apiKey". Returns null if no API key found.
+	 * then checks for a URL parameter named "apiKey", then checks the JSON body for "apiKey". Returns null if no API key found.
 	 * @param request	The HTTP request object
 	 * @return API key in a String, or null
 	 */
 	def getApiKey(def request) {
-		Matcher matcher = request.getHeader("Authorization") =~ /.*annotopia-api-key\s+([-0-9a-fA-F]*).*/
+		def key
+		
+		Matcher matcher = request.getHeader("Authorization") =~ /.*annotopia-api-key\s+([-0-9a-fA-F]*).*/	
 		if(matcher.matches())
-			return matcher.group(1)
+			key = matcher.group(1)
 		else
-			return request.getParameter("apiKey")
+			key = request.getParameter("apiKey")
+			
+		if(key == null)
+			key = request.JSON.apiKey
+
+		return key
 	}
 }
