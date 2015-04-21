@@ -394,50 +394,7 @@ class AnnotationIntegratedController extends BaseController {
 			
 			Object contextJson = null;
 			if(updatedAnnotationSet!=null) {
-				
-//				ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-//				RDFDataMgr.write(outputStream, updatedAnnotationSet, RDFLanguages.JSONLD);
-//				println outputStream.toString();
-				
 				openAnnotationSetsUtilsService.renderSavedNamedGraphsDataset(apiKey, startTime, outCmd, 'saved', response, updatedAnnotationSet);
-				
-//				if(outCmd=='none') {
-//					if(incGph=='false') {
-//						Model m = updatedAnnotationSet.getNamedModel(updatedAnnotationSet.listNames().next());
-//						RDFDataMgr.write(response.outputStream, m, RDFLanguages.JSONLD);
-//					} else {
-//						RDFDataMgr.write(response.outputStream, updatedAnnotationSet, RDFLanguages.JSONLD);
-//					}
-//				} else {
-//					if(contextJson==null) {
-//						if(outCmd=='context') {
-//							contextJson = JsonUtils.fromInputStream(callExternalUrl(apiKey, grailsApplication.config.annotopia.jsonld.annotopia.context));
-//						} else if(outCmd=='frame') {
-//							contextJson = JsonUtils.fromInputStream(callExternalUrl(apiKey, grailsApplication.config.annotopia.jsonld.annotopia.framing));
-//						}
-//					}
-//				
-//					ByteArrayOutputStream baos = new ByteArrayOutputStream();
-//					if(incGph=='false') {
-//						Model m = null;
-//						if(updatedAnnotationSet.listNames().hasNext()) 
-//							m = updatedAnnotationSet.getNamedModel(updatedAnnotationSet.listNames().next());
-//						else
-//							m = updatedAnnotationSet.getDefaultModel()
-//						RDFDataMgr.write(baos, m.getGraph(), RDFLanguages.JSONLD);
-//					} else {
-//						RDFDataMgr.write(baos, updatedAnnotationSet, RDFLanguages.JSONLD);
-//					}
-//					
-//					if(outCmd=='context') {
-//						Object compact = JsonLdProcessor.compact(JsonUtils.fromString(baos.toString()), contextJson,  new JsonLdOptions());
-//						response.outputStream << JsonUtils.toPrettyString(compact)
-//					}  else if(outCmd=='frame') {
-//						Object framed =  JsonLdProcessor.frame(JsonUtils.fromString(baos.toString()), contextJson, new JsonLdOptions());
-//						response.outputStream << JsonUtils.toPrettyString(framed)
-//					}
-//				}
-//				response.outputStream.flush()
 			} else {
 				// Dataset returned null
 				def message = "Null Annotation Set Dataset. Something went terribly wrong";
