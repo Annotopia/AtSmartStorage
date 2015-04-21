@@ -65,6 +65,38 @@ class AnnotationIntegratedController extends BaseController {
 	def annotationIntegratedStorageService;
 	def openAnnotationSetsUtilsService
 
+	// Shared variables/functionality
+	def startTime
+	def apiKey
+	def outCmd
+	def incGph
+	def beforeInterceptor = {
+		startTime = System.currentTimeMillis()
+
+		// Authenticate
+		apiKey = apiKeyAuthenticationService.getApiKey(request)
+		if(!apiKeyAuthenticationService.isApiKeyValid(request.getRemoteAddr(), apiKey)) {
+			invalidApiKey(request.getRemoteAddr())
+			return false // Returning false stops the actual controller action from being called
+		}
+		log.info("API key [" + apiKey + "]")
+
+		// Response format parametrization and constraints
+		outCmd = (request.JSON.outCmd!=null)?request.JSON.outCmd:OUTCMD_NONE;
+		if(params.outCmd!=null) outCmd = params.outCmd;
+
+		incGph = (request.JSON.incGph!=null)?request.JSON.incGph:INCGPH_NO;
+		if(params.incGph!=null) incGph = params.incGph;
+
+		if(outCmd==OUTCMD_FRAME && incGph==INCGPH_YES) {
+			log.warn("[" + apiKey + "] Invalid options, framing does not currently support Named Graphs");
+			def message = 'Invalid options, framing does not currently support Named Graphs';
+			render(status: 401, text: returnMessage(apiKey, "rejected", message, startTime),
+				contentType: "text/json", encoding: "UTF-8");
+			return;
+		}
+	}
+
 	/*
 	 * GET
 	 *
@@ -76,28 +108,6 @@ class AnnotationIntegratedController extends BaseController {
 	 * http://www.openannotation.org/spec/core/
 	 */
 	def showAnnotationSet = {
-		long startTime = System.currentTimeMillis();
-		
-		// Verifying the API key
-		def apiKey = request.JSON.apiKey;
-		if(apiKey==null) apiKey = params.apiKey;
-		if(!apiKeyAuthenticationService.isApiKeyValid(request.getRemoteAddr(), apiKey)) {
-			invalidApiKey(request.getRemoteAddr()); return;
-		}
-		
-		// Response format parametrization and constraints
-		def outCmd = (request.JSON.outCmd!=null)?request.JSON.outCmd:"none";
-		if(params.outCmd!=null) outCmd = params.outCmd;		
-		def incGph = (request.JSON.incGph!=null)?request.JSON.incGph:"false";
-		if(params.incGph!=null) incGph = params.incGph;
-		if(outCmd=='frame' && incGph=='true') {
-			log.warn("[" + apiKey + "] Invalid options, framing does not currently support Named Graphs");
-			def message = 'Invalid options, framing does not currently support Named Graphs';
-			render(status: 401, text: returnMessage(apiKey, "rejected", message, startTime),
-				contentType: "text/json", encoding: "UTF-8");
-			return;
-		}
-		
 		// GET of a list of annotations
 		if(params.id==null) {
 			// Pagination
@@ -320,27 +330,6 @@ class AnnotationIntegratedController extends BaseController {
 	 * Validation not yet implemented.
 	 */
 	def saveAnnotationSet = {
-		long startTime = System.currentTimeMillis();
-		
-		// Verifying the API key
-		def apiKey = request.JSON.apiKey;
-		if(!apiKeyAuthenticationService.isApiKeyValid(request.getRemoteAddr(), apiKey)) {
-			invalidApiKey(request.getRemoteAddr()); return;
-		}
-		
-		// Response format parametrization and constraints
-		def outCmd = (request.JSON.outCmd!=null)?request.JSON.outCmd:"none";
-		if(params.outCmd!=null) outCmd = params.outCmd;
-		def incGph = (request.JSON.incGph!=null)?request.JSON.incGph:"false";
-		if(params.incGph!=null) incGph = params.incGph;
-		if(outCmd=='frame' && incGph=='true') {
-			log.warn("[" + apiKey + "] Invalid options, framing does not currently support Named Graphs");
-			def message = 'Invalid options, framing does not currently support Named Graphs';
-			render(status: 401, text: returnMessage(apiKey, "rejected", message, startTime),
-				contentType: "text/json", encoding: "UTF-8");
-			return;
-		}
-		
 		log.info("[" + apiKey + "] Saving Annotation Set");
 		
 		// Parsing the incoming parameters
@@ -384,27 +373,6 @@ class AnnotationIntegratedController extends BaseController {
 	 * Validation not yet implemented.
 	 */
 	def updateAnnotationSet = {
-		long startTime = System.currentTimeMillis();
-		
-		// Verifying the API key
-		def apiKey = request.JSON.apiKey;
-		if(!apiKeyAuthenticationService.isApiKeyValid(request.getRemoteAddr(), apiKey)) {
-			invalidApiKey(request.getRemoteAddr()); return;
-		}
-		
-		// Response format parametrization and constraints
-		def outCmd = (request.JSON.outCmd!=null)?request.JSON.outCmd:"none";
-		if(params.outCmd!=null) outCmd = params.outCmd;
-		def incGph = (request.JSON.incGph!=null)?request.JSON.incGph:"false";
-		if(params.incGph!=null) incGph = params.incGph;
-		if(outCmd=='frame' && incGph=='true') {
-			log.warn("[" + apiKey + "] Invalid options, framing does not currently support Named Graphs");
-			def message = 'Invalid options, framing does not currently support Named Graphs';
-			render(status: 401, text: returnMessage(apiKey, "rejected", message, startTime),
-				contentType: "text/json", encoding: "UTF-8");
-			return;
-		}
-		
 		log.info("[" + apiKey + "] Updating Annotation Set");
 		
 		// Parsing the incoming parameters

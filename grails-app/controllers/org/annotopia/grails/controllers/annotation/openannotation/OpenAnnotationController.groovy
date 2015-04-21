@@ -69,6 +69,40 @@ class OpenAnnotationController extends BaseController {
 	def apiKeyAuthenticationService;
 	def jenaVirtuosoStoreService;
 
+	// Shared variables/functionality
+	def startTime
+	def apiKey
+	def outCmd
+	def incGph
+	def beforeInterceptor = {
+		startTime = System.currentTimeMillis()
+
+		// Authenticate
+		apiKey = apiKeyAuthenticationService.getApiKey(request)
+		if(!apiKeyAuthenticationService.isApiKeyValid(request.getRemoteAddr(), apiKey)) {
+			invalidApiKey(request.getRemoteAddr())
+			return false // Returning false stops the actual controller action from being called
+		}
+		log.info("API key [" + apiKey + "]")
+	}
+
+	def parseParameters = {
+		// Response format parametrization and constraints
+		outCmd = (request.JSON.outCmd!=null)?request.JSON.outCmd:"none";
+		if(params.outCmd!=null) outCmd = params.outCmd;
+
+		incGph = (request.JSON.incGph!=null)?request.JSON.incGph:"false";
+		if(params.incGph!=null) incGph = params.incGph;
+
+		if(outCmd=='frame' && incGph=='true') {
+			log.warn("[" + apiKey + "] Invalid options, framing does not currently support Named Graphs");
+			def message = "Invalid options outCmd=='frame' && incGph=='true', framing does not currently support Named Graphs";
+			render(status: 401, text: returnMessage(apiKey, "rejected", message, startTime),
+				contentType: "text/json", encoding: "UTF-8");
+			return false;
+		}
+	}
+
 	/*
 	 * GET 
 	 * 
@@ -80,26 +114,8 @@ class OpenAnnotationController extends BaseController {
 	 * http://www.openannotation.org/spec/core/
 	 */
 	def show = {
-		long startTime = System.currentTimeMillis();
-		
-		def apiKey = request.JSON.apiKey;
-		if(apiKey==null) apiKey = params.apiKey;
-		if(!apiKeyAuthenticationService.isApiKeyValid(request.getRemoteAddr(), apiKey)) {
-			invalidApiKey(request.getRemoteAddr()); return;
-		}
-		
 		// Response format parametrization and constraints
-		def outCmd = (request.JSON.outCmd!=null)?request.JSON.outCmd:OUTCMD_NONE;
-		if(params.outCmd!=null) outCmd = params.outCmd;
-		def incGph = (request.JSON.incGph!=null)?request.JSON.incGph:INCGPH_NO;
-		if(params.incGph!=null) incGph = params.incGph;
-		if(outCmd==OUTCMD_FRAME && incGph==INCGPH_YES) {
-			log.warn("[" + apiKey + "] Invalid options, framing does not currently support Named Graphs");
-			def message = 'Invalid options, framing does not currently support Named Graphs';
-			render(status: 401, text: returnMessage(apiKey, "rejected", message, startTime),
-				contentType: "text/json", encoding: "UTF-8");
-			return;
-		}
+		parseParameters()
 		
 		// GET of a list of annotations
 		if(params.id==null) {
@@ -300,26 +316,8 @@ class OpenAnnotationController extends BaseController {
 	 * Validation not yet implemented.
 	 */
 	def save = {
-		long startTime = System.currentTimeMillis();
-		
-		// Verifying the API key
-		def apiKey = request.JSON.apiKey;
-		if(!apiKeyAuthenticationService.isApiKeyValid(request.getRemoteAddr(), apiKey)) {
-			invalidApiKey(request.getRemoteAddr()); return;
-		}
-		
-		// Parsing the incoming parameters
-		def outCmd = (request.JSON.outCmd!=null)?request.JSON.outCmd:OUTCMD_NONE;
-		if(params.outCmd!=null) outCmd = params.outCmd;		
-		def incGph = (request.JSON.incGph!=null)?request.JSON.incGph:INCGPH_NO;
-		if(params.incGph!=null) incGph = params.incGph;
-		if(outCmd==OUTCMD_FRAME && incGph==INCGPH_YES) {
-			def message = "Invalid options outCmd=='frame' && incGph=='true', framing does not currently support Named Graphs";
-			log.warn("[" + apiKey + "] " + message);
-			render(status: 401, text: returnMessage(apiKey, "rejected", message, startTime),
-				contentType: "text/json", encoding: "UTF-8");
-			return;
-		}
+		// Response format parametrization and constraints
+		parseParameters()
 
 		// Unused but planned
 		def flavor = (request.JSON.flavor!=null)?request.JSON.flavor:"OA";
@@ -390,25 +388,8 @@ class OpenAnnotationController extends BaseController {
 	 * Validation not yet implemented.
 	 */
 	def update = {
-		long startTime = System.currentTimeMillis();
-		
-		// Verifying the API key
-		def apiKey = request.JSON.apiKey;
-		if(!apiKeyAuthenticationService.isApiKeyValid(request.getRemoteAddr(), apiKey)) {
-			invalidApiKey(request.getRemoteAddr()); return;
-		}
-		
-		def outCmd = (request.JSON.outCmd!=null)?request.JSON.outCmd:OUTCMD_NONE;
-		if(params.outCmd!=null) outCmd = params.outCmd;
-		def incGph = (request.JSON.incGph!=null)?request.JSON.incGph:INCGPH_NO;
-		if(params.incGph!=null) incGph = params.incGph;
-		if(outCmd==OUTCMD_FRAME && incGph==INCGPH_YES) {
-			log.warn("[" + apiKey + "] Invalid options, framing does not currently support Named Graphs");
-			def message = 'Invalid options, framing does not currently support Named Graphs';
-			render(status: 401, text: returnMessage(apiKey, "rejected", message, startTime),
-				contentType: "text/json", encoding: "UTF-8");
-			return;
-		}
+		// Response format parametrization and constraints
+		parseParameters()
 		
 		// Unused but planned
 		def flavor = (request.JSON.flavor!=null)?request.JSON.flavor:"OA";
@@ -463,14 +444,6 @@ class OpenAnnotationController extends BaseController {
 	}
 	
 	def validate = {
-		long startTime = System.currentTimeMillis();
-
-		// Verifying the API key
-		def apiKey = request.JSON.apiKey;
-		if(!apiKeyAuthenticationService.isApiKeyValid(request.getRemoteAddr(), apiKey)) {
-			invalidApiKey(request.getRemoteAddr()); return;
-		}
-		
 		def item = request.JSON.item
 		
 		// Unused but planned
@@ -556,14 +529,6 @@ class OpenAnnotationController extends BaseController {
 	}
 	
 	def delete = {
-		long startTime = System.currentTimeMillis();
-
-		// Verifying the API key
-		def apiKey = request.JSON.apiKey;
-		if(!apiKeyAuthenticationService.isApiKeyValid(request.getRemoteAddr(), apiKey)) {
-			invalidApiKey(request.getRemoteAddr()); return;
-		}
-
 		def uri = (request.JSON.uri!=null)?request.JSON.uri:getCurrentUrl(request);
 		log.info("[" + apiKey + "] Deleting annotation " + uri);
 		Dataset graphs =  openAnnotationVirtuosoService.retrieveAnnotation(apiKey, uri);
