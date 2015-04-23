@@ -51,17 +51,26 @@ class AnnotationIntegratedController extends BaseController {
 	//String AT_CONTEXT = "https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/AnnotopiaContext.json";
 	//String AT_FRAME = "https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/AnnotopiaFrame.json";
 	//String AT_FRAME_LIGHT = "https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/AnnotopiaFrameLight.json";
-	
+
+	// outCmd (output command) constants
+	private final OUTCMD_NONE = "none";
+	private final OUTCMD_FRAME = "frame";
+	private final OUTCMD_CONTEXT = "context";
+
+	// incGph (Include graph) constants
+	private final INCGPH_YES = "true";
+	private final INCGPH_NO = "false";
+
 	def grailsApplication;
 	def configAccessService;
-	
+
 	def jenaUtilsService;
 	def jenaVirtuosoStoreService;
 	def apiKeyAuthenticationService;
 	def openAnnotationSetStorageService;
 	def openAnnotationVirtuosoService;
 	def openAnnotationSetVirtuosoService
-	
+
 	def annotationIntegratedStorageService;
 	def openAnnotationSetsUtilsService
 
@@ -100,8 +109,8 @@ class AnnotationIntegratedController extends BaseController {
 	/*
 	 * GET
 	 *
-	 * Either retrieve a representation of the requested annotation set (if an 
-	 * id is specified and the requested annotation set exists) or lists 
+	 * Either retrieve a representation of the requested annotation set (if an
+	 * id is specified and the requested annotation set exists) or lists
 	 * available annotation sets (using pagination).
 	 *
 	 * The returned format is compliant with the Open Annotation specification
@@ -115,13 +124,13 @@ class AnnotationIntegratedController extends BaseController {
 			if(params.max!=null) max = params.max;
 			def offset = (request.JSON.offset!=null)?request.JSON.offset:"0";
 			if(params.offset!=null) offset = params.offset;
-			
+
 			// Target filters
 			def tgtUrl = request.JSON.tgtUrl
 			if(params.tgtUrl!=null) tgtUrl = params.tgtUrl;
-			def tgtFgt = (request.JSON.tgtFgt!=null)?request.JSON.tgtFgt:"true"; 
+			def tgtFgt = (request.JSON.tgtFgt!=null)?request.JSON.tgtFgt:"true";
 			if(params.tgtFgt!=null) tgtFgt = params.tgtFgt;
-			
+
 			// Target IDs
 			Map<String,String> identifiers = new HashMap<String,String>();
 			def tgtIds = (request.JSON.tgtIds!=null)?request.JSON.tgtIds:null;
@@ -132,11 +141,11 @@ class AnnotationIntegratedController extends BaseController {
 					identifiers.put(key, ids.get(key));
 				}
 			}
-			
+
 			// Currently unusued, planned
 			def tgtExt = request.JSON.tgtExt
 			def flavor = request.JSON.flavor
-			
+
 			log.info("[" + apiKey + "] List >>" +
 				" max:" + max + " offset:" + offset +
 				((tgtUrl!=null) ? (" tgtUrl:" + tgtUrl):"") +
@@ -146,7 +155,7 @@ class AnnotationIntegratedController extends BaseController {
 				((flavor!=null) ? (" flavor:" + flavor):"") +
 				((outCmd!=null) ? (" outCmd:" + outCmd):"") +
 				((incGph!=null) ? (" incGph:" + incGph):""));
-			
+
 			List<String> tgtUrls ;
 			if(tgtUrl!=null) {
 				tgtUrls = new ArrayList<String>();
@@ -155,7 +164,7 @@ class AnnotationIntegratedController extends BaseController {
 				tgtUrls = new ArrayList<String>();
 				tgtUrls = jenaVirtuosoStoreService.retrieveAllManifestationsByIdentifiers(apiKey, identifiers, configAccessService.getAsString("annotopia.storage.uri.graph.identifiers"));
 			}
-			
+
 			int annotationSetsTotal = annotationIntegratedStorageService.countAnnotationSetGraphs(apiKey, tgtUrls, tgtFgt);
 			int annotationSetsPages = (annotationSetsTotal/Integer.parseInt(max));
 			if(annotationSetsTotal>0 && Integer.parseInt(offset)>0 && Integer.parseInt(offset)>=annotationSetsPages) {
@@ -165,7 +174,7 @@ class AnnotationIntegratedController extends BaseController {
 					contentType: "text/json", encoding: "UTF-8");
 				return;
 			}
-		
+
 			Set<Dataset> annotationSets = annotationIntegratedStorageService.listAnnotationSets(apiKey, max, offset, tgtUrls, tgtFgt, tgtExt, tgtIds, incGph);
 			def summaryPrefix = '"total":"' + annotationSetsTotal + '", ' +
 					'"pages":"' + annotationSetsPages + '", ' +
@@ -173,7 +182,7 @@ class AnnotationIntegratedController extends BaseController {
 					'"offset": "' + offset + '", ' +
 					'"max": "' + max + '", ' +
 					'"sets":[';
-					
+
 			Object contextJson = null;
 			if(annotationSets!=null) {
 				response.outputStream << '{"status":"results", "result": {' + summaryPrefix
@@ -208,7 +217,7 @@ class AnnotationIntegratedController extends BaseController {
 						} else {
 							RDFDataMgr.write(baos, annotationSet, RDFLanguages.JSONLD);
 						}
-						
+
 						if(outCmd=='context') {
 							Object compact = JsonLdProcessor.compact(JsonUtils.fromString(baos.toString()), contextJson,  new JsonLdOptions());
 							response.outputStream << JsonUtils.toPrettyString(compact)
@@ -221,11 +230,11 @@ class AnnotationIntegratedController extends BaseController {
 				}
 			} else {
 				// No Annotation Sets found with the specified criteria
-				log.info("[" + apiKey + "] No Annotation sets found with the specified criteria");			
+				log.info("[" + apiKey + "] No Annotation sets found with the specified criteria");
 				response.outputStream << '{"status":"nocontent","message":"No results with the chosen criteria" , "result": {' + summaryPrefix
 			}
-			
-					
+
+
 			response.outputStream <<  ']}}';
 			response.outputStream.flush()
 		}
@@ -238,7 +247,7 @@ class AnnotationIntegratedController extends BaseController {
 			String url = null;
 			if(getCurrentUrl(request).indexOf("?")>0) url = getCurrentUrl(request).substring(0, getCurrentUrl(request).indexOf("?"))
 			else url = getCurrentUrl(request);
-			
+
 			Dataset graphs =  annotationIntegratedStorageService.retrieveAnnotationSet(apiKey, url);
 			if(graphs!=null && graphs.listNames().hasNext()) {
 				Set<Model> toAdd = new HashSet<Model>();
@@ -253,7 +262,7 @@ class AnnotationIntegratedController extends BaseController {
 					if(ds!=null && ds.listNames().hasNext()) {
 						Model annotationModel = ds.getNamedModel(ds.listNames().next());
 						StmtIterator  iter2 = annotationModel.listStatements(null, ResourceFactory.createProperty(RDF.RDF_TYPE), ResourceFactory.createResource(OA.ANNOTATION));
-						if(iter2.hasNext()) { 
+						if(iter2.hasNext()) {
 							toAdd.add(annotationModel);
 							//setModel.add(annotationModel);
 							statsToAdd.add(ResourceFactory.createStatement(s.getSubject(), ResourceFactory.createProperty(AnnotopiaVocabulary.ANNOTATIONS), iter2.next().getSubject()));
@@ -270,10 +279,10 @@ class AnnotationIntegratedController extends BaseController {
 					setModel.add(it);
 				}
 			}
-			
+
 			Object contextJson = null;
 			if(graphs!=null && graphs.listNames().hasNext()) {
-				
+
 				Model setModel = graphs.getNamedModel(graphs.listNames().next());
 
 				if(outCmd=='none') {
@@ -283,7 +292,7 @@ class AnnotationIntegratedController extends BaseController {
 					} else {
 						RDFDataMgr.write(response.outputStream, graphs, RDFLanguages.JSONLD);
 					}
-				} else {				
+				} else {
 					if(contextJson==null) {
 						if(outCmd=='context') {
 							contextJson = JsonUtils.fromInputStream(callExternalUrl(apiKey, configAccessService.getAsString("annotopia.jsonld.annotopia.context")));
@@ -291,7 +300,7 @@ class AnnotationIntegratedController extends BaseController {
 							contextJson = JsonUtils.fromInputStream(callExternalUrl(apiKey, configAccessService.getAsString("annotopia.jsonld.annotopia.framing")));
 						}
 					}
-				
+
 					ByteArrayOutputStream baos = new ByteArrayOutputStream();
 					if(incGph=='false') {
 						Model m = graphs.getNamedModel(graphs.listNames().next());
@@ -299,7 +308,7 @@ class AnnotationIntegratedController extends BaseController {
 					} else {
 						RDFDataMgr.write(baos, graphs, RDFLanguages.JSONLD);
 					}
-					
+
 					if(outCmd=='context') {
 						Object compact = JsonLdProcessor.compact(JsonUtils.fromString(baos.toString()), contextJson,  new JsonLdOptions());
 						response.outputStream << JsonUtils.toPrettyString(compact)
@@ -317,38 +326,38 @@ class AnnotationIntegratedController extends BaseController {
 			}
 		}
 	}
-	
+
 	/*
 	 * POST
 	 *
 	 * It accepts an annotation set formatted according to the Open Annotation specification
 	 * http://www.openannotation.org/spec/core/
 	 *
-	 * The single annotation set can be wrapped in a graph or not. This is not currently 
+	 * The single annotation set can be wrapped in a graph or not. This is not currently
 	 * handling multiple annotations.
 	 *
 	 * Validation not yet implemented.
 	 */
 	def saveAnnotationSet = {
 		log.info("[" + apiKey + "] Saving Annotation Set");
-		
+
 		// Parsing the incoming parameters
 		def set = request.JSON.set
-		
+
 		// Unused but planned
 		def flavor = (request.JSON.flavor!=null)?request.JSON.flavor:"OA";
 		def validate = (request.JSON.validate!=null)?request.JSON.validate:"OFF";
-				
-		if(set!=null) {	
+
+		if(set!=null) {
 			Dataset savedAnnotationSet;
 			try {
-				savedAnnotationSet = annotationIntegratedStorageService.saveAnnotationSet(apiKey, startTime, Boolean.parseBoolean(incGph), set.toString()); 
+				savedAnnotationSet = annotationIntegratedStorageService.saveAnnotationSet(apiKey, startTime, Boolean.parseBoolean(incGph), set.toString());
 			} catch(StoreServiceException exception) {
 				render(status: exception.status, text: exception.text, contentType: exception.contentType, encoding: exception.encoding);
 				return;
 			}
-			
-			if(savedAnnotationSet!=null) {				
+
+			if(savedAnnotationSet!=null) {
 				openAnnotationSetsUtilsService.renderSavedNamedGraphsDataset(apiKey, startTime, outCmd, 'saved', response, savedAnnotationSet);
 			} else {
 				// Dataset returned null
@@ -361,37 +370,37 @@ class AnnotationIntegratedController extends BaseController {
 			render(status: 200, text: returnMessage(apiKey, "nocontent", message, startTime), contentType: "text/json", encoding: "UTF-8");
 		}
 	}
-	
+
 	/*
 	 * PUT
 	 *
 	 * It accepts updates existing annotation set formatted according to the Open Annotation specification
 	 * http://www.openannotation.org/spec/core/
 	 *
-	 * The single annotation set can be wrapped in a graph or not. 
+	 * The single annotation set can be wrapped in a graph or not.
 	 *
 	 * Validation not yet implemented.
 	 */
 	def updateAnnotationSet = {
 		log.info("[" + apiKey + "] Updating Annotation Set");
-		
+
 		// Parsing the incoming parameters
 		def set = request.JSON.set
-		
+
 		// Unused but planned
 		def flavor = (request.JSON.flavor!=null)?request.JSON.flavor:"OA";
 		def validate = (request.JSON.validate!=null)?request.JSON.validate:"OFF";
-				
-		if(set!=null) {	
+
+		if(set!=null) {
 			Dataset updatedAnnotationSet;
 			try {
 				println set.toString();
-				updatedAnnotationSet = annotationIntegratedStorageService.updateAnnotationSet(apiKey, startTime, Boolean.parseBoolean(incGph), set.toString()); 
+				updatedAnnotationSet = annotationIntegratedStorageService.updateAnnotationSet(apiKey, startTime, Boolean.parseBoolean(incGph), set.toString());
 			} catch(StoreServiceException exception) {
 				render(status: exception.status, text: exception.text, contentType: exception.contentType, encoding: exception.encoding);
 				return;
 			}
-			
+
 			Object contextJson = null;
 			if(updatedAnnotationSet!=null) {
 				openAnnotationSetsUtilsService.renderSavedNamedGraphsDataset(apiKey, startTime, outCmd, 'saved', response, updatedAnnotationSet);
