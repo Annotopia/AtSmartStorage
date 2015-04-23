@@ -2,6 +2,7 @@ package org.annotopia.grails.controllers.openannotationset
 
 import java.util.regex.Matcher
 import org.annotopia.grails.vocabularies.AnnotopiaVocabulary
+import org.annotopia.grails.vocabularies.PAV
 import org.annotopia.groovy.service.store.BaseController
 import org.apache.jena.riot.RDFDataMgr
 import org.apache.jena.riot.RDFLanguages
@@ -32,7 +33,7 @@ class OpenAnnotationSetRESTController extends BaseController {
 
 	def beforeInterceptor = {
 		startTime = System.currentTimeMillis()
-		
+
 		// Authenticate
 		apiKey = apiKeyAuthenticationService.getApiKey(request)
 		if(!apiKeyAuthenticationService.isApiKeyValid(request.getRemoteAddr(), apiKey)) {
@@ -83,11 +84,20 @@ class OpenAnnotationSetRESTController extends BaseController {
 		// Add the annotation to the set
 		def annotationGraphURI = storedAnnotation.listNames().next()
 		def annotationSetGraphURI = annotationSet.listNames().next()
-		annotationSet.getNamedModel(annotationSetGraphURI).add(ResourceFactory.createResource(annotationSetURI),
+
+		def annotationSetModel = annotationSet.getNamedModel(annotationSetGraphURI)
+		annotationSetModel.add(ResourceFactory.createResource(annotationSetURI),
 				ResourceFactory.createProperty(AnnotopiaVocabulary.ANNOTATIONS),
 				ResourceFactory.createResource(annotationGraphURI))
+		// Set Last saved on
+		annotationSetModel.removeAll(ResourceFactory.createResource(annotationSetURI), ResourceFactory.createProperty(PAV.PAV_LAST_UPDATED_ON), null);
+		annotationSetModel.add(ResourceFactory.createResource(annotationSetURI), ResourceFactory.createProperty(PAV.PAV_LAST_UPDATED_ON),
+			ResourceFactory.createPlainLiteral(dateFormat.format(new Date())));
+
+		// TODO: Needs to increment PAV_VERSION
+
 		// Store the updated annotation set
-		jenaVirtuosoStoreService.storeDataset(apiKey, annotationSet)
+		jenaVirtuosoStoreService.updateDataset(apiKey, annotationSet)
 
 		// Render the set
 		openAnnotationSetsUtilsService.renderSavedNamedGraphsDataset(apiKey, startTime, 'none', 'saved', response, annotationSet)
