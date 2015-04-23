@@ -42,7 +42,7 @@ interface ITripleStore {
 	 * @return
 	 */
 	public String store(String apiKey, File content);
-	
+
 	/**
 	 * Stores the triples/quads loaded from a file.
 	 * @param apiKey	The API key of the system requesting the transaction
@@ -51,7 +51,7 @@ interface ITripleStore {
 	 * @return
 	 */
 	public String store(String apiKey, File content, String baseUri);
-	
+
 	/**
 	 * Stores the triples/quads loaded through a String.
 	 * @param apiKey	The API key of the system requesting the transaction
@@ -59,7 +59,7 @@ interface ITripleStore {
 	 * @return
 	 */
 	public String store(String apiKey, String content);
-	
+
 	/**
 	 * Stores the triples/quads loaded through a String
 	 * @param apiKey	The API key of the system requesting the transaction
@@ -68,7 +68,7 @@ interface ITripleStore {
 	 * @return
 	 */
 	public String store(String apiKey, String content, String baseUri);
-	
+
 	/**
 	 * Updates the triples/quads loaded from a file.
 	 * @param apiKey	The API key of the system requesting the transaction
@@ -76,7 +76,7 @@ interface ITripleStore {
 	 * @return
 	 */
 	public String update(String apiKey, File content);
-	
+
 	/**
 	 * Updates the triples/quads loaded from a file.
 	 * @param apiKey	The API key of the system requesting the transaction
@@ -85,7 +85,7 @@ interface ITripleStore {
 	 * @return
 	 */
 	public String update(String apiKey, File content, String baseUri);
-	
+
 	/**
 	 * Updates the triples/quads loaded through a String.
 	 * @param apiKey	The API key of the system requesting the transaction
@@ -93,7 +93,7 @@ interface ITripleStore {
 	 * @return
 	 */
 	public String update(String apiKey, String content);
-	
+
 	/**
 	 * Updates the triples/quads loaded through a String
 	 * @param apiKey	The API key of the system requesting the transaction
@@ -102,14 +102,14 @@ interface ITripleStore {
 	 * @return
 	 */
 	public String update(String apiKey, String content, String baseUri);
-	
+
 	/**
 	 * Retrieves the graph identified by the given URI
 	 * @param apiKey	The API key of the system requesting the transaction
 	 * @param graphUri	The URI identifying the graph to retrieve
 	 */
 	public Dataset retrieveGraph(String apiKey, String graphUri);
-	
+
 	/**
 	 * Retrieves the metadata about the graph identified by the given URI
 	 * @param apiKey	The API key of the system requesting the transaction
@@ -117,17 +117,17 @@ interface ITripleStore {
 	 * @param metadataGraphUri	The URI identifying the graph containing all graphs metadata
 	 */
 	public Model retrieveGraphMetadata(String apiKey, String graphUri, String metadataGraphUri);
-	
+
 	public Model retrieveGraphIdentifiersMetadata(String apiKey, Map<String,String> identifiers, String metadataGraphUri);
-	
+
 	/**
 	 * Verifies existence of the graph identified by the given URI
 	 * @param apiKey	The API key of the system requesting the transaction
-	 * @param graphUri  The URI identifying the graph 
+	 * @param graphUri  The URI identifying the graph
 	 * @return True if the graph exists
 	 */
 	public boolean doesGraphExists(String apiKey, String graphUri);
-	
+
 	/**
 	 * Drops the graph identified by the given URI
 	 * @param apiKey	The API key of the system requesting the transaction
@@ -135,4 +135,11 @@ interface ITripleStore {
 	 * @return True if the graph has been dropped
 	 */
 	public boolean dropGraph(String apiKey, String graphUri);
+
+	/**
+	 * Remove all triples with the given object URI.
+	 * @param apiKey	The API key of the system requesting the transaction
+	 * @param objectUri	The URI identifying the object
+	 */
+	public void removeAllTriplesWithObject(String apiKey, String objectUri);
 }

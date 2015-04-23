@@ -48,20 +48,20 @@ class OpenAnnotationController extends BaseController {
 
 	//String OA_CONTEXT = "https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/OAContext.json";
 	//String OA_FRAME = "https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/OAFrame.json";
-	
+
 	private final RESPONSE_CONTENT_TYPE = "application/json;charset=UTF-8";
-	
+
 	// outCmd (output command) constants
 	private final OUTCMD_NONE = "none";
 	private final OUTCMD_FRAME = "frame";
 	private final OUTCMD_CONTEXT = "context";
-	
+
 	// incGph (Include graph) constants
 	private final INCGPH_YES = "true";
 	private final INCGPH_NO = "false";
-	
+
 	def configAccessService;
-	
+
 	def openAnnotationVirtuosoService;
 	def annotationJenaStorageService;
 	def openAnnotationStorageService
@@ -104,33 +104,33 @@ class OpenAnnotationController extends BaseController {
 	}
 
 	/*
-	 * GET 
-	 * 
+	 * GET
+	 *
 	 * Either retrieve a representation of the requested annotation (if an id
-	 * is specified and the requested annotation exists) or lists available 
+	 * is specified and the requested annotation exists) or lists available
 	 * annotations (using pagination).
-	 * 
-	 * The returned format is compliant with the Open Annotation specification 
+	 *
+	 * The returned format is compliant with the Open Annotation specification
 	 * http://www.openannotation.org/spec/core/
 	 */
 	def show = {
 		// Response format parametrization and constraints
 		parseParameters()
-		
+
 		// GET of a list of annotations
 		if(params.id==null) {
 			// Pagination
 			def max = (request.JSON.max!=null)?request.JSON.max:"10";
 			if(params.max!=null) max = params.max;
 			def offset = (request.JSON.offset!=null)?request.JSON.offset:"0";
-			if(params.offset!=null) offset = params.offset;	
-			
+			if(params.offset!=null) offset = params.offset;
+
 			// Target filters
 			def tgtUrl = request.JSON.tgtUrl
 			if(params.tgtUrl!=null) tgtUrl = params.tgtUrl;
 			def tgtFgt = (request.JSON.tgtFgt!=null)?request.JSON.tgtFgt:"true";
 			if(params.tgtFgt!=null) tgtFgt = params.tgtFgt;
-			
+
 			// Target IDs
 			Map<String,String> identifiers = new HashMap<String,String>();
 			def tgtIds = (request.JSON.tgtIds!=null)?request.JSON.tgtIds:null;
@@ -139,9 +139,9 @@ class OpenAnnotationController extends BaseController {
 				JSONObject ids = JSON.parse(tgtIds);
 				ids.keys().each { key ->
 					identifiers.put(key, ids.get(key));
-				}			
+				}
 			}
-			
+
 			// Facets
 			def sources = request.JSON.sources
 			if(params.sources!=null) sources = params.sources;
@@ -151,11 +151,11 @@ class OpenAnnotationController extends BaseController {
 			if(params.motivations!=null) motivations = params.motivations;
 			def motivationsFacet = []
 			if(motivations) motivationsFacet = motivations.split(",");
-			
+
 			// Currently unusued, planned
 			def tgtExt = request.JSON.tgtExt
 			def flavor = request.JSON.flavor
-			
+
 			log.info("[" + apiKey + "] List >>" +
 				" max:" + max + " offset:" + offset +
 				((tgtUrl!=null) ? (" tgtUrl:" + tgtUrl):"") +
@@ -164,8 +164,8 @@ class OpenAnnotationController extends BaseController {
 				((tgtIds!=null) ? (" tgtIds:" + tgtIds):"") +
 				((flavor!=null) ? (" flavor:" + flavor):"") +
 				((outCmd!=null) ? (" outCmd:" + outCmd):"") +
-				((incGph!=null) ? (" incGph:" + incGph):""));	
-			
+				((incGph!=null) ? (" incGph:" + incGph):""));
+
 			List<String> tgtUrls ;
 			if(tgtUrl!=null) {
 				tgtUrls = new ArrayList<String>();
@@ -174,18 +174,18 @@ class OpenAnnotationController extends BaseController {
 				tgtUrls = new ArrayList<String>();
 				tgtUrls = jenaVirtuosoStoreService.retrieveAllManifestationsByIdentifiers(apiKey, identifiers, configAccessService.getAsString("annotopia.storage.uri.graph.identifiers"));
 			}
-			
-			int annotationsTotal = openAnnotationVirtuosoService.countAnnotationGraphs(apiKey, tgtUrls, tgtFgt, sourcesFacet, motivationsFacet);			
+
+			int annotationsTotal = openAnnotationVirtuosoService.countAnnotationGraphs(apiKey, tgtUrls, tgtFgt, sourcesFacet, motivationsFacet);
 			//int annotationsTotal = openAnnotationVirtuosoService.countAnnotationGraphs(apiKey, tgtUrl, tgtFgt, identifiers);
-			int annotationsPages = (annotationsTotal/Integer.parseInt(max));		
+			int annotationsPages = (annotationsTotal/Integer.parseInt(max));
 			if(annotationsTotal>0 && Integer.parseInt(offset)>0 && Integer.parseInt(offset)>=annotationsPages) {
-				def message = 'The requested page ' + offset + 
+				def message = 'The requested page ' + offset +
 					' does not exist, the page index limit is ' + (annotationsPages==0?"0":(annotationsPages-1));
-				render(status: 401, text: returnMessage(apiKey, "rejected", message, startTime), 
+				render(status: 401, text: returnMessage(apiKey, "rejected", message, startTime),
 					contentType: "text/json", encoding: "UTF-8");
 				return;
 			}
-			
+
 			Set<Dataset> annotationGraphs = openAnnotationStorageService.listAnnotation(apiKey, max, offset, tgtUrls, tgtFgt, tgtExt, tgtIds, incGph, sourcesFacet, motivationsFacet);
 			def summaryPrefix = '"total":"' + annotationsTotal + '", ' +
 					'"pages":"' + annotationsPages + '", ' +
@@ -193,11 +193,11 @@ class OpenAnnotationController extends BaseController {
 					'"offset": "' + offset + '", ' +
 					'"max": "' + max + '", ' +
 					'"items":[';
-					
+
 			Object contextJson = null;
-			response.contentType = RESPONSE_CONTENT_TYPE	
+			response.contentType = RESPONSE_CONTENT_TYPE
 			if(annotationGraphs!=null) {
-				response.outputStream << '{"status":"results", "result": {' + summaryPrefix	
+				response.outputStream << '{"status":"results", "result": {' + summaryPrefix
 				boolean firstStreamed = false // To add the commas between items
 				annotationGraphs.each { annotationGraph ->
 					if(firstStreamed) response.outputStream << ','
@@ -216,7 +216,7 @@ class OpenAnnotationController extends BaseController {
 							if(outCmd==OUTCMD_CONTEXT) {
 								contextJson = JsonUtils.fromInputStream(callExternalUrl(apiKey, configAccessService.getAsString("annotopia.jsonld.annotopia.context")));
 							} else if(outCmd==OUTCMD_FRAME) {
-								contextJson = JsonUtils.fromInputStream(callExternalUrl(apiKey, configAccessService.getAsString("annotopia.jsonld.openannotation.framing")));						
+								contextJson = JsonUtils.fromInputStream(callExternalUrl(apiKey, configAccessService.getAsString("annotopia.jsonld.openannotation.framing")));
 							}
 						}
 
@@ -229,7 +229,7 @@ class OpenAnnotationController extends BaseController {
 						} else {
 							RDFDataMgr.write(baos, annotationGraph, RDFLanguages.JSONLD);
 						}
-						
+
 						if(outCmd==OUTCMD_CONTEXT) {
 							Object compact = JsonLdProcessor.compact(JsonUtils.fromString(baos.toString()), contextJson,  new JsonLdOptions());
 							response.outputStream << JsonUtils.toPrettyString(compact)
@@ -243,7 +243,7 @@ class OpenAnnotationController extends BaseController {
 				}
 			} else {
 				// No Annotation Sets found with the specified criteria
-				log.info("[" + apiKey + "] No Annotation found with the specified criteria");			
+				log.info("[" + apiKey + "] No Annotation found with the specified criteria");
 				response.outputStream << '{"status":"nocontent","message":"No results with the chosen criteria" , "result": {' + summaryPrefix
 			}
 			response.outputStream <<  ']}}';
@@ -256,16 +256,16 @@ class OpenAnnotationController extends BaseController {
 		// be returned.
 		else {
 			Dataset graphs =  openAnnotationVirtuosoService.retrieveAnnotation(apiKey, getCurrentUrl(request));
-			
+
 			response.contentType = RESPONSE_CONTENT_TYPE
-			
+
 			Object contextJson = null;
 			if(graphs!=null && graphs.listNames().hasNext()) {
-						
-				if(outCmd==OUTCMD_NONE) { 
+
+				if(outCmd==OUTCMD_NONE) {
 					if(incGph==INCGPH_NO) {
 						Model m = graphs.getNamedModel(graphs.listNames().next());
-						RDFDataMgr.write(response.outputStream, m, RDFLanguages.JSONLD);		
+						RDFDataMgr.write(response.outputStream, m, RDFLanguages.JSONLD);
 					} else {
 						RDFDataMgr.write(response.outputStream, graphs, RDFLanguages.JSONLD);
 					}
@@ -274,18 +274,18 @@ class OpenAnnotationController extends BaseController {
 						if(outCmd==OUTCMD_CONTEXT) {
 							contextJson = JsonUtils.fromInputStream(callExternalUrl(apiKey, configAccessService.getAsString("annotopia.jsonld.openannotation.context")));
 						} else if(outCmd==OUTCMD_FRAME) {
-							contextJson = JsonUtils.fromInputStream(callExternalUrl(apiKey, configAccessService.getAsString("annotopia.jsonld.openannotation.framing")));						
+							contextJson = JsonUtils.fromInputStream(callExternalUrl(apiKey, configAccessService.getAsString("annotopia.jsonld.openannotation.framing")));
 						}
 					}
-				
+
 					ByteArrayOutputStream baos = new ByteArrayOutputStream();
-					if(incGph==INCGPH_NO) {			
+					if(incGph==INCGPH_NO) {
 						Model m = graphs.getNamedModel(graphs.listNames().next());
-						RDFDataMgr.write(baos, m.getGraph(), RDFLanguages.JSONLD);			
+						RDFDataMgr.write(baos, m.getGraph(), RDFLanguages.JSONLD);
 					} else {
 						RDFDataMgr.write(baos, graphs, RDFLanguages.JSONLD);
 					}
-					
+
 					if(outCmd==OUTCMD_CONTEXT) {
 						Object compact = JsonLdProcessor.compact(JsonUtils.fromString(baos.toString()), contextJson, new JsonLdOptions());
 						response.outputStream << JsonUtils.toPrettyString(compact)
@@ -293,7 +293,7 @@ class OpenAnnotationController extends BaseController {
 						Object framed =  JsonLdProcessor.frame(JsonUtils.fromString(baos.toString().replace('"@id" : "urn:x-arq:DefaultGraphNode",','')),contextJson, new JsonLdOptions());
 						response.outputStream << JsonUtils.toPrettyString(framed)
 					}
-				} 			
+				}
 				response.outputStream.flush()
 			} else {
 				// Annotation Set not found
@@ -303,16 +303,16 @@ class OpenAnnotationController extends BaseController {
 			}
 		}
 	}
-	
+
 	/*
 	 * POST
 	 *
 	 * It accepts an annotation item formatted according to the Open Annotation specification
 	 * http://www.openannotation.org/spec/core/
-	 * 
-	 * The single annotation can be wrapped in a graph or not. This is not currently handling 
+	 *
+	 * The single annotation can be wrapped in a graph or not. This is not currently handling
 	 * multiple annotations.
-	 * 
+	 *
 	 * Validation not yet implemented.
 	 */
 	def save = {
@@ -322,12 +322,12 @@ class OpenAnnotationController extends BaseController {
 		// Unused but planned
 		def flavor = (request.JSON.flavor!=null)?request.JSON.flavor:"OA";
 		def validate = (request.JSON.validate!=null &&  request.JSON.validate in ['ON'])?request.JSON.validate:"OFF";
-				
+
 		// Parsing the payload
 		def item = request.JSON.item
 		if(item!=null) {
 			if(request.JSON.validate=='ON')  log.warn("[" + apiKey + "] TODO: Validation of the Annotation content requested but not implemented yest!");
-						
+
 			// Reads the inputs in a dataset
 			Dataset inMemoryDataset = DatasetFactory.createMem();
 			try {
@@ -341,7 +341,7 @@ class OpenAnnotationController extends BaseController {
 				render(status: 500, text: returnMessage(apiKey, "invalidcontent", message, startTime), contentType: "text/json", encoding: "UTF-8");
 				return;
 			}
-			
+
 			// Saves the annotation through services
 			Dataset savedAnnotation;
 			try {
@@ -352,9 +352,9 @@ class OpenAnnotationController extends BaseController {
 				render(status: exception.status, text: exception.text, contentType: exception.contentType, encoding: exception.encoding);
 				return;
 			}
-			
+
 			try {
-				if(savedAnnotation!=null) { 					
+				if(savedAnnotation!=null) {
 					renderSavedNamedGraphsDataset(apiKey, startTime, outCmd, 'saved', response, savedAnnotation);
 				} else {
 					// Annotation Set not found
@@ -363,7 +363,7 @@ class OpenAnnotationController extends BaseController {
 					return;
 				}
 			} catch(Exception exception) {
-				log.error("[" + apiKey + "] " + exception.getMessage());	
+				log.error("[" + apiKey + "] " + exception.getMessage());
 				def message = "Invalid content, saved annotation does not seem well formatted";
 				log.error("[" + apiKey + "] " + message + ": " + getDatasetAsString(savedAnnotation));
 				render(status: 500, text: returnMessage(apiKey, "invalidcontent", message, startTime), contentType: "text/json", encoding: "UTF-8");
@@ -375,7 +375,7 @@ class OpenAnnotationController extends BaseController {
 			render(status: 200, text: returnMessage(apiKey, "nocontent", message, startTime), contentType: "text/json", encoding: "UTF-8");
 		}
 	}
-	
+
 	/*
 	 * PUT
 	 *
@@ -390,16 +390,16 @@ class OpenAnnotationController extends BaseController {
 	def update = {
 		// Response format parametrization and constraints
 		parseParameters()
-		
+
 		// Unused but planned
 		def flavor = (request.JSON.flavor!=null)?request.JSON.flavor:"OA";
 		def validate = (request.JSON.validate!=null &&  request.JSON.validate in ['ON'])?request.JSON.validate:"OFF";
-		
+
 		def item = request.JSON.item
-				
+
 		if(item!=null) {
 			if(request.JSON.validate=='ON') log.warn("[" + apiKey + "] TODO: Validation of the Annotation content requested but not implemented yest!");
-			
+
 			Dataset inMemoryDataset = DatasetFactory.createMem();
 			try {
 				RDFDataMgr.read(inMemoryDataset, new ByteArrayInputStream(item.toString().getBytes("UTF-8")), RDFLanguages.JSONLD);
@@ -410,7 +410,7 @@ class OpenAnnotationController extends BaseController {
 				render(status: 500, text: returnMessage(apiKey, "invalidcontent", message, startTime), contentType: "text/json", encoding: "UTF-8");
 				return;
 			}
-			
+
 			Dataset updatedAnnotation;
 			try {
 				updatedAnnotation = openAnnotationStorageService.updateAnnotationDataset(apiKey, startTime, Boolean.parseBoolean(incGph), inMemoryDataset);
@@ -418,7 +418,7 @@ class OpenAnnotationController extends BaseController {
 				render(status: exception.status, text: exception.text, contentType: exception.contentType, encoding: exception.encoding);
 				return;
 			}
-			
+
 			try {
 				if(updatedAnnotation!=null) {
 					renderSavedNamedGraphsDataset(apiKey, startTime, outCmd, 'updated', response, updatedAnnotation);
@@ -442,24 +442,24 @@ class OpenAnnotationController extends BaseController {
 			render(status: 200, text: returnMessage(apiKey, "nocontent", message, startTime), contentType: "text/json", encoding: "UTF-8");
 		}
 	}
-	
+
 	def validate = {
 		def item = request.JSON.item
-		
+
 		// Unused but planned
 		def flavor = (request.JSON.flavor!=null)?request.JSON.flavor:"OA";
 
 		if(item!=null) {
 			List<HashMap<String,Object>> results = openAnnotationValidationService.validate(new ByteArrayInputStream(item.toString().getBytes("UTF-8")), "application/json");
-			
+
 			JSONObject jsonFinalSummary = new JSONObject();
 			JSONObject annotationSummary = new JSONObject();
-			
+
 			JSONArray finalResult = new JSONArray();
 			for(resultExternal in results) {
 				//HashMap<String,Object> resultExternal = results.get(0);
 				if(resultExternal.containsKey("result") && resultExternal.get("result")!=null) {
-					
+
 					JSONObject jsonSummary = new JSONObject();
 					//jsonSummary.put("content", item);
 					jsonSummary.put("total", resultExternal.get("total"));
@@ -468,22 +468,22 @@ class OpenAnnotationController extends BaseController {
 					jsonSummary.put("error", resultExternal.get("error"));
 					jsonSummary.put("skip", resultExternal.get("skip"));
 					jsonSummary.put("pass", resultExternal.get("pass"));
-					
+
 					JSONObject jsonGraph = new JSONObject();
 					jsonGraph.put("summary", jsonSummary);
-					
+
 					JSONArray jsonResults = new JSONArray();
 					Object resultInternal = resultExternal.get("result");
 					for(Object result: resultInternal) {
 						JSONObject jsonResult = new JSONObject();
-		
+
 						jsonResult.put("section", result.getAt("section"));
 						jsonResult.put("warn", result.getAt("warn"));
 						jsonResult.put("error", result.getAt("error"));
 						jsonResult.put("skip", result.getAt("skip"));
 						jsonResult.put("pass", result.getAt("pass"));
 						jsonResult.put("total", result.getAt("total"));
-						
+
 						JSONArray jsonConstraints = new JSONArray();
 						ArrayList constraints = result.getAt("constraints");
 						for(Object constraint: constraints) {
@@ -507,16 +507,16 @@ class OpenAnnotationController extends BaseController {
 					annotationSummary.put("graphs", resultExternal.get("annotationGraphs"));
 				} else if(resultExternal.get("exception")!=null) {
 					Object exc =  resultExternal.get("exception");
-					
+
 					JSONObject jsonException = new JSONObject();
 					jsonException.put("step", "validation");
 					jsonException.put("label", exc.get("label"));
 					jsonException.put("description", exc.get("message"));
-					
+
 					finalResult.put("exception", jsonException);
 				}
 			}
-			
+
 			//jsonFinalSummary.put("totalGraphs", results.size());
 			annotationSummary.put("validation", finalResult)
 			jsonFinalSummary.put("annotation", annotationSummary);
@@ -527,7 +527,7 @@ class OpenAnnotationController extends BaseController {
 			render(status: 200, text: returnMessage(apiKey, "nocontent", message, startTime), contentType: "text/json", encoding: "UTF-8");
 		}
 	}
-	
+
 	def delete = {
 		def uri = (request.JSON.uri!=null)?request.JSON.uri:getCurrentUrl(request);
 		log.info("[" + apiKey + "] Deleting annotation " + uri);
@@ -538,19 +538,20 @@ class OpenAnnotationController extends BaseController {
 				log.trace("[" + apiKey + "] Deleting graph " + it);
 				jenaVirtuosoStoreService.dropGraph(apiKey, it);
 				jenaVirtuosoStoreService.removeAllTriples(apiKey, configAccessService.getAsString("annotopia.storage.uri.graph.provenance"), it);
+				jenaVirtuosoStoreService.removeAllTriplesWithObject(apiKey, it);
 			}
 			def message = "Annotation deleted";
 			render(status: 410, text: returnMessage(apiKey, "deleted", message, startTime), contentType: "text/json", encoding: "UTF-8");
 		}  else {
 			// Annotation not found (but that's OK)
 			def message = "Annotation not found";
-			render(status: 404, text: returnMessage(apiKey, "notfound", message, startTime), contentType: "text/json", encoding: "UTF-8");
+			render(status: 410, text: returnMessage(apiKey, "notfound", message, startTime), contentType: "text/json", encoding: "UTF-8");
 		}
 	}
-	
+
 	private void renderSavedNamedGraphsDataset(def apiKey, long startTime, String outCmd, String status, HttpServletResponse response, Dataset dataset) {
 		response.contentType = RESPONSE_CONTENT_TYPE
-		
+
 		// Count graphs
 		int sizeDataset = 0;
 		Iterator iterator = dataset.listNames();
@@ -558,7 +559,7 @@ class OpenAnnotationController extends BaseController {
 			sizeDataset++;
 			iterator.next();
 		}
-		
+
 		if(sizeDataset>1 && outCmd==OUTCMD_FRAME) {
 			log.warn("[" + apiKey + "] Invalid options, framing does not currently support Named Graphs");
 			def message = 'Invalid options, framing does not currently support Named Graphs';
@@ -566,14 +567,14 @@ class OpenAnnotationController extends BaseController {
 				contentType: "text/json", encoding: "UTF-8");
 			return;
 		}
-		
+
 		Dataset datasetToRender = DatasetFactory.createMem();
 		if(sizeDataset==1) datasetToRender.setDefaultModel(dataset.getNamedModel(dataset.listNames().next()));
 		else datasetToRender = dataset;
-		
+
 		def summaryPrefix = '"duration": "' + (System.currentTimeMillis()-startTime) + 'ms","graphs":"' + sizeDataset +  '",' + '"item":[';
 		response.outputStream << '{"status":"' + status + '", "result": {' + summaryPrefix
-		
+
 		Object contextJson = null;
 		if(outCmd==OUTCMD_NONE) {
 			RDFDataMgr.write(response.outputStream, datasetToRender, RDFLanguages.JSONLD);
@@ -585,10 +586,10 @@ class OpenAnnotationController extends BaseController {
 					contextJson = JsonUtils.fromInputStream(callExternalUrl(apiKey, configAccessService.getAsString("annotopia.jsonld.openannotation.framing")));
 				}
 			}
-		
+
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
 			RDFDataMgr.write(baos, datasetToRender, RDFLanguages.JSONLD);
-			
+
 			if(outCmd==OUTCMD_CONTEXT) {
 				Object compact = JsonLdProcessor.compact(JsonUtils.fromString(baos.toString()), contextJson, new JsonLdOptions());
 				response.outputStream << JsonUtils.toPrettyString(compact)
@@ -596,7 +597,7 @@ class OpenAnnotationController extends BaseController {
 			// FIXME: avoid replace() in Jena 2.12.2
 				Object framed =  JsonLdProcessor.frame(JsonUtils.fromString(baos.toString().replace('"@id" : "urn:x-arq:DefaultGraphNode",','')), contextJson, new JsonLdOptions());
 				response.outputStream << JsonUtils.toPrettyString(framed)
-			} 
+			}
 		}
 		response.outputStream << ']}}'
 		response.outputStream.flush()

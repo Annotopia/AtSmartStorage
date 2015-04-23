@@ -51,10 +51,10 @@ import com.hp.hpl.jena.rdf.model.RDFNode
  * @author Paolo Ciccarese <paolo.ciccarese@gmail.com>
  */
 class JenaVirtuosoStoreService implements ITripleStore {
-	
+
 	def grailsApplication
 	def configAccessService
-	
+
 	/**
 	 * Returns a Virtuoso Graph for connecting to the Virtuoso
 	 * triple store.
@@ -66,11 +66,11 @@ class JenaVirtuosoStoreService implements ITripleStore {
 			configAccessService.getAsString("annotopia.storage.triplestore.user"),
 			configAccessService.getAsString("annotopia.storage.triplestore.pass"));
 	}
-	
+
 	private VirtModel getModel() {
 		return new VirtModel(getGraph());
 	}
-	
+
 	private VirtGraph getGraph(String name) {
 		return new VirtGraph (
 			name,
@@ -78,7 +78,7 @@ class JenaVirtuosoStoreService implements ITripleStore {
 			configAccessService.getAsString("annotopia.storage.triplestore.user"),
 			configAccessService.getAsString("annotopia.storage.triplestore.pass"));
 	}
-	
+
 	// -----------------------------------------------------------------------
 	//    COUNT
 	// -----------------------------------------------------------------------
@@ -91,7 +91,7 @@ class JenaVirtuosoStoreService implements ITripleStore {
 	public int count(apiKey, queryString, counter = "total") {
 		VirtGraph graph = getGraph();
 		log.trace('[' + apiKey + '] ' +  queryString);
-			
+
 		int totalCount = 0;
 		VirtuosoQueryExecution vqe = VirtuosoQueryExecutionFactory.create (QueryFactory.create(queryString), graph);
 		ResultSet results=vqe.execSelect();
@@ -101,11 +101,11 @@ class JenaVirtuosoStoreService implements ITripleStore {
 		log.info('[' + apiKey + '] Total: ' + totalCount);
 		totalCount;
 	}
-	
+
 	public Map<String, Integer> counters(apiKey, queryString, counters = ["total"]) {
 		VirtGraph graph = getGraph();
 		log.trace('[' + apiKey + '] ' +  queryString);
-			
+
 		Map<String, Integer> map = new HashMap<String, Integer>();
 		VirtuosoQueryExecution vqe = VirtuosoQueryExecutionFactory.create (QueryFactory.create(queryString), graph);
 		ResultSet results=vqe.execSelect();
@@ -113,7 +113,7 @@ class JenaVirtuosoStoreService implements ITripleStore {
 			QuerySolution querySolution = results.nextSolution();
 			counters.each { counter ->
 				map.put(
-					counter.toString(), 
+					counter.toString(),
 					querySolution.get(counter).asLiteral().int
 				);
 			}
@@ -121,11 +121,11 @@ class JenaVirtuosoStoreService implements ITripleStore {
 		log.info('[' + apiKey + '] Total: ' + map);
 		map;
 	}
-	
+
 	/**
 	 * Counts occurrences of grouped entities.
 	 * @param apiKey		The API software key
-	 * @param queryString	The query 
+	 * @param queryString	The query
 	 * @param counter		The label of the counter in the query
 	 * @param groupBy		The grouping criteria in the query
 	 * @return The map of the counter for each item of the group.
@@ -133,24 +133,7 @@ class JenaVirtuosoStoreService implements ITripleStore {
 	public Map<String, Integer> countAndGroupBy(apiKey, queryString, counter, groupBy) {
 		VirtGraph graph = getGraph();
 		log.trace('[' + apiKey + '] ' + queryString);
-		
-		Map<String, Integer> map = new HashMap<String, Integer>();
-		VirtuosoQueryExecution qGraphs = VirtuosoQueryExecutionFactory.create (QueryFactory.create(queryString), graph);
-		ResultSet rGraphs = qGraphs.execSelect();
-		while (rGraphs.hasNext()) {
-			QuerySolution querySolution = rGraphs.nextSolution();
-			map.put(
-				querySolution.get(groupBy).toString(), 
-				querySolution.get(counter).asLiteral().int
-			);
-		}
-		map
-	}
-	
-	public Map<String, Integer> countAndGroupBys(apiKey, queryString, counter, groupBys) {
-		VirtGraph graph = getGraph();
-		log.trace('[' + apiKey + '] ' + queryString);
-		
+
 		Map<String, Integer> map = new HashMap<String, Integer>();
 		VirtuosoQueryExecution qGraphs = VirtuosoQueryExecutionFactory.create (QueryFactory.create(queryString), graph);
 		ResultSet rGraphs = qGraphs.execSelect();
@@ -163,14 +146,31 @@ class JenaVirtuosoStoreService implements ITripleStore {
 		}
 		map
 	}
-	
+
+	public Map<String, Integer> countAndGroupBys(apiKey, queryString, counter, groupBys) {
+		VirtGraph graph = getGraph();
+		log.trace('[' + apiKey + '] ' + queryString);
+
+		Map<String, Integer> map = new HashMap<String, Integer>();
+		VirtuosoQueryExecution qGraphs = VirtuosoQueryExecutionFactory.create (QueryFactory.create(queryString), graph);
+		ResultSet rGraphs = qGraphs.execSelect();
+		while (rGraphs.hasNext()) {
+			QuerySolution querySolution = rGraphs.nextSolution();
+			map.put(
+				querySolution.get(groupBy).toString(),
+				querySolution.get(counter).asLiteral().int
+			);
+		}
+		map
+	}
+
 	// -----------------------------------------------------------------------
 	//    QUERY
 	// -----------------------------------------------------------------------
 	/**
 	 * This method runs all the queries that return a set of URIs. Normally
 	 * this is used for graph names hence the SELECT should contain the item
-	 * name 'g' which is the one that gets returned. 
+	 * name 'g' which is the one that gets returned.
 	 * @param apiKey		The API software key
 	 * @param queryString	The query that select 'g'
 	 * @return The set of 'g' that have been selected.
@@ -178,7 +178,7 @@ class JenaVirtuosoStoreService implements ITripleStore {
 	public Set<String> retrieveGraphsNames(apiKey, queryString) {
 		VirtGraph graph = getGraph();
 		log.trace('[' + apiKey + '] retrieveGraphsNames: ' + queryString);
-		
+
 		Set<String> graphNames = new HashSet<String>();
 		VirtuosoQueryExecution vqe = VirtuosoQueryExecutionFactory.create(QueryFactory.create(queryString), graph);
 		ResultSet results = vqe.execSelect();
@@ -189,10 +189,10 @@ class JenaVirtuosoStoreService implements ITripleStore {
 		}
 		graphNames
 	}
-	
+
 	/**
 	 * This method runs a SELECY query and returns the property values
-	 * as a Set of Strings. 
+	 * as a Set of Strings.
 	 * @param apiKey		The API software key
 	 * @param queryString	The query that select a property
 	 * @param variable		The property to query
@@ -201,7 +201,7 @@ class JenaVirtuosoStoreService implements ITripleStore {
 	public Set<String> retrievePropertyValues(apiKey, queryString, variable) {
 		VirtGraph graph = getGraph();
 		log.trace('[' + apiKey + '] retrievePropertyValues: ' + queryString);
-		
+
 		Set<String> propertyValues = new HashSet<String>();
 		VirtuosoQueryExecution vqe = VirtuosoQueryExecutionFactory.create(QueryFactory.create(queryString), graph);
 		ResultSet results = vqe.execSelect();
@@ -212,26 +212,26 @@ class JenaVirtuosoStoreService implements ITripleStore {
 		}
 		propertyValues
 	}
-	
+
 	// -----------------------------------------------------------------------
 	//    STORE
 	// -----------------------------------------------------------------------
 	@Override
-	public String store(String apiKey, File annotationFile) {		
-		log.info '[' + apiKey + '] Storing file: ' + annotationFile.getName();	
+	public String store(String apiKey, File annotationFile) {
+		log.info '[' + apiKey + '] Storing file: ' + annotationFile.getName();
 		store(apiKey, annotationFile, null);
 	}
-	
+
 	@Override
 	public String store(String apiKey, File annotationFile, String baseUri) {
-		log.info '[' + apiKey + '] Storing file: ' + annotationFile.getName() + ' with baseUri: ' + baseUri;		
+		log.info '[' + apiKey + '] Storing file: ' + annotationFile.getName() + ' with baseUri: ' + baseUri;
 		try {
 			if(annotationFile == null || !annotationFile.exists()) {
 				log.error "File not found: " + annotationFile;
 				throw new IllegalArgumentException("File not found: " + annotationFile);
 			}
 			InputStream inputStream = new FileInputStream(annotationFile);
-			storeGraphs(inputStream, baseUri);	
+			storeGraphs(inputStream, baseUri);
 		} catch (Exception e) {
 			System.out.println( e.getMessage());
 		}
@@ -239,7 +239,7 @@ class JenaVirtuosoStoreService implements ITripleStore {
 
 	@Override
 	public String store(String apiKey, String content) {
-		log.info '[' + apiKey + '] Loading content: ' + content;	
+		log.info '[' + apiKey + '] Loading content: ' + content;
 		store(apiKey, content, null);
 	}
 
@@ -250,14 +250,14 @@ class JenaVirtuosoStoreService implements ITripleStore {
 			if(content == null || content.isEmpty()) {
 				log.error "Content not valid: " + content;
 				throw new IllegalArgumentException("Content not valid: " + content);
-			}				
+			}
 			InputStream inputStream = new ByteArrayInputStream(content.getBytes());
-			storeGraphs(apiKey, inputStream, baseUri);		
+			storeGraphs(apiKey, inputStream, baseUri);
 		} catch (Exception e) {
 			System.out.println( e.getMessage());
 		}
 	}
-	
+
 	public storeDataset(String apiKey, Dataset dataset) {
 		// Default graph management
 		if(dataset.getDefaultModel()!=null && dataset.getDefaultModel().size()>0) {
@@ -268,7 +268,7 @@ class JenaVirtuosoStoreService implements ITripleStore {
 			virtModel.add(dataset.getDefaultModel())
 			printDebugData(dataset.getDefaultModel());
 		}
-		
+
 		Iterator<String> names = dataset.listNames()
 		while(names.hasNext()) {
 			String name = names.next();
@@ -279,15 +279,15 @@ class JenaVirtuosoStoreService implements ITripleStore {
 			printDebugData(model);
 		}
 	}
-	
+
 	private storeGraphs(String apiKey, InputStream inputStream, String baseUri) {
 		Dataset dataset = DatasetFactory.createMem();
-		
+
 		// Using the RIOT reader
 		if(baseUri!=null && !baseUri.isEmpty()) RDFDataMgr.read(dataset, inputStream, baseUri, RDFFormat.JSONLD);
 		else RDFDataMgr.read(dataset, inputStream, RDFFormat.JSONLD);
 		printDebugData(dataset);
-		
+
 		// Default graph management
 		if(dataset.getDefaultModel()!=null && dataset.getDefaultModel().size()>0) {
 			log.debug '[' + apiKey + '] Storing graph: * (default)'
@@ -296,11 +296,11 @@ class JenaVirtuosoStoreService implements ITripleStore {
 			virtModel.add(dataset.getDefaultModel())
 			printDebugData(dataset.getDefaultModel());
 		}
-		
+
 		Iterator<String> names = dataset.listNames()
 		while(names.hasNext()) {
 			String name = names.next();
-			
+
 			log.debug '[' + apiKey + '] Storing graph: ' + name
 			Model model = dataset.getNamedModel(name)
 			VirtModel virtModel = model(name);
@@ -308,7 +308,7 @@ class JenaVirtuosoStoreService implements ITripleStore {
 			printDebugData(model);
 		}
 	}
-	
+
 	private printDebugData(def data) {
 		if (Environment.current == Environment.DEVELOPMENT && grailsApplication.config.annotopia.debug.storage.environment.trace.data &&
 				Boolean.parseBoolean(configAccessService.getAsString("annotopia.debug.storage.environment.trace.data"))) {
@@ -317,7 +317,7 @@ class JenaVirtuosoStoreService implements ITripleStore {
 			println '\n-----END-DEVELOPMENT-DEBUG-DATA-----';
 		}
 	}
-	
+
 	// -----------------------------------------------------------------------
 	//    UPDATE
 	// -----------------------------------------------------------------------
@@ -344,7 +344,7 @@ class JenaVirtuosoStoreService implements ITripleStore {
 		// TODO Auto-generated method stub
 		return null;
 	}
-	
+
 	public updateDataset(String apiKey, Dataset dataset) {
 		Iterator<String> names = dataset.listNames()
 		while(names.hasNext()) {
@@ -354,7 +354,7 @@ class JenaVirtuosoStoreService implements ITripleStore {
 		}
 		storeDataset(apiKey, dataset);
 	}
-	
+
 	public updateGraphMetadata(String apiKey, Model graphMetadata, String graphUri, String metadataGraph) {
 		removeAllTriples(apiKey, metadataGraph, graphUri);
 		// TODO: ... and insert the new triples
@@ -366,15 +366,15 @@ class JenaVirtuosoStoreService implements ITripleStore {
 	@Override
 	public Dataset retrieveGraph(String apiKey, String graphUri) {
 		log.info '[' + apiKey + '] Retrieving graph: ' + graphUri;
-		
+
 		VirtGraph set = getGraph();
-		
-		String queryString = "CONSTRUCT { ?s ?p ?o . } FROM <" + graphUri + ">" + 
+
+		String queryString = "CONSTRUCT { ?s ?p ?o . } FROM <" + graphUri + ">" +
 			" WHERE { ?s ?p ?o . }";
 		log.trace '[' + apiKey + '] retrieveGraph: ' + queryString
-		
+
 		try {
-			VirtuosoQueryExecution vqe = VirtuosoQueryExecutionFactory.create (QueryFactory.create(queryString), set);	
+			VirtuosoQueryExecution vqe = VirtuosoQueryExecutionFactory.create (QueryFactory.create(queryString), set);
 			Model model = vqe.execConstruct();
 			if(model!=null && !model.empty) {
 				Dataset dataset = DatasetFactory.createMem();
@@ -390,18 +390,18 @@ class JenaVirtuosoStoreService implements ITripleStore {
 			return null;
 		}
 	}
-	
+
 	@Override
 	public Model retrieveGraphMetadata(String apiKey, String graphUri, String metadataGraphUri) {
 		log.info '[' + apiKey + '] Retrieving graph metadata: ' + graphUri;
-		
+
 		VirtGraph set = getGraph(graphUri);
-		
+
 		String queryString = "CONSTRUCT { <"+graphUri+"> ?p ?o . } FROM <" + metadataGraphUri + ">" +
 			" WHERE { <"+graphUri+"> ?p ?o .}";
 		log.trace '[' + apiKey + '] retrieveGraphMetadata: ' + queryString
-		
-		try {			
+
+		try {
 			VirtuosoQueryExecution vqe = VirtuosoQueryExecutionFactory.create (QueryFactory.create(queryString), set);
 			Model model = vqe.execConstruct();
 			return model;
@@ -410,7 +410,7 @@ class JenaVirtuosoStoreService implements ITripleStore {
 			return null;
 		}
 	}
-	
+
 	@Override
 	public Model retrieveGraphIdentifiersMetadata(String apiKey, Map<String,String> identifiers, String metadataIdentifiersGraphUri) {
 		log.info '[' + apiKey + '] Retrieving graph identifiers metadata: ' + identifiers;
@@ -422,9 +422,9 @@ class JenaVirtuosoStoreService implements ITripleStore {
 			StringBuffer queryBuffer = new StringBuffer();
 			//queryBuffer.append("<"+identifiers.get(Bibliographic.LABEL_URL)+"> <http://purl.org/vocab/frbr/core#embodimentOf> ?expression. ?expression ?ep ?eo . ");
 			queryBuffer.append("?s <http://purl.org/vocab/frbr/core#embodimentOf> ?expression. ?expression ?ep ?eo . ");
-			
+
 			boolean firstDone = false
-			
+
 			String doi = identifiers.get(Bibliographic.LABEL_DOI);
 			if(doi!=null) {
 				queryBuffer.append("{");
@@ -452,14 +452,14 @@ class JenaVirtuosoStoreService implements ITripleStore {
 				queryBuffer.append("{ ?expression <" + Bibliographic.PII + "> ?pii . FILTER (?pii = '" + pii + "')}");
 				firstDone = true;
 			}
-			
+
 			if(firstDone) queryBuffer.append("}");
-			
+
 			String queryString = "CONSTRUCT { ?s ?p ?o . ?expression ?ep ?eo. } FROM <" + metadataIdentifiersGraphUri + ">" +
 			" WHERE { ?s ?p ?o . ?s <"+RDF.RDF_TYPE+"> <"+Bibliographic.WEB_PAGE+"> . " + queryBuffer.toString() + "}";
 
 			log.trace '[' + apiKey + '] retrieveGraphIdentifiersMetadata: ' + queryString
-		
+
 			try {
 				VirtuosoQueryExecution vqe = VirtuosoQueryExecutionFactory.create (QueryFactory.create(queryString), set);
 				Model model = vqe.execConstruct();
@@ -470,58 +470,58 @@ class JenaVirtuosoStoreService implements ITripleStore {
 			}
 		}
 	}
-	
+
 	public List<String> retrieveAllManifestationsByIdentifiers(String apiKey, Map<String,String> identifiers, String metadataIdentifiersGraphUri) {
 		log.info '[' + apiKey + '] Retrieving manifestations by identifiers: ' + identifiers;
-		
+
 		VirtGraph set = getGraph(metadataIdentifiersGraphUri);
-		
+
 
 		boolean first = false;
 		StringBuffer queryBuffer = new StringBuffer();
-		
+
 		String doi = identifiers.get(Bibliographic.LABEL_DOI);
 		if(doi!=null) {
 			queryBuffer.append(" { ?expression <" + Bibliographic.DOI + "> ?doi . FILTER (?doi = '" + doi + "')}");
 			first = true;
 		}
-		
+
 		String pmid = identifiers.get(Bibliographic.LABEL_PMID);
 		if(pmid!=null) {
 			if(first) queryBuffer.append(" UNION ");
 			queryBuffer.append(" { ?expression <" + Bibliographic.PMID + "> ?pmid . FILTER (?pmid = '" + pmid + "')}");
 			first = true;
 		}
-		
+
 		String pmcid = identifiers.get(Bibliographic.LABEL_PMCID);
 		if(pmcid!=null) {
 			if(first) queryBuffer.append(" UNION ");
 			queryBuffer.append(" { ?expression <" + Bibliographic.PMCID + "> ?pmcid . FILTER (?pmcid = '" + pmcid + "')}");
 			first = true;
 		}
-		
+
 		String pii = identifiers.get(Bibliographic.LABEL_PII);
 		if(pii!=null) {
 			if(first) queryBuffer.append(" UNION ");
 			queryBuffer.append(" { ?expression <" + Bibliographic.PII + "> ?pii . FILTER (?pii = '" + pii + "')}");
 			first = true;
 		}
-		
+
 		// If no identifier has been found return an empty list
 		// And don't exexute the following query.
 		if(!first) return new ArrayList<String>();
-		
+
 		String QUERY = "SELECT DISTINCT ?manifestation FROM <" + metadataIdentifiersGraphUri + ">" +
 			" WHERE { ?manifestation ?p ?expression . ?manifestation <"+RDF.RDF_TYPE+"> <"+Bibliographic.WEB_PAGE+"> . " + queryBuffer.toString() + "}";
 		log.trace '[' + apiKey + '] retrieveAllManifestationsByIdentifiers: ' + QUERY
-	
+
 		List<String> manifestations = new ArrayList<String>();
 		try {
 			VirtuosoQueryExecution gIdentifiers  = VirtuosoQueryExecutionFactory.create(QueryFactory.create(QUERY), set);
 			ResultSet rIdentifiers = gIdentifiers.execSelect();
 			while (rIdentifiers.hasNext()) {
 				QuerySolution querySolution = rIdentifiers.nextSolution();
-		
+
 				RDFNode manifestation = querySolution.get("manifestation");
 				if(manifestation!=null) {
 					manifestations.add(manifestation);
@@ -533,28 +533,28 @@ class JenaVirtuosoStoreService implements ITripleStore {
 			return null;
 		}
 	}
-	
-	
+
+
 	@Override
 	public boolean doesGraphExists(String apiKey, String graphUri) {
 		log.info '[' + apiKey + '] Checking graph existance: ' + graphUri;
 
 		// The ASK method seems not working so I am using a more elaborate
 		// methodology
-		
+
 		/*
 		VirtGraph set = graph();
-		
+
 		String query = "ASK { GRAPH <" + graphUri + "> { ?s ?p ?o . } }";
 		log.info 'Query: ' + query;
-		
+
 		Query sparql = QueryFactory.create(query);
 		VirtuosoQueryExecution vqe = VirtuosoQueryExecutionFactory.create (sparql, set);
 		boolean result =  vqe.execAsk();
 		log.info 'Result: ' + result;
 		return	result
 		*/
-		
+
 		Dataset dataset = retrieveGraph(apiKey, graphUri);
 		boolean existenceFlag = false;
 		if(dataset!=null) {
@@ -567,31 +567,47 @@ class JenaVirtuosoStoreService implements ITripleStore {
 		}
 		return existenceFlag;
 	}
-	
+
 	// -----------------------------------------------------------------------
 	//    DROP/CLEAR
 	// -----------------------------------------------------------------------
-	
+
 	public void removeAllTriples(String apiKey, String graphUri, String subjectUri) {
 		log.info '[' + apiKey + '] Removing all triples with subject: ' + subjectUri + ' from: ' + graphUri;
-		
+
 		try {
 			VirtGraph graph = getGraph();
 			String queryString = "DELETE WHERE { GRAPH <" + graphUri + ">" +
 				" { <"+subjectUri+"> ?p ?o .} }";
 			log.trace '[' + apiKey + '] removeAllTriples: ' + queryString
-			
+
 			VirtuosoUpdateRequest vur = VirtuosoUpdateFactory.create(queryString, graph);
 			vur.exec();
 		} catch (Exception e) {
 			println "removeAllTriples: " + e.getMessage();
 		}
 	}
-	
+
+	public void removeAllTriplesWithObject(String apiKey, String objectUri) {
+		log.info '[' + apiKey + '] Removing all triples with object: ' + objectUri;
+
+		try {
+			VirtGraph graph = getGraph();
+			String queryString = "DELETE WHERE { GRAPH ?g" +
+				" { ?s ?p <"+ objectUri +"> .} }";
+			log.trace '[' + apiKey + '] removeAllTriplesWithObject: ' + queryString
+
+			VirtuosoUpdateRequest vur = VirtuosoUpdateFactory.create(queryString, graph);
+			vur.exec();
+		} catch (Exception e) {
+			println "removeAllTriplesWithObject: " + e.getMessage();
+		}
+	}
+
 	@Override
 	public boolean dropGraph(String apiKey, String graphUri) {
 		log.info '[' + apiKey + '] Removing graph: ' + graphUri;
-		
+
 		try {
 			VirtGraph graph = getGraph();
 			String str = "DROP SILENT GRAPH <" + graphUri + ">";
@@ -601,11 +617,11 @@ class JenaVirtuosoStoreService implements ITripleStore {
 			println e.getMessage();
 		}
 	}
-	
+
 	@Override
 	public boolean clearGraph(String apiKey, String graphUri) {
 		log.info '[' + apiKey + '] Clearing graph: ' + graphUri;
-		
+
 		try {
 			VirtGraph graph = getGraph();
 			String str = "CLEAR GRAPH <" + graphUri + ">";
