@@ -1,14 +1,20 @@
 package org.annotopia.grails.controllers.openannotationset
 
+import groovy.lang.Closure;
+
+import java.util.Set;
 import java.util.regex.Matcher
+
 import org.annotopia.grails.vocabularies.AnnotopiaVocabulary
 import org.annotopia.grails.vocabularies.PAV
 import org.annotopia.groovy.service.store.BaseController
 import org.apache.jena.riot.RDFDataMgr
 import org.apache.jena.riot.RDFLanguages
 
+import com.hp.hpl.jena.query.Dataset
 import com.hp.hpl.jena.query.DatasetFactory
 import com.hp.hpl.jena.rdf.model.Model
+import com.hp.hpl.jena.rdf.model.Resource;
 import com.hp.hpl.jena.rdf.model.ResourceFactory
 /**
  * @author Finn Bacall <finn.bacall@manchester.ac.uk>
@@ -24,6 +30,8 @@ class OpenAnnotationSetRESTController extends BaseController {
 	def openAnnotationSetsUtilsService
 	def openAnnotationStorageService
 	def configAccessService
+	def openAnnotationVirtuosoService
+	def openAnnotationUtilsService
 
 	// Shared variables
 	def apiKey
@@ -45,15 +53,16 @@ class OpenAnnotationSetRESTController extends BaseController {
 		// Figure out the URL of the annotation set
 		annotationSetURI = null
 		// Strip off the params to get the URL as it would appear as a named graph in the triplestore
-		if(getCurrentUrl(request).indexOf("/annotations/") > 0)
-			annotationSetURI = getCurrentUrl(request).substring(0, getCurrentUrl(request).indexOf("/annotations/"))
-		else
-			annotationSetURI = getCurrentUrl(request)
-
-		log.info(annotationSetURI)
+		Matcher matcher = getCurrentUrl(request) =~ /(.*\/s\/annotationset\/[^\/]*).*/
+		if(matcher.matches())
+			annotationSetURI = matcher.group(1)
 
 		// Fetch the annotation set
-		annotationSet = annotationIntegratedStorageService.retrieveAnnotationSet(apiKey, annotationSetURI)
+		annotationSet = null
+		if(annotationSetURI != null) {
+			log.info(annotationSetURI)
+			annotationSet = annotationIntegratedStorageService.retrieveAnnotationSet(apiKey, annotationSetURI)
+		}
 		if(annotationSet == null || !annotationSet.listNames().hasNext()) {
 			// Annotation Set not found
 			def message = 'Annotation set ' + getCurrentUrl(request) + ' has not been found'
@@ -68,10 +77,12 @@ class OpenAnnotationSetRESTController extends BaseController {
 
 		// Detect annotations in the given JSON-LD
 		def annotationGraphURIs = []
-		List annotations = annotationSetJson.getAt("annotations");
+		List annotations = annotationSetJson.getAt("annotations") // this doesn't work, no @context!
+
+		def existingAnnotationURIMap = annotationIntegratedStorageService.retrieveAnnotationUrisInSet(apiKey, annotationSetURI)
 
 		annotations.each() {
-			def annotationDataset
+			def annotationDataset = DatasetFactory.createMem()
 			try {
 				RDFDataMgr.read(annotationDataset, new ByteArrayInputStream(it.toString().getBytes("UTF-8")), RDFLanguages.JSONLD)
 			} catch (Exception ex) {
@@ -81,13 +92,38 @@ class OpenAnnotationSetRESTController extends BaseController {
 				render(status: 500, text: returnMessage(apiKey, "invalidcontent", message, startTime), contentType: "text/json", encoding: "UTF-8")
 				return
 			}
-			// Look-up its ID within the set - can't be part of another annotation set!
 
+			println "The annotation: "
+			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+			RDFDataMgr.write(outputStream, annotationDataset, RDFLanguages.JSONLD);
+			println outputStream.toString()
+
+			// Look-up its ID within the set - can't be part of another annotation set!
+			Set<Resource> annotationURIs = new HashSet<Resource>()
+			def numAnnotations = openAnnotationUtilsService.detectAnnotationsInDefaultGraph(apiKey, annotationDataset, annotationURIs, null)
+			if(numAnnotations > 1)
+			  println "HELP"
+
+			println annotationURIs
+
+			// Hopefully there was only one annotation in the graph, but if not lets just pick the first one
+			def annotationURI = null
+			if(!annotationURIs.isEmpty()) {
+				annotationURI = annotationURIs.first().toString()
+			}
+
+			def annotation
 			// If found:
-			annotation = openAnnotationStorageService.updateAnnotationDataset(apiKey, startTime, false, annotationDataset);
-			// else:
-			annotation = openAnnotationStorageService.saveAnnotationDataset(apiKey, startTime, false, annotationDataset);
+			if(annotationURI != null && existingAnnotationURIMap.getKey(annotationURI)) {
+				log.info("[" + apiKey + "] Updating annotation: " + annotationURI)
+				annotation = openAnnotationStorageService.updateAnnotationDataset(apiKey, startTime, false, annotationDataset);
+				// else:
+			} else {
+				log.info("[" + apiKey + "] Adding new annotation")
+				annotation = openAnnotationStorageService.saveAnnotationDataset(apiKey, startTime, false, annotationDataset);
+			}
 			// Record graph URI for each annotation
+			// Hopefully the only named graph in the dataset is that of the annotation!
 			annotationGraphURIs.push(annotation.listNames().next())
 		}
 
@@ -100,11 +136,22 @@ class OpenAnnotationSetRESTController extends BaseController {
 		// Add annotation graph URIs to annotation set's "annotations" list
 
 		// TODO: Delete any annotations that were present, but are no longer in the annotation set
+//		def graphs = get graphs some how
+//		if(graphs != null) {
+//			graphs.listNames().each {
+//				log.trace("[" + apiKey + "] Deleting graph " + it);
+//				jenaVirtuosoStoreService.dropGraph(apiKey, it);
+//				jenaVirtuosoStoreService.removeAllTriples(apiKey, configAccessService.getAsString("annotopia.storage.uri.graph.provenance"), it);
+//				jenaVirtuosoStoreService.removeAllTriplesWithObject(apiKey, it);
+//			}
+//		}
+
 		annotationSetModel.removeAll(ResourceFactory.createResource(annotationSetURI),
 				ResourceFactory.createProperty(AnnotopiaVocabulary.ANNOTATIONS),
 				null)
 
 		annotationGraphURIs.each() {
+			println "Adding to set:" + it
 			annotationSetModel.add(ResourceFactory.createResource(annotationSetURI),
 					ResourceFactory.createProperty(AnnotopiaVocabulary.ANNOTATIONS),
 					ResourceFactory.createResource(it))
