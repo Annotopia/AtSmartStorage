@@ -75,20 +75,23 @@ class OpenAnnotationSetRESTController extends BaseController {
 	def replaceAnnotationSet = {
 		def annotationSetJson = request.JSON
 
-		// Detect annotations in the given JSON-LD
-		def annotationGraphURIs = []
-		List annotations = annotationSetJson.getAt("annotations") // this doesn't work, no @context!
-
+		// Get the graph URIs/URIs of the annotations already in the set
 		def existingAnnotationURIMap = annotationIntegratedStorageService.retrieveAnnotationUrisInSet(apiKey, annotationSetURI)
 
+		// Iterate over all the annotations given in the PUT and either update or create them, recording
+		//  their graph URIs.
+		def annotationGraphURIs = []
+		List annotations = annotationSetJson.getAt("annotations")
 		annotations.each() {
+			// Copy the @context node so the "snipped out" JSON-LD makes sense. Must be a better way of doing this!
+			def annotationJson = it.put("@context", annotationSetJson.get("@context"))
 			def annotationDataset = DatasetFactory.createMem()
 			try {
-				RDFDataMgr.read(annotationDataset, new ByteArrayInputStream(it.toString().getBytes("UTF-8")), RDFLanguages.JSONLD)
+				RDFDataMgr.read(annotationDataset, new ByteArrayInputStream(annotationJson.toString().getBytes("UTF-8")), RDFLanguages.JSONLD)
 			} catch (Exception ex) {
 				log.error("[" + apiKey + "] " + ex.getMessage())
-				def message = "Invalid content, the following annotation could not be read: \n\n" + it.toString()
-				log.error("[" + apiKey + "] " + message + ": " + it.toString())
+				def message = "Invalid content, the following annotation could not be read: \n\n" + annotationJson.toString()
+				log.error("[" + apiKey + "] " + message + ": " + annotationJson.toString())
 				render(status: 500, text: returnMessage(apiKey, "invalidcontent", message, startTime), contentType: "text/json", encoding: "UTF-8")
 				return
 			}
@@ -101,20 +104,15 @@ class OpenAnnotationSetRESTController extends BaseController {
 			// Look-up its ID within the set - can't be part of another annotation set!
 			Set<Resource> annotationURIs = new HashSet<Resource>()
 			def numAnnotations = openAnnotationUtilsService.detectAnnotationsInDefaultGraph(apiKey, annotationDataset, annotationURIs, null)
-			if(numAnnotations > 1)
-			  println "HELP"
-
-			println annotationURIs
 
 			// Hopefully there was only one annotation in the graph, but if not lets just pick the first one
 			def annotationURI = null
-			if(!annotationURIs.isEmpty()) {
+			if(!annotationURIs.isEmpty())
 				annotationURI = annotationURIs.first().toString()
-			}
 
 			def annotation
 			// If found:
-			if(annotationURI != null && existingAnnotationURIMap.getKey(annotationURI)) {
+			if(annotationURI != null && existingAnnotationURIMap.get(annotationURI)) {
 				log.info("[" + apiKey + "] Updating annotation: " + annotationURI)
 				annotation = openAnnotationStorageService.updateAnnotationDataset(apiKey, startTime, false, annotationDataset);
 				// else:
