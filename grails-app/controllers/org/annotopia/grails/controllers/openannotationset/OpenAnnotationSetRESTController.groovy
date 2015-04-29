@@ -60,7 +60,7 @@ class OpenAnnotationSetRESTController extends BaseController {
 		// Fetch the annotation set
 		annotationSet = null
 		if(annotationSetURI != null) {
-			log.info(annotationSetURI)
+			log.info("Annotation set URI: " + annotationSetURI)
 			annotationSet = annotationIntegratedStorageService.retrieveAnnotationSet(apiKey, annotationSetURI)
 		}
 		if(annotationSet == null || !annotationSet.listNames().hasNext()) {
@@ -96,26 +96,21 @@ class OpenAnnotationSetRESTController extends BaseController {
 				return
 			}
 
-			println "The annotation: "
-			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-			RDFDataMgr.write(outputStream, annotationDataset, RDFLanguages.JSONLD);
-			println outputStream.toString()
-
-			// Look-up its ID within the set - can't be part of another annotation set!
+			// Get the annotation's ID
 			Set<Resource> annotationURIs = new HashSet<Resource>()
 			def numAnnotations = openAnnotationUtilsService.detectAnnotationsInDefaultGraph(apiKey, annotationDataset, annotationURIs, null)
 
-			// Hopefully there was only one annotation in the graph, but if not lets just pick the first one
+			// Hopefully there was only one annotation in the JSON-LD, but if not lets just pick the first one
 			def annotationURI = null
 			if(!annotationURIs.isEmpty())
 				annotationURI = annotationURIs.first().toString()
 
 			def annotation
-			// If found:
-			if(annotationURI != null && existingAnnotationURIMap.get(annotationURI)) {
+			// Was the annotation already in the set?
+			// TODO: check not part of another annotation set!
+			if(annotationURI != null && existingAnnotationURIMap.remove(annotationURI) != null) {
 				log.info("[" + apiKey + "] Updating annotation: " + annotationURI)
 				annotation = openAnnotationStorageService.updateAnnotationDataset(apiKey, startTime, false, annotationDataset);
-				// else:
 			} else {
 				log.info("[" + apiKey + "] Adding new annotation")
 				annotation = openAnnotationStorageService.saveAnnotationDataset(apiKey, startTime, false, annotationDataset);
@@ -129,27 +124,14 @@ class OpenAnnotationSetRESTController extends BaseController {
 		def annotationSetGraphURI = annotationSet.listNames().next()
 		def annotationSetModel = annotationSet.getNamedModel(annotationSetGraphURI)
 
+		// Don't need this node anymore, the annotations have been stored in their own graphs
 		annotationSetJson.getAt("annotations").clear()
 
 		// Add annotation graph URIs to annotation set's "annotations" list
-
-		// TODO: Delete any annotations that were present, but are no longer in the annotation set
-//		def graphs = get graphs some how
-//		if(graphs != null) {
-//			graphs.listNames().each {
-//				log.trace("[" + apiKey + "] Deleting graph " + it);
-//				jenaVirtuosoStoreService.dropGraph(apiKey, it);
-//				jenaVirtuosoStoreService.removeAllTriples(apiKey, configAccessService.getAsString("annotopia.storage.uri.graph.provenance"), it);
-//				jenaVirtuosoStoreService.removeAllTriplesWithObject(apiKey, it);
-//			}
-//		}
-
 		annotationSetModel.removeAll(ResourceFactory.createResource(annotationSetURI),
 				ResourceFactory.createProperty(AnnotopiaVocabulary.ANNOTATIONS),
 				null)
-
 		annotationGraphURIs.each() {
-			println "Adding to set:" + it
 			annotationSetModel.add(ResourceFactory.createResource(annotationSetURI),
 					ResourceFactory.createProperty(AnnotopiaVocabulary.ANNOTATIONS),
 					ResourceFactory.createResource(it))
@@ -166,7 +148,16 @@ class OpenAnnotationSetRESTController extends BaseController {
 		// Store the updated annotation set
 		jenaVirtuosoStoreService.updateDataset(apiKey, annotationSet)
 
+		// Remove now-orphaned annotations
+		existingAnnotationURIMap.values().each() {
+			log.info("[" + apiKey + "] Deleting orphaned annotation graph: " + it);
+			jenaVirtuosoStoreService.dropGraph(apiKey, it);
+			jenaVirtuosoStoreService.removeAllTriples(apiKey, configAccessService.getAsString("annotopia.storage.uri.graph.provenance"), it);
+			jenaVirtuosoStoreService.removeAllTriplesWithObject(apiKey, it);
+		}
+
 		// Render the set
+		// TODO: This needs to show the fully expanded set + annotations, framed nicely
 		openAnnotationSetsUtilsService.renderSavedNamedGraphsDataset(apiKey, startTime, 'none', 'saved', response, annotationSet)
 	}
 
@@ -207,6 +198,7 @@ class OpenAnnotationSetRESTController extends BaseController {
 		jenaVirtuosoStoreService.updateDataset(apiKey, annotationSet)
 
 		// Render the set
+		// TODO: Maybe just render the created annotation?
 		openAnnotationSetsUtilsService.renderSavedNamedGraphsDataset(apiKey, startTime, 'none', 'saved', response, annotationSet)
 	}
 }
