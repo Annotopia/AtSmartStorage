@@ -14,6 +14,7 @@ import org.apache.jena.riot.RDFLanguages
 import com.hp.hpl.jena.query.Dataset
 import com.hp.hpl.jena.query.DatasetFactory
 import com.hp.hpl.jena.rdf.model.Model
+import com.hp.hpl.jena.rdf.model.ModelFactory;
 import com.hp.hpl.jena.rdf.model.Resource;
 import com.hp.hpl.jena.rdf.model.ResourceFactory
 /**
@@ -72,25 +73,37 @@ class OpenAnnotationSetRESTController extends BaseController {
 		}
 	}
 
+	// TODO: Extract all this logic out into a service
 	def replaceAnnotationSet = {
 		def annotationSetJson = request.JSON
 
-		// Get the graph URIs/URIs of the annotations already in the set
+		// TODO: Check ID's match
+		if(false && annotationSetURI == 'something?') {
+			def message = "The ID of the annotation set did not match the one in the PUT body\n"
+			log.error("[" + apiKey + "] " + message + ": " + annotationSetJson.toString())
+			render(status: 500, text: returnMessage(apiKey, "invalidcontent", message, startTime), contentType: "text/json", encoding: "UTF-8")
+			return
+		}
+
+
+		// Get the [graph URIs : URIs] of the annotations already in the set
 		def existingAnnotationURIMap = annotationIntegratedStorageService.retrieveAnnotationUrisInSet(apiKey, annotationSetURI)
 
+		// Snip out the "annotations" property
+		List annotations = annotationSetJson.getAt("annotations")
+		def storedAnnotationGraphURIs = []
 		// Iterate over all the annotations given in the PUT and either update or create them, recording
 		//  their graph URIs.
-		def annotationGraphURIs = []
-		List annotations = annotationSetJson.getAt("annotations")
 		annotations.each() {
-			// Copy the @context node so the "snipped out" JSON-LD makes sense. Must be a better way of doing this!
+			println it
+			// Copy the @context node so the "snipped out" JSON-LD makes sense... must be a better way of doing this!
 			def annotationJson = it.put("@context", annotationSetJson.get("@context"))
 			def annotationDataset = DatasetFactory.createMem()
 			try {
 				RDFDataMgr.read(annotationDataset, new ByteArrayInputStream(annotationJson.toString().getBytes("UTF-8")), RDFLanguages.JSONLD)
 			} catch (Exception ex) {
 				log.error("[" + apiKey + "] " + ex.getMessage())
-				def message = "Invalid content, the following annotation could not be read: \n\n" + annotationJson.toString()
+				def message = "Invalid content, the following annotation could not be read\n"
 				log.error("[" + apiKey + "] " + message + ": " + annotationJson.toString())
 				render(status: 500, text: returnMessage(apiKey, "invalidcontent", message, startTime), contentType: "text/json", encoding: "UTF-8")
 				return
@@ -105,9 +118,9 @@ class OpenAnnotationSetRESTController extends BaseController {
 			if(!annotationURIs.isEmpty())
 				annotationURI = annotationURIs.first().toString()
 
-			def annotation
 			// Was the annotation already in the set?
 			// TODO: check not part of another annotation set!
+			def annotation
 			if(annotationURI != null && existingAnnotationURIMap.remove(annotationURI) != null) {
 				log.info("[" + apiKey + "] Updating annotation: " + annotationURI)
 				annotation = openAnnotationStorageService.updateAnnotationDataset(apiKey, startTime, false, annotationDataset);
@@ -117,36 +130,49 @@ class OpenAnnotationSetRESTController extends BaseController {
 			}
 			// Record graph URI for each annotation
 			// Hopefully the only named graph in the dataset is that of the annotation!
-			annotationGraphURIs.push(annotation.listNames().next())
+			storedAnnotationGraphURIs.push(annotation.listNames().next())
 		}
 
-		// Replace all annotation set metadata with body of PUT
-		def annotationSetGraphURI = annotationSet.listNames().next()
-		def annotationSetModel = annotationSet.getNamedModel(annotationSetGraphURI)
+		annotationSetJson.getAt("annotations").clear() // Don't need this anymore, annotations have been stored in their own graphs
 
-		// Don't need this node anymore, the annotations have been stored in their own graphs
-		annotationSetJson.getAt("annotations").clear()
+		def newAnnotationSet = DatasetFactory.createMem() // Dataset for the updated annotation set
+		def newAnnotationSetModel = ModelFactory.createDefaultModel() // Model for the updated annotation set
+		def annotationSetGraphURI = annotationSet.listNames().next() // URI of the original set's graph
+
+		// Read the PUT body
+		try {
+			RDFDataMgr.read(newAnnotationSetModel, new ByteArrayInputStream(annotationSetJson.toString().getBytes("UTF-8")), RDFLanguages.JSONLD)
+		} catch (Exception ex) {
+			log.error("[" + apiKey + "] " + ex.getMessage())
+			def message = "Invalid content, the annotation set could not be read\n"
+			log.error("[" + apiKey + "] " + message + ": " + annotationSetJson.toString())
+			render(status: 500, text: returnMessage(apiKey, "invalidcontent", message, startTime), contentType: "text/json", encoding: "UTF-8")
+			return
+		}
 
 		// Add annotation graph URIs to annotation set's "annotations" list
-		annotationSetModel.removeAll(ResourceFactory.createResource(annotationSetURI),
+		newAnnotationSetModel.removeAll(ResourceFactory.createResource(annotationSetURI),
 				ResourceFactory.createProperty(AnnotopiaVocabulary.ANNOTATIONS),
 				null)
-		annotationGraphURIs.each() {
-			annotationSetModel.add(ResourceFactory.createResource(annotationSetURI),
+		storedAnnotationGraphURIs.each() {
+			newAnnotationSetModel.add(ResourceFactory.createResource(annotationSetURI),
 					ResourceFactory.createProperty(AnnotopiaVocabulary.ANNOTATIONS),
 					ResourceFactory.createResource(it))
 		}
 
 		// Set Last saved on
-		annotationSetModel.removeAll(ResourceFactory.createResource(annotationSetURI),
+		newAnnotationSetModel.removeAll(ResourceFactory.createResource(annotationSetURI),
 				ResourceFactory.createProperty(PAV.PAV_LAST_UPDATED_ON),
 				null)
-		annotationSetModel.add(ResourceFactory.createResource(annotationSetURI),
+		newAnnotationSetModel.add(ResourceFactory.createResource(annotationSetURI),
 				ResourceFactory.createProperty(PAV.PAV_LAST_UPDATED_ON),
 				ResourceFactory.createPlainLiteral(dateFormat.format(new Date())))
 
-		// Store the updated annotation set
-		jenaVirtuosoStoreService.updateDataset(apiKey, annotationSet)
+		// Add the updated annotation set as a named graph to the dataset
+		newAnnotationSet.addNamedModel(annotationSetGraphURI, newAnnotationSetModel)
+
+		// Store the updated annotation set dataset
+		jenaVirtuosoStoreService.updateDataset(apiKey, newAnnotationSet)
 
 		// Remove now-orphaned annotations
 		existingAnnotationURIMap.values().each() {
@@ -158,7 +184,7 @@ class OpenAnnotationSetRESTController extends BaseController {
 
 		// Render the set
 		// TODO: This needs to show the fully expanded set + annotations, framed nicely
-		openAnnotationSetsUtilsService.renderSavedNamedGraphsDataset(apiKey, startTime, 'none', 'saved', response, annotationSet)
+		openAnnotationSetsUtilsService.renderSavedNamedGraphsDataset(apiKey, startTime, 'none', 'saved', response, newAnnotationSet)
 	}
 
 	// Create an annotation in a set
