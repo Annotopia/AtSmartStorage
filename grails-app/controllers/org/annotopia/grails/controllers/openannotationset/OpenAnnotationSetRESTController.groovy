@@ -85,7 +85,6 @@ class OpenAnnotationSetRESTController extends BaseController {
 			return
 		}
 
-
 		// Get the [graph URIs : URIs] of the annotations already in the set
 		def existingAnnotationURIMap = annotationIntegratedStorageService.retrieveAnnotationUrisInSet(apiKey, annotationSetURI)
 
@@ -95,7 +94,6 @@ class OpenAnnotationSetRESTController extends BaseController {
 		// Iterate over all the annotations given in the PUT and either update or create them, recording
 		//  their graph URIs.
 		annotations.each() {
-			println it
 			// Copy the @context node so the "snipped out" JSON-LD makes sense... must be a better way of doing this!
 			def annotationJson = it.put("@context", annotationSetJson.get("@context"))
 			def annotationDataset = DatasetFactory.createMem()
@@ -183,8 +181,7 @@ class OpenAnnotationSetRESTController extends BaseController {
 		}
 
 		// Render the set
-		// TODO: This needs to show the fully expanded set + annotations, framed nicely
-		openAnnotationSetsUtilsService.renderSavedNamedGraphsDataset(apiKey, startTime, 'none', 'saved', response, newAnnotationSet)
+		openAnnotationSetsUtilsService.renderAnnotationSet(apiKey, newAnnotationSet, annotationSetURI, response, 200)
 	}
 
 	// Create an annotation in a set
@@ -225,6 +222,6 @@ class OpenAnnotationSetRESTController extends BaseController {
 
 		// Render the set
 		// TODO: Maybe just render the created annotation?
-		openAnnotationSetsUtilsService.renderSavedNamedGraphsDataset(apiKey, startTime, 'none', 'saved', response, annotationSet)
+		openAnnotationSetsUtilsService.renderAnnotationSet(apiKey, annotationSet, annotationSetURI, response, 201)
 	}
 }
