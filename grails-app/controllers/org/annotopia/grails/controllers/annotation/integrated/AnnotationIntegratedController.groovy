@@ -320,7 +320,7 @@ class AnnotationIntegratedController extends BaseController {
 				response.outputStream.flush()
 			} else {
 				// Annotation Set not found
-				def message = 'Annotation ' + getCurrentUrl(request) + ' has not been found';
+				def message = 'Annotation set ' + getCurrentUrl(request) + ' has not been found';
 				render(status: 404, text: returnMessage(apiKey, "notfound", message, startTime), contentType: "text/json", encoding: "UTF-8");
 				return;
 			}
