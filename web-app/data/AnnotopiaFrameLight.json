@@ -61,7 +61,7 @@
 	    
 	    "targets"		: "at:targets",
 	    "hasChanged"    : "at:hasChanged",
-	    "annotations" 	: {"@type":"@id", "@id" : "at:annotations"}
+	    "annotations" 	: {"@type":"@id","@container":"@set","@id" : "at:annotations"}
 
   },
    "@type": "at:AnnotationSet",
