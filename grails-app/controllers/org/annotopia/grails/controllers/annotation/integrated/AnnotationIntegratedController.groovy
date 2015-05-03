@@ -342,7 +342,7 @@ class AnnotationIntegratedController extends BaseController {
 		log.info("[" + apiKey + "] Saving Annotation Set");
 
 		// Parsing the incoming parameters
-		def set = request.JSON.set
+		def set = request.JSON
 
 		// Unused but planned
 		def flavor = (request.JSON.flavor!=null)?request.JSON.flavor:"OA";

@@ -40,6 +40,7 @@ import com.hp.hpl.jena.rdf.model.Model
 /**
  * @author Paolo Ciccarese <paolo.ciccarese@gmail.com>
  */
+@Deprecated
 class OpenAnnotationSetController extends BaseController {
 
 //	String AT_CONTEXT = "https://raw2.github.com/Annotopia/AtSmartStorage/master/web-app/data/AnnotopiaContext.json";

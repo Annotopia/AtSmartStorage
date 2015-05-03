@@ -200,6 +200,10 @@ class OpenAnnotationWithPermissionsStorageService {
 	 */
 	public Dataset saveAnnotationDataset(String apiKey, String userKey, Long startTime, Boolean incGph, Dataset dataset) {
 		
+		// TODO Match userKey with the permission details to make sure that
+		// 1) Private annotation should oly include the user coming from OAuth
+		// 2) Groups are eligible only if the user belongs to them or if they are public
+		
 		// Registry of the URIs of the annotations.
 		// Note: The method currently supports the saving of one annotation at a time
 		Set<Resource> annotationUris = new HashSet<Resource>();
@@ -286,6 +290,7 @@ class OpenAnnotationWithPermissionsStorageService {
 			metaModel.add(graphResource, ResourceFactory.createProperty(AnnotopiaVocabulary.ANNOTATION_COUNT), ResourceFactory.createPlainLiteral("1"));
 			
 			// Detection of permissions
+			// TODO Permission sanity check
 			List<Statement> permissionsStatements = detectPermissionsStatements(apiKey, dataset.getDefaultModel());
 			permissionsStatements.each { statement ->
 				metaModel.add(graphResource,statement.getPredicate(), statement.getObject());
@@ -486,6 +491,8 @@ class OpenAnnotationWithPermissionsStorageService {
 			
 			Dataset workingDataset = DatasetFactory.createMem();
 			RDFDataMgr.read(workingDataset, new ByteArrayInputStream(content.toString().getBytes("UTF-8")), RDFLanguages.JSONLD);
+			
+			//TODO evluate possibility of updating the permission of the annotation ('admin')
 			
 			Set<String> enabled = openAnnotationWithPermissionsVirtuosoService.whoCanUpdateAnnotation(apiKey, userKey, "yolo");
 			println "1>>>>>> " + enabled
