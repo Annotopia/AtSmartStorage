@@ -101,52 +101,41 @@ class AnnotationIntegratedController extends BaseController {
 			log.warn("[" + apiKey + "] Invalid options, framing does not currently support Named Graphs");
 			def message = 'Invalid options, framing does not currently support Named Graphs';
 			render(status: 401, text: returnMessage(apiKey, "rejected", message, startTime),
-				contentType: "text/json", encoding: "UTF-8");
+			contentType: "text/json", encoding: "UTF-8");
 			return false;
 		}
 	}
 
-	/*
-	 * GET
-	 *
-	 * Either retrieve a representation of the requested annotation set (if an
-	 * id is specified and the requested annotation set exists) or lists
-	 * available annotation sets (using pagination).
-	 *
-	 * The returned format is compliant with the Open Annotation specification
-	 * http://www.openannotation.org/spec/core/
-	 */
-	def showAnnotationSet = {
+	def index = {
 		// GET of a list of annotations
-		if(params.id==null) {
-			// Pagination
-			def max = (request.JSON.max!=null)?request.JSON.max:"10";
-			if(params.max!=null) max = params.max;
-			def offset = (request.JSON.offset!=null)?request.JSON.offset:"0";
-			if(params.offset!=null) offset = params.offset;
+		// Pagination
+		def max = (request.JSON.max!=null)?request.JSON.max:"10";
+		if(params.max!=null) max = params.max;
+		def offset = (request.JSON.offset!=null)?request.JSON.offset:"0";
+		if(params.offset!=null) offset = params.offset;
 
-			// Target filters
-			def tgtUrl = request.JSON.tgtUrl
-			if(params.tgtUrl!=null) tgtUrl = params.tgtUrl;
-			def tgtFgt = (request.JSON.tgtFgt!=null)?request.JSON.tgtFgt:"true";
-			if(params.tgtFgt!=null) tgtFgt = params.tgtFgt;
+		// Target filters
+		def tgtUrl = request.JSON.tgtUrl
+		if(params.tgtUrl!=null) tgtUrl = params.tgtUrl;
+		def tgtFgt = (request.JSON.tgtFgt!=null)?request.JSON.tgtFgt:"true";
+		if(params.tgtFgt!=null) tgtFgt = params.tgtFgt;
 
-			// Target IDs
-			Map<String,String> identifiers = new HashMap<String,String>();
-			def tgtIds = (request.JSON.tgtIds!=null)?request.JSON.tgtIds:null;
-			if(params.tgtIds!=null) tgtIds = params.tgtIds
-			if(tgtIds!=null) {
-				JSONObject ids = JSON.parse(tgtIds);
-				ids.keys().each { key ->
-					identifiers.put(key, ids.get(key));
-				}
+		// Target IDs
+		Map<String,String> identifiers = new HashMap<String,String>();
+		def tgtIds = (request.JSON.tgtIds!=null)?request.JSON.tgtIds:null;
+		if(params.tgtIds!=null) tgtIds = params.tgtIds
+		if(tgtIds!=null) {
+			JSONObject ids = JSON.parse(tgtIds);
+			ids.keys().each { key ->
+				identifiers.put(key, ids.get(key));
 			}
+		}
 
-			// Currently unusued, planned
-			def tgtExt = request.JSON.tgtExt
-			def flavor = request.JSON.flavor
+		// Currently unusued, planned
+		def tgtExt = request.JSON.tgtExt
+		def flavor = request.JSON.flavor
 
-			log.info("[" + apiKey + "] List >>" +
+		log.info("[" + apiKey + "] List >>" +
 				" max:" + max + " offset:" + offset +
 				((tgtUrl!=null) ? (" tgtUrl:" + tgtUrl):"") +
 				((tgtFgt!=null) ? (" tgtFgt:" + tgtFgt):"") +
@@ -156,174 +145,181 @@ class AnnotationIntegratedController extends BaseController {
 				((outCmd!=null) ? (" outCmd:" + outCmd):"") +
 				((incGph!=null) ? (" incGph:" + incGph):""));
 
-			List<String> tgtUrls ;
-			if(tgtUrl!=null) {
-				tgtUrls = new ArrayList<String>();
-				tgtUrls.add(tgtUrl);
-			} else if(tgtIds!=null) {
-				tgtUrls = new ArrayList<String>();
-				tgtUrls = jenaVirtuosoStoreService.retrieveAllManifestationsByIdentifiers(apiKey, identifiers, configAccessService.getAsString("annotopia.storage.uri.graph.identifiers"));
-			}
-
-			int annotationSetsTotal = annotationIntegratedStorageService.countAnnotationSetGraphs(apiKey, tgtUrls, tgtFgt);
-			int annotationSetsPages = (annotationSetsTotal/Integer.parseInt(max));
-			if(annotationSetsTotal>0 && Integer.parseInt(offset)>0 && Integer.parseInt(offset)>=annotationSetsPages) {
-				def message = 'The requested page ' + offset +
-					' does not exist, the page index limit is ' + (annotationSetsPages==0?"0":(annotationSetsPages-1));
-				render(status: 401, text: returnMessage(apiKey, "rejected", message, startTime),
-					contentType: "text/json", encoding: "UTF-8");
-				return;
-			}
-
-			Set<Dataset> annotationSets = annotationIntegratedStorageService.listAnnotationSets(apiKey, max, offset, tgtUrls, tgtFgt, tgtExt, tgtIds, incGph);
-			def summaryPrefix = '"total":"' + annotationSetsTotal + '", ' +
-					'"pages":"' + annotationSetsPages + '", ' +
-					'"duration": "' + (System.currentTimeMillis()-startTime) + 'ms", ' +
-					'"offset": "' + offset + '", ' +
-					'"max": "' + max + '", ' +
-					'"sets":[';
-
-			Object contextJson = null;
-			if(annotationSets!=null) {
-				response.outputStream << '{"status":"results", "result": {' + summaryPrefix
-				boolean firstStreamed = false // To add the commas between items
-				annotationSets.each { annotationSet ->
-					if(firstStreamed) response.outputStream << ','
-					if(outCmd=='none') {
-						if(incGph=='false') {
-							if(annotationSet.listNames().hasNext()) {
-								Model m = annotationSet.getNamedModel(annotationSet.listNames().next());
-								RDFDataMgr.write(response.outputStream, m.getGraph(), RDFLanguages.JSONLD);
-							}
-						} else {
-							RDFDataMgr.write(response.outputStream, annotationSet, RDFLanguages.JSONLD);
-						}
-					} else {
-						// This serializes with and according to the context
-						if(contextJson==null) {
-							if(outCmd=='context') {
-								contextJson = JsonUtils.fromInputStream(callExternalUrl(apiKey, configAccessService.getAsString("annotopia.jsonld.annotopia.context")));
-							} else if(outCmd=='frame') {
-								contextJson = JsonUtils.fromInputStream(callExternalUrl(apiKey, configAccessService.getAsString(".annotopia.jsonld.annotopia.framinglight")));
-							}
-						}
-
-						ByteArrayOutputStream baos = new ByteArrayOutputStream();
-						if(incGph=='false') {
-							if(annotationSet.listNames().hasNext()) {
-								Model m = annotationSet.getNamedModel(annotationSet.listNames().next());
-								RDFDataMgr.write(baos, m.getGraph(), RDFLanguages.JSONLD);
-							}
-						} else {
-							RDFDataMgr.write(baos, annotationSet, RDFLanguages.JSONLD);
-						}
-
-						if(outCmd=='context') {
-							Object compact = JsonLdProcessor.compact(JsonUtils.fromString(baos.toString()), contextJson,  new JsonLdOptions());
-							response.outputStream << JsonUtils.toPrettyString(compact)
-						}  else if(outCmd=='frame') {
-							Object framed =  JsonLdProcessor.frame(JsonUtils.fromString(baos.toString().replace('"@id" : "urn:x-arq:DefaultGraphNode",','')), contextJson, new JsonLdOptions());
-							response.outputStream << JsonUtils.toPrettyString(framed)
-						}
-					}
-					firstStreamed = true;
-				}
-			} else {
-				// No Annotation Sets found with the specified criteria
-				log.info("[" + apiKey + "] No Annotation sets found with the specified criteria");
-				response.outputStream << '{"status":"nocontent","message":"No results with the chosen criteria" , "result": {' + summaryPrefix
-			}
-
-
-			response.outputStream <<  ']}}';
-			response.outputStream.flush()
+		List<String> tgtUrls ;
+		if(tgtUrl!=null) {
+			tgtUrls = new ArrayList<String>();
+			tgtUrls.add(tgtUrl);
+		} else if(tgtIds!=null) {
+			tgtUrls = new ArrayList<String>();
+			tgtUrls = jenaVirtuosoStoreService.retrieveAllManifestationsByIdentifiers(apiKey, identifiers, configAccessService.getAsString("annotopia.storage.uri.graph.identifiers"));
 		}
-		// GET of the annotation set identified by the current url
-		// Note that the content that is returned might not be the bare Annotation
-		// but more likely will be a Named Graph that wraps the annotation.
-		// If the annotation is related to multiple graphs, all of the graphs will
-		// be returned.
-		else {
-			String url = null;
-			if(getCurrentUrl(request).indexOf("?")>0) url = getCurrentUrl(request).substring(0, getCurrentUrl(request).indexOf("?"))
-			else url = getCurrentUrl(request);
 
-			Dataset graphs =  annotationIntegratedStorageService.retrieveAnnotationSet(apiKey, url);
-			if(graphs!=null && graphs.listNames().hasNext()) {
-				Set<Model> toAdd = new HashSet<Model>();
-				Set<Statement> statsToAdd = new HashSet<Statement>();
-				Set<Statement> toRemove = new HashSet<Statement>();
-				Model setModel = graphs.getNamedModel(graphs.listNames().next());
-				StmtIterator  iter = setModel.listStatements(null, ResourceFactory.createProperty(AnnotopiaVocabulary.ANNOTATIONS), null);
-				while(iter.hasNext()) {
-					Statement s = iter.next();
-					toRemove.add(s);
-					Dataset ds = jenaVirtuosoStoreService.retrieveGraph(apiKey, s.getObject().asResource().getURI());
-					if(ds!=null && ds.listNames().hasNext()) {
-						Model annotationModel = ds.getNamedModel(ds.listNames().next());
-						StmtIterator  iter2 = annotationModel.listStatements(null, ResourceFactory.createProperty(RDF.RDF_TYPE), ResourceFactory.createResource(OA.ANNOTATION));
-						if(iter2.hasNext()) {
-							toAdd.add(annotationModel);
-							//setModel.add(annotationModel);
-							statsToAdd.add(ResourceFactory.createStatement(s.getSubject(), ResourceFactory.createProperty(AnnotopiaVocabulary.ANNOTATIONS), iter2.next().getSubject()));
-						}
-					}
-				}
-				toRemove.each {
-					setModel.remove(it);
-				}
-				statsToAdd.each {
-					setModel.add(it);
-				}
-				toAdd.each {
-					setModel.add(it);
-				}
-			}
+		int annotationSetsTotal = annotationIntegratedStorageService.countAnnotationSetGraphs(apiKey, tgtUrls, tgtFgt);
+		int annotationSetsPages = (annotationSetsTotal/Integer.parseInt(max));
+		if(annotationSetsTotal>0 && Integer.parseInt(offset)>0 && Integer.parseInt(offset)>=annotationSetsPages) {
+			def message = 'The requested page ' + offset +
+					' does not exist, the page index limit is ' + (annotationSetsPages==0?"0":(annotationSetsPages-1));
+			render(status: 401, text: returnMessage(apiKey, "rejected", message, startTime),
+			contentType: "text/json", encoding: "UTF-8");
+			return;
+		}
 
-			Object contextJson = null;
-			if(graphs!=null && graphs.listNames().hasNext()) {
+		Set<Dataset> annotationSets = annotationIntegratedStorageService.listAnnotationSets(apiKey, max, offset, tgtUrls, tgtFgt, tgtExt, tgtIds, incGph);
+		def summaryPrefix = '"total":"' + annotationSetsTotal + '", ' +
+				'"pages":"' + annotationSetsPages + '", ' +
+				'"duration": "' + (System.currentTimeMillis()-startTime) + 'ms", ' +
+				'"offset": "' + offset + '", ' +
+				'"max": "' + max + '", ' +
+				'"sets":[';
 
-				Model setModel = graphs.getNamedModel(graphs.listNames().next());
-
+		Object contextJson = null;
+		if(annotationSets!=null) {
+			response.outputStream << '{"status":"results", "result": {' + summaryPrefix
+			boolean firstStreamed = false // To add the commas between items
+			annotationSets.each { annotationSet ->
+				if(firstStreamed) response.outputStream << ','
 				if(outCmd=='none') {
 					if(incGph=='false') {
-						Model m = graphs.getNamedModel(graphs.listNames().next());
-						RDFDataMgr.write(response.outputStream, m, RDFLanguages.JSONLD);
+						if(annotationSet.listNames().hasNext()) {
+							Model m = annotationSet.getNamedModel(annotationSet.listNames().next());
+							RDFDataMgr.write(response.outputStream, m.getGraph(), RDFLanguages.JSONLD);
+						}
 					} else {
-						RDFDataMgr.write(response.outputStream, graphs, RDFLanguages.JSONLD);
+						RDFDataMgr.write(response.outputStream, annotationSet, RDFLanguages.JSONLD);
 					}
 				} else {
+					// This serializes with and according to the context
 					if(contextJson==null) {
 						if(outCmd=='context') {
 							contextJson = JsonUtils.fromInputStream(callExternalUrl(apiKey, configAccessService.getAsString("annotopia.jsonld.annotopia.context")));
 						} else if(outCmd=='frame') {
-							contextJson = JsonUtils.fromInputStream(callExternalUrl(apiKey, configAccessService.getAsString("annotopia.jsonld.annotopia.framing")));
+							contextJson = JsonUtils.fromInputStream(callExternalUrl(apiKey, configAccessService.getAsString(".annotopia.jsonld.annotopia.framinglight")));
 						}
 					}
 
 					ByteArrayOutputStream baos = new ByteArrayOutputStream();
 					if(incGph=='false') {
-						Model m = graphs.getNamedModel(graphs.listNames().next());
-						RDFDataMgr.write(baos, m.getGraph(), RDFLanguages.JSONLD);
+						if(annotationSet.listNames().hasNext()) {
+							Model m = annotationSet.getNamedModel(annotationSet.listNames().next());
+							RDFDataMgr.write(baos, m.getGraph(), RDFLanguages.JSONLD);
+						}
 					} else {
-						RDFDataMgr.write(baos, graphs, RDFLanguages.JSONLD);
+						RDFDataMgr.write(baos, annotationSet, RDFLanguages.JSONLD);
 					}
 
 					if(outCmd=='context') {
 						Object compact = JsonLdProcessor.compact(JsonUtils.fromString(baos.toString()), contextJson,  new JsonLdOptions());
 						response.outputStream << JsonUtils.toPrettyString(compact)
 					}  else if(outCmd=='frame') {
-						Object framed =  JsonLdProcessor.frame(JsonUtils.fromString(baos.toString().replace('"@id" : "urn:x-arq:DefaultGraphNode",','')),contextJson, new JsonLdOptions());
+						Object framed =  JsonLdProcessor.frame(JsonUtils.fromString(baos.toString().replace('"@id" : "urn:x-arq:DefaultGraphNode",','')), contextJson, new JsonLdOptions());
 						response.outputStream << JsonUtils.toPrettyString(framed)
 					}
 				}
-				response.outputStream.flush()
-			} else {
-				// Annotation Set not found
-				def message = 'Annotation set ' + getCurrentUrl(request) + ' has not been found';
-				render(status: 404, text: returnMessage(apiKey, "notfound", message, startTime), contentType: "text/json", encoding: "UTF-8");
-				return;
+				firstStreamed = true;
 			}
+		} else {
+			// No Annotation Sets found with the specified criteria
+			log.info("[" + apiKey + "] No Annotation sets found with the specified criteria");
+			response.outputStream << '{"status":"nocontent","message":"No results with the chosen criteria" , "result": {' + summaryPrefix
+		}
+
+
+		response.outputStream <<  ']}}';
+		response.outputStream.flush()
+	}
+
+	/*
+	 * GET
+	 *
+	 * GET of the annotation set identified by the current url
+	 * Note that the content that is returned might not be the bare Annotation
+	 * but more likely will be a Named Graph that wraps the annotation.
+	 * If the annotation is related to multiple graphs, all of the graphs will
+	 * be returned.
+	 *
+	 * The returned format is compliant with the Open Annotation specification
+	 * http://www.openannotation.org/spec/core/
+	 */
+	def show = {
+		String url = null;
+		if(getCurrentUrl(request).indexOf("?")>0) url = getCurrentUrl(request).substring(0, getCurrentUrl(request).indexOf("?"))
+		else url = getCurrentUrl(request);
+
+		Dataset graphs =  annotationIntegratedStorageService.retrieveAnnotationSet(apiKey, url);
+		if(graphs!=null && graphs.listNames().hasNext()) {
+			Set<Model> toAdd = new HashSet<Model>();
+			Set<Statement> statsToAdd = new HashSet<Statement>();
+			Set<Statement> toRemove = new HashSet<Statement>();
+			Model setModel = graphs.getNamedModel(graphs.listNames().next());
+			StmtIterator  iter = setModel.listStatements(null, ResourceFactory.createProperty(AnnotopiaVocabulary.ANNOTATIONS), null);
+			while(iter.hasNext()) {
+				Statement s = iter.next();
+				toRemove.add(s);
+				Dataset ds = jenaVirtuosoStoreService.retrieveGraph(apiKey, s.getObject().asResource().getURI());
+				if(ds!=null && ds.listNames().hasNext()) {
+					Model annotationModel = ds.getNamedModel(ds.listNames().next());
+					StmtIterator  iter2 = annotationModel.listStatements(null, ResourceFactory.createProperty(RDF.RDF_TYPE), ResourceFactory.createResource(OA.ANNOTATION));
+					if(iter2.hasNext()) {
+						toAdd.add(annotationModel);
+						//setModel.add(annotationModel);
+						statsToAdd.add(ResourceFactory.createStatement(s.getSubject(), ResourceFactory.createProperty(AnnotopiaVocabulary.ANNOTATIONS), iter2.next().getSubject()));
+					}
+				}
+			}
+			toRemove.each {
+				setModel.remove(it);
+			}
+			statsToAdd.each {
+				setModel.add(it);
+			}
+			toAdd.each {
+				setModel.add(it);
+			}
+		}
+
+		Object contextJson = null;
+		if(graphs!=null && graphs.listNames().hasNext()) {
+
+			Model setModel = graphs.getNamedModel(graphs.listNames().next());
+
+			if(outCmd=='none') {
+				if(incGph=='false') {
+					Model m = graphs.getNamedModel(graphs.listNames().next());
+					RDFDataMgr.write(response.outputStream, m, RDFLanguages.JSONLD);
+				} else {
+					RDFDataMgr.write(response.outputStream, graphs, RDFLanguages.JSONLD);
+				}
+			} else {
+				if(contextJson==null) {
+					if(outCmd=='context') {
+						contextJson = JsonUtils.fromInputStream(callExternalUrl(apiKey, configAccessService.getAsString("annotopia.jsonld.annotopia.context")));
+					} else if(outCmd=='frame') {
+						contextJson = JsonUtils.fromInputStream(callExternalUrl(apiKey, configAccessService.getAsString("annotopia.jsonld.annotopia.framing")));
+					}
+				}
+
+				ByteArrayOutputStream baos = new ByteArrayOutputStream();
+				if(incGph=='false') {
+					Model m = graphs.getNamedModel(graphs.listNames().next());
+					RDFDataMgr.write(baos, m.getGraph(), RDFLanguages.JSONLD);
+				} else {
+					RDFDataMgr.write(baos, graphs, RDFLanguages.JSONLD);
+				}
+
+				if(outCmd=='context') {
+					Object compact = JsonLdProcessor.compact(JsonUtils.fromString(baos.toString()), contextJson,  new JsonLdOptions());
+					response.outputStream << JsonUtils.toPrettyString(compact)
+				}  else if(outCmd=='frame') {
+					Object framed =  JsonLdProcessor.frame(JsonUtils.fromString(baos.toString().replace('"@id" : "urn:x-arq:DefaultGraphNode",','')),contextJson, new JsonLdOptions());
+					response.outputStream << JsonUtils.toPrettyString(framed)
+				}
+			}
+			response.outputStream.flush()
+		} else {
+			// Annotation Set not found
+			def message = 'Annotation set ' + getCurrentUrl(request) + ' has not been found';
+			render(status: 404, text: returnMessage(apiKey, "notfound", message, startTime), contentType: "text/json", encoding: "UTF-8");
+			return;
 		}
 	}
 
@@ -338,7 +334,7 @@ class AnnotationIntegratedController extends BaseController {
 	 *
 	 * Validation not yet implemented.
 	 */
-	def saveAnnotationSet = {
+	def create = {
 		log.info("[" + apiKey + "] Saving Annotation Set");
 
 		// Parsing the incoming parameters
@@ -381,7 +377,7 @@ class AnnotationIntegratedController extends BaseController {
 	 *
 	 * Validation not yet implemented.
 	 */
-	def updateAnnotationSet = {
+	def update = {
 		log.info("[" + apiKey + "] Updating Annotation Set");
 
 		// Parsing the incoming parameters
