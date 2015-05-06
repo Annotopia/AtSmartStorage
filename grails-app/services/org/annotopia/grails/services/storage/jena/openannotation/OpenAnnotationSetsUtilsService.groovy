@@ -307,17 +307,22 @@ class OpenAnnotationSetsUtilsService {
 	 * Render a JSON-LD representation of the annotation set and its annotations
 	 * @param apiKey			The API key of the client issuing the request
 	 * @param annotationSet		A Dataset object containing the annotation set's graph
-	 * @param annotationSetURI	The URI of the annotation set
 	 * @param response			The Grails response object
 	 * @param status			The HTTP status code
 	 */
-	def renderAnnotationSet(def apiKey, def annotationSet, def annotationSetURI, def response, def status) {
+	def renderAnnotationSet(def apiKey, def annotationSet, def response, def status) {
 		def defaultModel = annotationSet.getDefaultModel()
 
-		// Get annotation graphs and merge into set
 		def annotationSetModel = annotationSet.getNamedModel(annotationSet.listNames().next())
 		def annotationURIs = []
 
+		// Get annotation set resource
+		def annotationSetResource
+		annotationSetModel.listStatements(null, ResourceFactory.createProperty(RDF.RDF_TYPE), ResourceFactory.createProperty(AnnotopiaVocabulary.ANNOTATION_SET)).each { statement ->
+			annotationSetResource = statement.getSubject().asResource()
+		}
+
+		// Get annotation graphs and merge into set
 		annotationSetModel.listStatements(null, ResourceFactory.createProperty(AnnotopiaVocabulary.ANNOTATIONS), null).each { statement ->
 			def annGraphURI = statement.getObject().asResource().getURI()
 			Dataset ds = jenaVirtuosoStoreService.retrieveGraph(apiKey, annGraphURI)
@@ -331,7 +336,7 @@ class OpenAnnotationSetsUtilsService {
 		// Need to replace annotation graph URI with annotation URI so framing works later on...
 		annotationSetModel.removeAll(null, ResourceFactory.createProperty(AnnotopiaVocabulary.ANNOTATIONS), null)
 		annotationURIs.each { uri ->
-			annotationSetModel.add(ResourceFactory.createResource(annotationSetURI),
+			annotationSetModel.add(annotationSetResource,
 					ResourceFactory.createProperty(AnnotopiaVocabulary.ANNOTATIONS),
 					uri)
 		}
