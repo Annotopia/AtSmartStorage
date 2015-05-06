@@ -43,11 +43,17 @@ class OpenAnnotationSetRESTController extends BaseController {
 	def beforeInterceptor = {
 		startTime = System.currentTimeMillis()
 
-		// Authenticate
-		apiKey = apiKeyAuthenticationService.getApiKey(request)
-		if(!apiKeyAuthenticationService.isApiKeyValid(request.getRemoteAddr(), apiKey)) {
-			invalidApiKey(request.getRemoteAddr())
-			return false // Returning false stops the actual controller action from being called
+		// Authenticate with OAuth or Annotopia API Key
+		def oauthToken = apiKeyAuthenticationService.getOauthToken(request)
+		if(oauthToken != null) {
+			apiKey = oauthToken.system.apikey
+		} else {
+			apiKey = apiKeyAuthenticationService.getApiKey(request)
+
+			if(!apiKeyAuthenticationService.isApiKeyValid(request.getRemoteAddr(), apiKey)) {
+				invalidApiKey(request.getRemoteAddr())
+				return false // Returning false stops the actual controller action from being called
+			}
 		}
 		log.info("API key [" + apiKey + "]")
 

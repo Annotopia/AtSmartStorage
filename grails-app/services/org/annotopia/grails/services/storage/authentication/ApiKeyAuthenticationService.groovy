@@ -21,9 +21,10 @@
 package org.annotopia.grails.services.storage.authentication
 
 import java.util.regex.Matcher
+import org.commonsemantics.grails.security.oauth.OAuthToken
 
 /**
- * This service manages access through API keys that are assigned to 
+ * This service manages access through API keys that are assigned to
  * applications or users that want to make use of the Smart Storage.
  *
  * @author Paolo Ciccarese <paolo.ciccarese@gmail.com>
@@ -32,10 +33,10 @@ class ApiKeyAuthenticationService {
 
 	def grailsApplication
 	def configAccessService
-	
+
 	/**
 	 * Returns true if the tested apiKey is valid. At the moment this validates
-	 * the testing ApiKey only. Later it will test the validity against real 
+	 * the testing ApiKey only. Later it will test the validity against real
 	 * API keys.
 	 * @param apiKey	The ApiKey assigned to a client
 	 * @return True if the client is authorized
@@ -49,7 +50,7 @@ class ApiKeyAuthenticationService {
 		);
 	 	return allowed;
 	}
-	
+
 	/**
 	 * Returns the API key used to authorize the request. First checks the "Authorization" header,
 	 * then checks for a URL parameter named "apiKey", then checks the JSON body for "apiKey". Returns null if no API key found.
@@ -58,16 +59,32 @@ class ApiKeyAuthenticationService {
 	 */
 	def getApiKey(def request) {
 		def key
-		
-		Matcher matcher = request.getHeader("Authorization") =~ /.*annotopia-api-key\s+([-0-9a-fA-F]*).*/	
+
+		Matcher matcher = request.getHeader("Authorization") =~ /.*annotopia-api-key\s+([-0-9a-fA-F]*).*/
 		if(matcher.matches())
 			key = matcher.group(1)
 		else
 			key = request.getParameter("apiKey")
-			
+
 		if(key == null)
 			key = request.JSON.apiKey
 
 		return key
+	}
+
+	/**
+	 * Returns the OAuth token used to authorize the request.
+	 * Checks the authorization header for the "Bearer" key
+	 * @param request	The HTTP request object
+	 * @return OAuthToken object, or null
+	 */
+	def getOauthToken(def request) {
+		Matcher matcher = request.getHeader("Authorization") =~ /.*Bearer\s+([-0-9a-fA-F]*).*/
+
+		if(matcher.matches()) {
+			return OAuthToken.findByToken(matcher.group(1))
+		} else {
+			return null
+		}
 	}
 }
