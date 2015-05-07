@@ -85,7 +85,7 @@ class OpenAnnotationSetRESTController extends BaseController {
 
 		def jsonURI = annotationSetJson.get("@id")
 		if(jsonURI != annotationSetURI) {
-			def message = "The ID of the annotation set ("+annotationSetURI+") does not match the one in the request body ("+jsonURI+")"
+			def message = "The ID of the annotation set in the request URL ("+annotationSetURI+") does not match the one in the request body ("+jsonURI+")"
 			log.error("[" + apiKey + "] " + message + ": " + annotationSetJson.toString())
 			render(status: 500, text: returnMessage(apiKey, "invalidcontent", message, startTime), contentType: "text/json", encoding: "UTF-8")
 			return
