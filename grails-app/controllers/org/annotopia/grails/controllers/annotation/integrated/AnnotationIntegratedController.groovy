@@ -22,10 +22,11 @@ package org.annotopia.grails.controllers.annotation.integrated
 
 import grails.converters.JSON
 
-import javax.servlet.http.HttpServletResponse
+import java.util.regex.Matcher
 
 import org.annotopia.grails.vocabularies.AnnotopiaVocabulary
 import org.annotopia.grails.vocabularies.OA
+import org.annotopia.grails.vocabularies.PAV
 import org.annotopia.grails.vocabularies.RDF
 import org.annotopia.groovy.service.store.BaseController
 import org.annotopia.groovy.service.store.StoreServiceException
@@ -39,6 +40,8 @@ import com.github.jsonldjava.utils.JsonUtils
 import com.hp.hpl.jena.query.Dataset
 import com.hp.hpl.jena.query.DatasetFactory
 import com.hp.hpl.jena.rdf.model.Model
+import com.hp.hpl.jena.rdf.model.ModelFactory
+import com.hp.hpl.jena.rdf.model.Resource
 import com.hp.hpl.jena.rdf.model.ResourceFactory
 import com.hp.hpl.jena.rdf.model.Statement
 import com.hp.hpl.jena.rdf.model.StmtIterator
@@ -73,20 +76,31 @@ class AnnotationIntegratedController extends BaseController {
 
 	def annotationIntegratedStorageService;
 	def openAnnotationSetsUtilsService
+	def openAnnotationUtilsService
+	def openAnnotationStorageService
 
 	// Shared variables/functionality
 	def startTime
 	def apiKey
 	def outCmd
 	def incGph
+	def annotationSet
+	def annotationSetURI
+
 	def beforeInterceptor = {
 		startTime = System.currentTimeMillis()
 
-		// Authenticate
-		apiKey = apiKeyAuthenticationService.getApiKey(request)
-		if(!apiKeyAuthenticationService.isApiKeyValid(request.getRemoteAddr(), apiKey)) {
-			invalidApiKey(request.getRemoteAddr())
-			return false // Returning false stops the actual controller action from being called
+		// Authenticate with OAuth or Annotopia API Key
+		def oauthToken = apiKeyAuthenticationService.getOauthToken(request)
+		if(oauthToken != null) {
+			apiKey = oauthToken.system.apikey
+		} else {
+			apiKey = apiKeyAuthenticationService.getApiKey(request)
+
+			if(!apiKeyAuthenticationService.isApiKeyValid(request.getRemoteAddr(), apiKey)) {
+				invalidApiKey(request.getRemoteAddr())
+				return false // Returning false stops the actual controller action from being called
+			}
 		}
 		log.info("API key [" + apiKey + "]")
 
@@ -103,6 +117,30 @@ class AnnotationIntegratedController extends BaseController {
 			render(status: 401, text: returnMessage(apiKey, "rejected", message, startTime),
 			contentType: "text/json", encoding: "UTF-8");
 			return false;
+		}
+
+		// Get annotation set if necessary
+		if(actionName == 'update' || actionName == 'show') {
+			// Figure out the URL of the annotation set
+			annotationSetURI = null
+			// Strip off the params to get the URL as it would appear as a named graph in the triplestore
+			Matcher matcher = getCurrentUrl(request) =~ /(.*\/s\/annotationset\/[^\/]*).*/
+			if(matcher.matches())
+				annotationSetURI = matcher.group(1)
+
+			// Fetch the annotation set
+			annotationSet = null
+			if(annotationSetURI != null) {
+				log.info("Annotation set URI: " + annotationSetURI)
+				annotationSet = annotationIntegratedStorageService.retrieveAnnotationSet(apiKey, annotationSetURI)
+			}
+			if(annotationSet == null || !annotationSet.listNames().hasNext()) {
+				// Annotation Set not found
+				def message = 'Annotation set ' + getCurrentUrl(request) + ' has not been found'
+
+				render(status: 404, text: returnMessage(apiKey, "notfound", message, startTime), contentType: "text/json", encoding: "UTF-8")
+				return false
+			}
 		}
 	}
 
@@ -378,37 +416,115 @@ class AnnotationIntegratedController extends BaseController {
 	 * Validation not yet implemented.
 	 */
 	def update = {
+		// TODO: Extract all this logic out into a service
 		log.info("[" + apiKey + "] Updating Annotation Set");
 
-		// Parsing the incoming parameters
-		def set = request.JSON.set
+		def annotationSetJson = request.JSON
 
-		// Unused but planned
-		def flavor = (request.JSON.flavor!=null)?request.JSON.flavor:"OA";
-		def validate = (request.JSON.validate!=null)?request.JSON.validate:"OFF";
-
-		if(set!=null) {
-			Dataset updatedAnnotationSet;
-			try {
-				println set.toString();
-				updatedAnnotationSet = annotationIntegratedStorageService.updateAnnotationSet(apiKey, startTime, Boolean.parseBoolean(incGph), set.toString());
-			} catch(StoreServiceException exception) {
-				render(status: exception.status, text: exception.text, contentType: exception.contentType, encoding: exception.encoding);
-				return;
-			}
-
-			Object contextJson = null;
-			if(updatedAnnotationSet!=null) {
-				openAnnotationSetsUtilsService.renderSavedNamedGraphsDataset(apiKey, startTime, outCmd, 'saved', response, updatedAnnotationSet);
-			} else {
-				// Dataset returned null
-				def message = "Null Annotation Set Dataset. Something went terribly wrong";
-				render(status: 500, text: returnMessage(apiKey, "exception", message, startTime), contentType: "text/json", encoding: "UTF-8");
-			}
-		} else {
-			// Annotation not found
-			def message = "No annotation set found in the request";
-			render(status: 200, text: returnMessage(apiKey, "nocontent", message, startTime), contentType: "text/json", encoding: "UTF-8");
+		def jsonURI = annotationSetJson.get("@id")
+		if(jsonURI != annotationSetURI) {
+			def message = "The ID of the annotation set in the request URL ("+annotationSetURI+") does not match the one in the request body ("+jsonURI+")"
+			log.error("[" + apiKey + "] " + message + ": " + annotationSetJson.toString())
+			render(status: 500, text: returnMessage(apiKey, "invalidcontent", message, startTime), contentType: "text/json", encoding: "UTF-8")
+			return
 		}
+
+		// Get the [graph URIs : URIs] of the annotations already in the set
+		def existingAnnotationURIMap = annotationIntegratedStorageService.retrieveAnnotationUrisInSet(apiKey, annotationSetURI)
+
+		// Snip out the "annotations" property
+		List annotations = annotationSetJson.getAt("annotations")
+		def storedAnnotationGraphURIs = []
+		// Iterate over all the annotations given in the PUT and either update or create them, recording
+		//  their graph URIs.
+		annotations.each() {
+			// Copy the @context node so the "snipped out" JSON-LD makes sense... must be a better way of doing this!
+			def annotationJson = it.put("@context", annotationSetJson.get("@context"))
+			def annotationDataset = DatasetFactory.createMem()
+			try {
+				RDFDataMgr.read(annotationDataset, new ByteArrayInputStream(annotationJson.toString().getBytes("UTF-8")), RDFLanguages.JSONLD)
+			} catch (Exception ex) {
+				log.error("[" + apiKey + "] " + ex.getMessage())
+				def message = "Invalid content, the following annotation could not be read\n"
+				log.error("[" + apiKey + "] " + message + ": " + annotationJson.toString())
+				render(status: 500, text: returnMessage(apiKey, "invalidcontent", message, startTime), contentType: "text/json", encoding: "UTF-8")
+				return
+			}
+
+			// Get the annotation's ID
+			Set<Resource> annotationURIs = new HashSet<Resource>()
+			def numAnnotations = openAnnotationUtilsService.detectAnnotationsInDefaultGraph(apiKey, annotationDataset, annotationURIs, null)
+
+			// Hopefully there was only one annotation in the JSON-LD, but if not lets just pick the first one
+			def annotationURI = null
+			if(!annotationURIs.isEmpty())
+				annotationURI = annotationURIs.first().toString()
+
+			// Was the annotation already in the set?
+			// TODO: check not part of another annotation set!
+			def annotation
+			if(annotationURI != null && existingAnnotationURIMap.remove(annotationURI) != null) {
+				log.info("[" + apiKey + "] Updating annotation: " + annotationURI)
+				annotation = openAnnotationStorageService.updateAnnotationDataset(apiKey, startTime, false, annotationDataset);
+			} else {
+				log.info("[" + apiKey + "] Adding new annotation")
+				annotation = openAnnotationStorageService.saveAnnotationDataset(apiKey, startTime, false, annotationDataset);
+			}
+			// Record graph URI for each annotation
+			// Hopefully the only named graph in the dataset is that of the annotation!
+			storedAnnotationGraphURIs.push(annotation.listNames().next())
+		}
+
+		annotationSetJson.getAt("annotations").clear() // Don't need this anymore, annotations have been stored in their own graphs
+
+		def newAnnotationSet = DatasetFactory.createMem() // Dataset for the updated annotation set
+		def newAnnotationSetModel = ModelFactory.createDefaultModel() // Model for the updated annotation set
+		def annotationSetGraphURI = annotationSet.listNames().next() // URI of the original set's graph
+
+		// Read the PUT body
+		try {
+			RDFDataMgr.read(newAnnotationSetModel, new ByteArrayInputStream(annotationSetJson.toString().getBytes("UTF-8")), RDFLanguages.JSONLD)
+		} catch (Exception ex) {
+			log.error("[" + apiKey + "] " + ex.getMessage())
+			def message = "Invalid content, the annotation set could not be read\n"
+			log.error("[" + apiKey + "] " + message + ": " + annotationSetJson.toString())
+			render(status: 500, text: returnMessage(apiKey, "invalidcontent", message, startTime), contentType: "text/json", encoding: "UTF-8")
+			return
+		}
+
+		// Add annotation graph URIs to annotation set's "annotations" list
+		newAnnotationSetModel.removeAll(ResourceFactory.createResource(annotationSetURI),
+				ResourceFactory.createProperty(AnnotopiaVocabulary.ANNOTATIONS),
+				null)
+		storedAnnotationGraphURIs.each() {
+			newAnnotationSetModel.add(ResourceFactory.createResource(annotationSetURI),
+					ResourceFactory.createProperty(AnnotopiaVocabulary.ANNOTATIONS),
+					ResourceFactory.createResource(it))
+		}
+
+		// Set Last saved on
+		newAnnotationSetModel.removeAll(ResourceFactory.createResource(annotationSetURI),
+				ResourceFactory.createProperty(PAV.PAV_LAST_UPDATED_ON),
+				null)
+		newAnnotationSetModel.add(ResourceFactory.createResource(annotationSetURI),
+				ResourceFactory.createProperty(PAV.PAV_LAST_UPDATED_ON),
+				ResourceFactory.createPlainLiteral(dateFormat.format(new Date())))
+
+		// Add the updated annotation set as a named graph to the dataset
+		newAnnotationSet.addNamedModel(annotationSetGraphURI, newAnnotationSetModel)
+
+		// Store the updated annotation set dataset
+		jenaVirtuosoStoreService.updateDataset(apiKey, newAnnotationSet)
+
+		// Remove now-orphaned annotations
+		existingAnnotationURIMap.values().each() {
+			log.info("[" + apiKey + "] Deleting orphaned annotation graph: " + it);
+			jenaVirtuosoStoreService.dropGraph(apiKey, it);
+			jenaVirtuosoStoreService.removeAllTriples(apiKey, configAccessService.getAsString("annotopia.storage.uri.graph.provenance"), it);
+			jenaVirtuosoStoreService.removeAllTriplesWithObject(apiKey, it);
+		}
+
+		// Render the set
+		openAnnotationSetsUtilsService.renderAnnotationSet(apiKey, newAnnotationSet, response, 200)
 	}
 }
