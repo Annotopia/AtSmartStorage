@@ -283,76 +283,9 @@ class AnnotationIntegratedController extends BaseController {
 		if(getCurrentUrl(request).indexOf("?")>0) url = getCurrentUrl(request).substring(0, getCurrentUrl(request).indexOf("?"))
 		else url = getCurrentUrl(request);
 
-		Dataset graphs =  annotationIntegratedStorageService.retrieveAnnotationSet(apiKey, url);
-		if(graphs!=null && graphs.listNames().hasNext()) {
-			Set<Model> toAdd = new HashSet<Model>();
-			Set<Statement> statsToAdd = new HashSet<Statement>();
-			Set<Statement> toRemove = new HashSet<Statement>();
-			Model setModel = graphs.getNamedModel(graphs.listNames().next());
-			StmtIterator  iter = setModel.listStatements(null, ResourceFactory.createProperty(AnnotopiaVocabulary.ANNOTATIONS), null);
-			while(iter.hasNext()) {
-				Statement s = iter.next();
-				toRemove.add(s);
-				Dataset ds = jenaVirtuosoStoreService.retrieveGraph(apiKey, s.getObject().asResource().getURI());
-				if(ds!=null && ds.listNames().hasNext()) {
-					Model annotationModel = ds.getNamedModel(ds.listNames().next());
-					StmtIterator  iter2 = annotationModel.listStatements(null, ResourceFactory.createProperty(RDF.RDF_TYPE), ResourceFactory.createResource(OA.ANNOTATION));
-					if(iter2.hasNext()) {
-						toAdd.add(annotationModel);
-						//setModel.add(annotationModel);
-						statsToAdd.add(ResourceFactory.createStatement(s.getSubject(), ResourceFactory.createProperty(AnnotopiaVocabulary.ANNOTATIONS), iter2.next().getSubject()));
-					}
-				}
-			}
-			toRemove.each {
-				setModel.remove(it);
-			}
-			statsToAdd.each {
-				setModel.add(it);
-			}
-			toAdd.each {
-				setModel.add(it);
-			}
-		}
-
-		Object contextJson = null;
-		if(graphs!=null && graphs.listNames().hasNext()) {
-
-			Model setModel = graphs.getNamedModel(graphs.listNames().next());
-
-			if(outCmd=='none') {
-				if(incGph=='false') {
-					Model m = graphs.getNamedModel(graphs.listNames().next());
-					RDFDataMgr.write(response.outputStream, m, RDFLanguages.JSONLD);
-				} else {
-					RDFDataMgr.write(response.outputStream, graphs, RDFLanguages.JSONLD);
-				}
-			} else {
-				if(contextJson==null) {
-					if(outCmd=='context') {
-						contextJson = JsonUtils.fromInputStream(callExternalUrl(apiKey, configAccessService.getAsString("annotopia.jsonld.annotopia.context")));
-					} else if(outCmd=='frame') {
-						contextJson = JsonUtils.fromInputStream(callExternalUrl(apiKey, configAccessService.getAsString("annotopia.jsonld.annotopia.framing")));
-					}
-				}
-
-				ByteArrayOutputStream baos = new ByteArrayOutputStream();
-				if(incGph=='false') {
-					Model m = graphs.getNamedModel(graphs.listNames().next());
-					RDFDataMgr.write(baos, m.getGraph(), RDFLanguages.JSONLD);
-				} else {
-					RDFDataMgr.write(baos, graphs, RDFLanguages.JSONLD);
-				}
-
-				if(outCmd=='context') {
-					Object compact = JsonLdProcessor.compact(JsonUtils.fromString(baos.toString()), contextJson,  new JsonLdOptions());
-					response.outputStream << JsonUtils.toPrettyString(compact)
-				}  else if(outCmd=='frame') {
-					Object framed =  JsonLdProcessor.frame(JsonUtils.fromString(baos.toString().replace('"@id" : "urn:x-arq:DefaultGraphNode",','')),contextJson, new JsonLdOptions());
-					response.outputStream << JsonUtils.toPrettyString(framed)
-				}
-			}
-			response.outputStream.flush()
+		Dataset annotationSet =  annotationIntegratedStorageService.retrieveAnnotationSet(apiKey, url);
+		if(annotationSet!=null && annotationSet.listNames().hasNext()) {
+			openAnnotationSetsUtilsService.renderAnnotationSet(apiKey, annotationSet, response, 200)
 		} else {
 			// Annotation Set not found
 			def message = 'Annotation set ' + getCurrentUrl(request) + ' has not been found';
