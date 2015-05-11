@@ -105,7 +105,7 @@ class AnnotationIntegratedController extends BaseController {
 		log.info("API key [" + apiKey + "]")
 
 		// Response format parametrization and constraints
-		outCmd = (request.JSON.outCmd!=null)?request.JSON.outCmd:OUTCMD_NONE;
+		outCmd = (request.JSON.outCmd!=null)?request.JSON.outCmd:OUTCMD_FRAME;
 		if(params.outCmd!=null) outCmd = params.outCmd;
 
 		incGph = (request.JSON.incGph!=null)?request.JSON.incGph:INCGPH_NO;
