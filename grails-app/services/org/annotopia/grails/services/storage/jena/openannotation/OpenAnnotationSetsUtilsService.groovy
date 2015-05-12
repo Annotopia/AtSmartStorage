@@ -188,22 +188,9 @@ class OpenAnnotationSetsUtilsService {
 
 		def annGraphUris = [];
 		Dataset annotationGraphs = DatasetFactory.createMem();
-		if(framed.get("@graph").getAt(0).getAt("annotations") instanceof java.util.ArrayList) {
-			for(int i=0; i<framed.get("@graph").getAt(0).getAt("annotations").size(); i++) {
-				println 'annotation ' + i + " - "
-				def annotation = framed.get("@graph").getAt(0).getAt("annotations").get(i);
-				annotation.put("@context", configAccessService.getAsString("annotopia.jsonld.annotopia.context"));
 
-				String graphUri = mintGraphUri();
-				annGraphUris.add(graphUri);
-				Model model = ModelFactory.createDefaultModel();
-
-				RDFDataMgr.read(model, new ByteArrayInputStream(JsonUtils.toString(annotation).getBytes("UTF-8")), RDFLanguages.JSONLD);
-				annotationGraphs.addNamedModel(graphUri, model);
-				framed.get("@graph").getAt(0).getAt("annotations").get(i).clear();
-			}
-		} else {
-			def annotation = framed.get("@graph").getAt(0).getAt("annotations");
+		// Closure for making an annotation
+		def makeAnnotation = { annotation ->
 			annotation.put("@context", configAccessService.getAsString("annotopia.jsonld.annotopia.context"));
 
 			String graphUri = mintGraphUri();
@@ -212,10 +199,19 @@ class OpenAnnotationSetsUtilsService {
 
 			RDFDataMgr.read(model, new ByteArrayInputStream(JsonUtils.toString(annotation).getBytes("UTF-8")), RDFLanguages.JSONLD);
 			annotationGraphs.addNamedModel(graphUri, model);
-			framed.get("@graph").getAt(0).remove("annotations");
-			framed.get("@graph").getAt(0).put("annotations", new ArrayList())
 		}
 
+		if(framed.get("@graph").getAt(0).getAt("annotations") instanceof java.util.ArrayList) {
+			for(int i=0; i<framed.get("@graph").getAt(0).getAt("annotations").size(); i++) {
+				println 'annotation ' + i + " - "
+				makeAnnotation(framed.get("@graph").getAt(0).getAt("annotations").get(i));
+			}
+		} else { // I tihnk this will never be called, annotations should always be an array
+			makeAnnotation(framed.get("@graph").getAt(0).getAt("annotations"));
+			framed.get("@graph").getAt(0).remove("annotations");
+		}
+
+		framed.get("@graph").getAt(0).put("annotations", new ArrayList())
 		annGraphUris.each { annGraphUri ->
 			framed.get("@graph").getAt(0).getAt("annotations").add(annGraphUri)
 		}
@@ -325,12 +321,14 @@ class OpenAnnotationSetsUtilsService {
 		// Get annotation graphs and merge into set
 		annotationSetModel.listStatements(null, ResourceFactory.createProperty(AnnotopiaVocabulary.ANNOTATIONS), null).each { statement ->
 			def annGraphURI = statement.getObject().asResource().getURI()
-			Dataset ds = jenaVirtuosoStoreService.retrieveGraph(apiKey, annGraphURI)
-			Model annotationModel = ds.getNamedModel(ds.listNames().next())
-			annotationModel.listStatements(null, ResourceFactory.createProperty(RDF.RDF_TYPE), ResourceFactory.createResource(OA.ANNOTATION)).each { annStatement ->
-				annotationURIs.push(annStatement.getSubject())
+			if(annGraphURI != null) {
+				Dataset ds = jenaVirtuosoStoreService.retrieveGraph(apiKey, annGraphURI)
+				Model annotationModel = ds.getNamedModel(ds.listNames().next())
+				annotationModel.listStatements(null, ResourceFactory.createProperty(RDF.RDF_TYPE), ResourceFactory.createResource(OA.ANNOTATION)).each { annStatement ->
+					annotationURIs.push(annStatement.getSubject())
+				}
+				defaultModel.add(annotationModel)
 			}
-			defaultModel.add(annotationModel)
 		}
 
 		// Need to replace annotation graph URI with annotation URI so framing works later on...

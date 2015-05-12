@@ -124,7 +124,7 @@ class AnnotationIntegratedController extends BaseController {
 			// Figure out the URL of the annotation set
 			annotationSetURI = null
 			// Strip off the params to get the URL as it would appear as a named graph in the triplestore
-			Matcher matcher = getCurrentUrl(request) =~ /(.*\/s\/annotationset\/[^\/]*).*/
+			Matcher matcher = getCurrentUrl(request) =~ /(.*\/s\/annotationset\/[-a-zA-Z0-9]*).*/
 			if(matcher.matches())
 				annotationSetURI = matcher.group(1)
 
@@ -279,19 +279,7 @@ class AnnotationIntegratedController extends BaseController {
 	 * http://www.openannotation.org/spec/core/
 	 */
 	def show = {
-		String url = null;
-		if(getCurrentUrl(request).indexOf("?")>0) url = getCurrentUrl(request).substring(0, getCurrentUrl(request).indexOf("?"))
-		else url = getCurrentUrl(request);
-
-		Dataset annotationSet =  annotationIntegratedStorageService.retrieveAnnotationSet(apiKey, url);
-		if(annotationSet!=null && annotationSet.listNames().hasNext()) {
-			openAnnotationSetsUtilsService.renderAnnotationSet(apiKey, annotationSet, response, 200)
-		} else {
-			// Annotation Set not found
-			def message = 'Annotation set ' + getCurrentUrl(request) + ' has not been found';
-			render(status: 404, text: returnMessage(apiKey, "notfound", message, startTime), contentType: "text/json", encoding: "UTF-8");
-			return;
-		}
+		openAnnotationSetsUtilsService.renderAnnotationSet(apiKey, annotationSet, response, 200)
 	}
 
 	/*
@@ -325,7 +313,14 @@ class AnnotationIntegratedController extends BaseController {
 			}
 
 			if(savedAnnotationSet!=null) {
-				openAnnotationSetsUtilsService.renderSavedNamedGraphsDataset(apiKey, startTime, outCmd, 'saved', response, savedAnnotationSet);
+				// Refetch the annotation set so it's in a form that is compatible with the renderer
+				def savedAnnotationSetModel = savedAnnotationSet.getNamedModel(savedAnnotationSet.listNames().next())
+				def setURI = savedAnnotationSetModel.listStatements(null,
+					ResourceFactory.createProperty(RDF.RDF_TYPE),
+					ResourceFactory.createResource(AnnotopiaVocabulary.ANNOTATION_SET)).next().getSubject().toString()
+				savedAnnotationSet = annotationIntegratedStorageService.retrieveAnnotationSet(apiKey, setURI)
+
+				openAnnotationSetsUtilsService.renderAnnotationSet(apiKey, savedAnnotationSet, response, 201)
 			} else {
 				// Dataset returned null
 				def message = "Null Annotation Set Dataset. Something went terribly wrong";
