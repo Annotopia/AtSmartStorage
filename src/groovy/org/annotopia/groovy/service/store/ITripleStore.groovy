@@ -137,6 +137,14 @@ interface ITripleStore {
 	public boolean dropGraph(String apiKey, String graphUri);
 
 	/**
+	 * Clears the graph identified by the given URI
+	 * @param apiKey	The API key of the system requesting the transaction
+	 * @param graphUri	The URI identifying the graph to drop
+	 * @return True if the graph has been dropped
+	 */
+	public boolean clearGraph(String apiKey, String graphUri);
+
+	/**
 	 * Remove all triples with the given object URI.
 	 * @param apiKey	The API key of the system requesting the transaction
 	 * @param objectUri	The URI identifying the object
