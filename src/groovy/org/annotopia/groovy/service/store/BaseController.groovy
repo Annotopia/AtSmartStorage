@@ -34,16 +34,16 @@ import com.hp.hpl.jena.rdf.model.Model
 
 /**
  * Basic methods for storage controllers.
- * 
+ *
  * Note: the references to grailsApplication and log work because of inheritance with the actual controller.
- * 
+ *
  * @author Paolo Ciccarese <paolo.ciccarese@gmail.com>
  */
 class BaseController {
 
 	// Date format for all Open Annotation date content
 	SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssz")
-	
+
 	/**
 	 * Logging and message for invalid API key.
 	 * @param ip	Ip of the client that issued the request
@@ -54,25 +54,25 @@ class BaseController {
 		response.setHeader('WWW-Authenticate', 'annotopia-api-key');
 		render(status: 401, text: json, contentType: "text/json", encoding: "UTF-8");
 	}
-	
+
 	/**
 	 * Returns the current URL.
 	 * @param request 	The HTTP request
 	 * @return	The current URL
 	 */
 	public String getCurrentUrl(HttpServletRequest request){
-		StringBuilder sb = new StringBuilder()
-		int fromIndex = 7;
-		if(configAccessService.getAsString("grails.server.protocol").equals("https")) {fromIndex = 8;}
-		sb << request.getRequestURL().substring(0,request.getRequestURL().indexOf("/", fromIndex))
-		sb << request.getAttribute("javax.servlet.forward.request_uri")
-		if(request.getAttribute("javax.servlet.forward.query_string")){
-			sb << "?"
-			sb << request.getAttribute("javax.servlet.forward.query_string")
+		def url = configAccessService.getAsString("grails.server.protocol") + "://" +
+				configAccessService.getAsString("grails.server.host") + ":" +
+				configAccessService.getAsString("grails.server.port") +
+				request.forwardURI; // The path
+		if(request.getAttribute("javax.servlet.forward.query_string")){ // The query
+			url += "?"
+			url += request.getAttribute("javax.servlet.forward.query_string")
 		}
-		return sb.toString();
+
+		return url;
 	}
-	
+
 	/**
 	 * Method for calling external URLs with or without proxy.
 	 * @param agentKey 	The agent key for logging
@@ -87,7 +87,7 @@ class BaseController {
 			SocketAddress addr = new InetSocketAddress(proxyHost, proxyPort);
 			httpProxy = new Proxy(Proxy.Type.HTTP, addr);
 		}
-		
+
 		if(httpProxy!=null) {
 			long startTime = System.currentTimeMillis();
 			logInfo(agentKey, "Proxy request: " + URL);
@@ -101,7 +101,7 @@ class BaseController {
 			return new URL(URL).openStream();
 		}
 	}
-	
+
 	/**
 	 * Creates a JSON message for the response.
 	 * @param apiKey	The API key of the client that issued the request
@@ -113,33 +113,33 @@ class BaseController {
 	public returnMessage(def apiKey, def status, def message, def startTime) {
 		log.info("[" + apiKey + "] " + message);
 		return JSON.parse('{"status":"' + status + '","message":"' + message +
-			'","duration": "' + (System.currentTimeMillis()-startTime) + 'ms", ' + '}');
+				'","duration": "' + (System.currentTimeMillis()-startTime) + 'ms", ' + '}');
 	}
-	
+
 	public String getDatasetAsString(DataSet dataset) {
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 		RDFDataMgr.write(outputStream, dataset, RDFLanguages.JSONLD);
 		return outputStream.toString();
 	}
-	
+
 	public String getDatasetAsString(Model model) {
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 		RDFDataMgr.write(outputStream, model, RDFLanguages.JSONLD);
 		return outputStream.toString();
 	}
-	
+
 	private def logInfo(def userId, message) {
 		log.info(":" + userId + ": " + message);
 	}
-	
+
 	private def logDebug(def userId, message) {
 		log.debug(":" + userId + ": " + message);
 	}
-	
+
 	private def logWarning(def userId, message) {
 		log.warn(":" + userId + ": " + message);
 	}
-	
+
 	private def logException(def userId, message) {
 		log.error(":" + userId + ": " + message);
 	}
