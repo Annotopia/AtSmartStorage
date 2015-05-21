@@ -547,7 +547,7 @@ class OpenAnnotationController extends BaseController {
 				jenaVirtuosoStoreService.removeAllTriplesWithObject(apiKey, it);
 			}
 			def message = "Annotation deleted";
-			render(status: 410, text: returnMessage(apiKey, "deleted", message, startTime), contentType: "text/json", encoding: "UTF-8");
+			render(status: 200, text: returnMessage(apiKey, "deleted", message, startTime), contentType: "text/json", encoding: "UTF-8");
 		}  else {
 			// Annotation not found (but that's OK)
 			def message = "Annotation not found";
