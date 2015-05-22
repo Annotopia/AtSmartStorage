@@ -39,6 +39,10 @@ import com.github.jsonldjava.core.JsonLdProcessor
 import com.github.jsonldjava.utils.JsonUtils
 import com.hp.hpl.jena.query.Dataset
 import com.hp.hpl.jena.query.DatasetFactory
+import com.hp.hpl.jena.query.ResultSet
+import virtuoso.jena.driver.VirtGraph
+import virtuoso.jena.driver.VirtuosoQueryExecution
+import virtuoso.jena.driver.VirtuosoQueryExecutionFactory
 import com.hp.hpl.jena.rdf.model.Model
 import com.hp.hpl.jena.rdf.model.ModelFactory
 import com.hp.hpl.jena.rdf.model.Resource
@@ -279,6 +283,41 @@ class AnnotationIntegratedController extends BaseController {
 	 * http://www.openannotation.org/spec/core/
 	 */
 	def show = {
+		// Filtering within sets
+		if(params.tgtUrl!=null) {
+			// Get the names of the annotation graphs that contain
+			//  annotations with targets that match the filter!
+			StringBuffer queryBuffer = new StringBuffer()
+			queryBuffer << "PREFIX oa:<http://www.w3.org/ns/oa#>\n" +
+					"SELECT DISTINCT ?annotation_graph WHERE { graph ?g {" +
+					"<"+annotationSetURI+"> <http://purl.org/annotopia#annotations> ?annotation_graph ." +
+					"graph ?annotation_graph {" +
+					"?s a <http://www.w3.org/ns/oa#Annotation> ."
+			openAnnotationVirtuosoService.getTargetFilter(queryBuffer, [params.tgtUrl], "true")
+			queryBuffer << "}}}"
+
+			// Remove all annotations references for now
+			def model = annotationSet.getNamedModel(annotationSet.listNames().next())
+			model.removeAll(ResourceFactory.createResource(annotationSetURI),
+					ResourceFactory.createProperty(AnnotopiaVocabulary.ANNOTATIONS),
+					null)
+			// Do the filter query
+			def graph = new VirtGraph (
+					configAccessService.getAsString("annotopia.storage.triplestore.host"),
+					configAccessService.getAsString("annotopia.storage.triplestore.user"),
+					configAccessService.getAsString("annotopia.storage.triplestore.pass"))
+
+			VirtuosoQueryExecution vqe = VirtuosoQueryExecutionFactory.create(QueryFactory.create(queryBuffer.toString()), graph);
+			ResultSet filterMatches = vqe.execSelect();
+			while (filterMatches.hasNext()) {
+				// Re-add the annotations that matched the query
+				Resource annGraphUri = filterMatches.nextSolution().getResource("annotation_graph")
+				model.add(ResourceFactory.createResource(annotationSetURI),
+						ResourceFactory.createProperty(AnnotopiaVocabulary.ANNOTATIONS),
+						annGraphUri)
+			}
+		}
+
 		openAnnotationSetsUtilsService.renderAnnotationSet(apiKey, annotationSet, response, 200)
 	}
 
@@ -316,8 +355,8 @@ class AnnotationIntegratedController extends BaseController {
 				// Refetch the annotation set so it's in a form that is compatible with the renderer
 				def savedAnnotationSetModel = savedAnnotationSet.getNamedModel(savedAnnotationSet.listNames().next())
 				def setURI = savedAnnotationSetModel.listStatements(null,
-					ResourceFactory.createProperty(RDF.RDF_TYPE),
-					ResourceFactory.createResource(AnnotopiaVocabulary.ANNOTATION_SET)).next().getSubject().toString()
+						ResourceFactory.createProperty(RDF.RDF_TYPE),
+						ResourceFactory.createResource(AnnotopiaVocabulary.ANNOTATION_SET)).next().getSubject().toString()
 				savedAnnotationSet = annotationIntegratedStorageService.retrieveAnnotationSet(apiKey, setURI)
 
 				openAnnotationSetsUtilsService.renderAnnotationSet(apiKey, savedAnnotationSet, response, 201)
