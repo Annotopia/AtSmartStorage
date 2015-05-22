@@ -1,6 +1,7 @@
 {
   "@context": {
-   	"at": "http://purl.org/annotopia#",
+   		"at": "http://purl.org/annotopia#",
+   		"pav": "http://purl.org/pav/",
         "oa": "http://www.w3.org/ns/oa#",
 	    "lit" :    "http://www.example.org/lit-annotation-ns#",
 	    "cnt" :    "http://www.w3.org/2011/content#",
@@ -55,6 +56,9 @@
 	    "name" :         "foaf:name",
 	    "mbox" :         "foaf:mbox",
 	    "styleClass" :   "oa:styleClass"
+	    "lastUpdateOn" :    "pav:lastUpdateOn",
+	    "version"    :      "pav:version",
+	    "previousVersion" : "pav:previousVersion",
   },
   "@type": "oa:Annotation",
   "hasBody": {

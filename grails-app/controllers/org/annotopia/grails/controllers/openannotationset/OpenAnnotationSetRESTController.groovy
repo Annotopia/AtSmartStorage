@@ -111,6 +111,6 @@ class OpenAnnotationSetRESTController extends BaseController {
 
 		// Render the set
 		// TODO: Maybe just render the created annotation?
-		openAnnotationSetsUtilsService.renderAnnotationSet(apiKey, annotationSet, response, 201)
+		openAnnotationUtilsService.renderAnnotation(apiKey, storedAnnotation, response, 201)
 	}
 }

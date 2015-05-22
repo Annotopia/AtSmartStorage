@@ -20,6 +20,8 @@
  */
 package org.annotopia.grails.services.storage.jena.openannotation
 
+import java.io.InputStream;
+
 import org.annotopia.grails.vocabularies.Bibliographic
 
 import com.hp.hpl.jena.query.Dataset
@@ -30,6 +32,13 @@ import com.hp.hpl.jena.query.QuerySolution
 import com.hp.hpl.jena.query.ResultSet
 import com.hp.hpl.jena.rdf.model.RDFNode
 import com.hp.hpl.jena.rdf.model.Resource
+import com.github.jsonldjava.core.JsonLdOptions
+import com.github.jsonldjava.core.JsonLdProcessor
+import com.github.jsonldjava.utils.JsonUtils
+
+import org.codehaus.groovy.grails.web.json.JSONObject
+import org.apache.jena.riot.RDFDataMgr
+import org.apache.jena.riot.RDFLanguages
 
 /**
  * This service provides some utilities for analyzing Open Annotation content
@@ -38,7 +47,10 @@ import com.hp.hpl.jena.rdf.model.Resource
  * @author Paolo Ciccarese <paolo.ciccarese@gmail.com>
  */
 class OpenAnnotationUtilsService {
-	
+
+	def configAccessService
+	def grailsApplication
+
 	/**
 	 * Verifies if there are Annotation items in the default graph and returns the total number.
 	 * @param apiKey			The API key of the client that issued the request
@@ -49,28 +61,28 @@ class OpenAnnotationUtilsService {
 	 */
 	public int detectAnnotationsInDefaultGraph(apiKey, Dataset dataset, Set<Resource> annotationUris, Closure closure) {
 		log.info("[" + apiKey + "] Detection of Annotation in Default Graph...");
-		
+
 		String QUERY = "PREFIX oa: <http://www.w3.org/ns/oa#> SELECT DISTINCT ?s WHERE { ?s a oa:Annotation . }"
 		log.trace("[" + apiKey + "] Query: " + QUERY);
-		
-		int annotationsInDefaultGraphsCounter = 0;	
+
+		int annotationsInDefaultGraphsCounter = 0;
 		QueryExecution queryExecution  = QueryExecutionFactory.create (QueryFactory.create(QUERY), dataset);
 		ResultSet rAnnotationsInDefaultGraph = queryExecution.execSelect();
 		while (rAnnotationsInDefaultGraph.hasNext()) {
 			Resource annUri = rAnnotationsInDefaultGraph.nextSolution().getResource("s");
 			annotationsInDefaultGraphsCounter++;
 			annotationUris.add(annUri);
-			
+
 			// Alters the triples with the Annotation as subject
 			if(closure!=null)  closure(dataset.getDefaultModel(), annUri);
 		}
-		
+
 		if(annotationsInDefaultGraphsCounter>0) log.info("[" + apiKey + "] Annotation in Default Graph detected " +
 			annotationsInDefaultGraphsCounter);
 		else log.info("[" + apiKey + "] No Annotation in Default Graph detected");
 		annotationsInDefaultGraphsCounter
 	}
-	
+
 	/**
 	 * Detects all the named graphs containing an Annotation instance.
 	 * @param apiKey				The API key of the client that issued the request
@@ -81,26 +93,26 @@ class OpenAnnotationUtilsService {
 	 * @param closure				This closure is executed after the query.
 	 * @return The total number of detected Annotations in Named Graphs
 	 */
-	public int detectAnnotationsInNamedGraph(apiKey, Dataset dataset, Set<Resource> graphsUris, 
+	public int detectAnnotationsInNamedGraph(apiKey, Dataset dataset, Set<Resource> graphsUris,
 			Set<Resource> annotationsGraphsUris, Set<Resource> annotationUris, Closure closure) {
 		log.info("[" + apiKey + "] Detection of Annotation in Named Graphs...");
-		
+
 		String QUERY = "PREFIX oa: <http://www.w3.org/ns/oa#> SELECT ?s ?g WHERE { GRAPH ?g { ?s a oa:Annotation . }}";
 		log.trace("[" + apiKey + "] Query: " + QUERY);
-		
+
 		int annotationGraphsCounter = 0;
 		QueryExecution qAnnotationGraphs = QueryExecutionFactory.create (QueryFactory.create(QUERY), dataset);
 		ResultSet rAnnotationGraphs = qAnnotationGraphs.execSelect();
 		while (rAnnotationGraphs.hasNext()) {
 			QuerySolution querySolution = rAnnotationGraphs.nextSolution();
-			
+
 			Resource graphUri = querySolution.getResource("g");
 			annotationsGraphsUris.add(graphUri);
 			graphsUris.remove(graphUri);
-			
+
 			Resource annUri = querySolution.getResource("s");
 			annotationUris.add(annUri);
-			
+
 			// Add saving data
 			if(closure!=null)   closure(dataset.getNamedModel(graphUri.toString()), annUri);
 
@@ -109,15 +121,15 @@ class OpenAnnotationUtilsService {
 		log.info("[" + apiKey + "] Annotation graphs " + annotationGraphsCounter);
 		annotationGraphsCounter
 	}
-			
+
 	public int detectAnnotationTarget(apiKey, Dataset dataset) {
 		log.info("[" + apiKey + "] Annotation target detection...");
-		
+
 		String QUERY = "PREFIX oa: <http://www.w3.org/ns/oa#> SELECT DISTINCT ?s WHERE " +
 			"{{ { ?s oa:hasTarget ?o . }} UNION " +
 			"{{ GRAPH ?g { ?s oa:hasTarget ?o . }}}}";
 		log.trace("[" + apiKey + "] Query: " + QUERY);
-		
+
 		int specificResourcesGraphsCounter = 0;
 		QueryExecution qSpecificResources  = QueryExecutionFactory.create (QueryFactory.create(QUERY), dataset);
 		ResultSet rSpecificResources = qSpecificResources.execSelect();
@@ -128,15 +140,15 @@ class OpenAnnotationUtilsService {
 		log.info("[" + apiKey + "] Identifiable Annotation targets " + specificResourcesGraphsCounter);
 		specificResourcesGraphsCounter
 	}
-	
+
 	public int detectAnnotatorInfo(apiKey, Dataset dataset) {
 		log.info("[" + apiKey + "] Annotator info detection...");
-		
+
 		String QUERY = "PREFIX oa: <http://www.w3.org/ns/oa#> PREFIX foaf: <http://xmlns.com/foaf/0.1/> SELECT DISTINCT ?s WHERE " +
 			"{{ { ?s oa:annotatedBy ?o . ?o a foaf:Person . }} UNION " +
 			"{{ GRAPH ?g { ?s oa:annotatedBy ?o . ?o a foaf:Person .}}}}";
 		log.trace("[" + apiKey + "] Query: " + QUERY);
-		
+
 		int annotatorCounter = 0;
 		QueryExecution qSpecificResources  = QueryExecutionFactory.create (QueryFactory.create(QUERY), dataset);
 		ResultSet rSpecificResources = qSpecificResources.execSelect();
@@ -147,7 +159,7 @@ class OpenAnnotationUtilsService {
 		log.info("[" + apiKey + "] Identifiable Annotator info " + annotatorCounter);
 		annotatorCounter
 	}
-			
+
 	/**
 	 * Detects all the Specific Resources that are defined in Named Graphs.
 	 * @param apiKey				The API key of the client that issued the request
@@ -157,11 +169,11 @@ class OpenAnnotationUtilsService {
 	 */
 	public int detectSpecificResourcesAsNamedGraphs(apiKey, Dataset dataset, Set<Resource> specificResourcesUris) {
 		log.info("[" + apiKey + "] Specific Resources in Named Graphs detection...");
-		
+
 		String QUERY = "PREFIX oa: <http://www.w3.org/ns/oa#> SELECT DISTINCT ?s WHERE " +
 			"{{ GRAPH ?g { ?s a oa:SpecificResource . }}}";
 		log.trace("[" + apiKey + "] Query: " + QUERY);
-		
+
 		int specificResourcesGraphsCounter = 0;
 		QueryExecution qSpecificResources  = QueryExecutionFactory.create (QueryFactory.create(QUERY), dataset);
 		ResultSet rSpecificResources = qSpecificResources.execSelect();
@@ -173,12 +185,12 @@ class OpenAnnotationUtilsService {
 		log.info("[" + apiKey + "] Identifiable Specific Resources as Named Graphs " + specificResourcesGraphsCounter);
 		specificResourcesGraphsCounter
 	}
-	
+
 	public int detectContextAsTextInDefaultGraph(apiKey, Dataset dataset, Set<Resource> embeddedTextualBodiesUris) {
 		log.info("[" + apiKey + "] Identifiable Content as Text detection in default graph...");
 		String QUERY = "PREFIX cnt:<http://www.w3.org/2011/content#> SELECT DISTINCT ?s WHERE " +
 			"{{ { ?s a cnt:ContentAsText . }} }"
-		
+
 		int embeddedTextualBodiesCounter = 0;
 		QueryExecution qEmbeddedTextualBodies  = QueryExecutionFactory.create (QueryFactory.create(QUERY), dataset);
 		ResultSet rEmbeddedTextualBodies = qEmbeddedTextualBodies.execSelect();
@@ -190,7 +202,7 @@ class OpenAnnotationUtilsService {
 		log.info("[" + apiKey + "] Identifiable Content as Text " + embeddedTextualBodiesCounter);
 		embeddedTextualBodiesCounter
 	}
-	
+
 	/**
 	 * Detects all the Content As Text instances defined in Named Graphs
 	 * @param apiKey					The API key of the client that issued the request
@@ -202,7 +214,7 @@ class OpenAnnotationUtilsService {
 		log.info("[" + apiKey + "] Identifiable Content as Text detection...");
 		String QUERY = "PREFIX cnt:<http://www.w3.org/2011/content#> SELECT DISTINCT ?s WHERE " +
 			"{{ GRAPH ?g { ?s a cnt:ContentAsText . }} }"
-		
+
 		int embeddedTextualBodiesCounter = 0;
 		QueryExecution qEmbeddedTextualBodies  = QueryExecutionFactory.create (QueryFactory.create(QUERY), dataset);
 		ResultSet rEmbeddedTextualBodies = qEmbeddedTextualBodies.execSelect();
@@ -214,12 +226,12 @@ class OpenAnnotationUtilsService {
 		log.info("[" + apiKey + "] Identifiable Content as Text " + embeddedTextualBodiesCounter);
 		embeddedTextualBodiesCounter
 	}
-	
+
 	public int detectBodiesAsNamedGraphs(apiKey, Dataset dataset, Set<Resource> bodiesGraphsUris) {
 		log.info("[" + apiKey + "] Bodies in Named Graphs detection...");
 		String QUERY = "PREFIX oa: <http://www.w3.org/ns/oa#> SELECT DISTINCT ?s ?graph WHERE " +
 			"{GRAPH ?g { ?s oa:hasBody ?graph .} GRAPH ?graph {?a ?b ?c .}}"
-		
+
 		int bodiesGraphsCounter = 0;
 		QueryExecution gBodiesAsGraphs  = QueryExecutionFactory.create (QueryFactory.create(QUERY), dataset);
 		ResultSet rBodiesAsGraphs = gBodiesAsGraphs.execSelect();
@@ -231,23 +243,23 @@ class OpenAnnotationUtilsService {
 		log.info("[" + apiKey + "] Identifiable Bodies as Named Graphs " + bodiesGraphsCounter);
 		bodiesGraphsCounter
 	}
-	
+
 	public Map<String,String> detectTargetIdentifiersInDefaultGraph(apiKey, Dataset dataset, Map<String,String> identifiers) {
 		log.info("[" + apiKey + "] Target identifiers detection...");
 		String QUERY = "PREFIX frbr: <http://purl.org/vocab/frbr/core#> " +
 			"PREFIX prism: <http://prismstandard.org/namespaces/basic/2.0/> " +
 			"PREFIX oa: <http://www.w3.org/ns/oa#> " +
 			"PREFIX fabio:<http://purl.org/spar/fabio#> " +
-			"PREFIX dct:<http://purl.org/dc/terms/>" + 
+			"PREFIX dct:<http://purl.org/dc/terms/>" +
 			"SELECT DISTINCT ?doi ?pmid ?pmcid ?pii ?target ?title WHERE { " +
 			"{{ ?ann oa:hasTarget ?target . ?target frbr:embodimentOf ?s. OPTIONAL { ?s dct:title ?title .} OPTIONAL { ?s prism:doi ?doi .} OPTIONAL {?s fabio:hasPubMedId ?pmid .} OPTIONAL { ?s fabio:hasPII ?pii .} OPTIONAL { ?s fabio:hasPubMedCentralId ?pmcid . }} " +
 			"UNION { ?ann oa:hasTarget ?spt. ?spt oa:hasSource ?target. ?target frbr:embodimentOf ?s. OPTIONAL {?s prism:doi ?doi .} OPTIONAL { ?s dct:title ?title .} OPTIONAL {?s fabio:hasPubMedId ?pmid .} OPTIONAL {?s fabio:hasPII ?pii .} OPTIONAL {?s fabio:hasPubMedCentralId ?pmcid .} }}}"
-			
+
 		QueryExecution gIdentifiers  = QueryExecutionFactory.create (QueryFactory.create(QUERY), dataset.getDefaultModel());
 		ResultSet rIdentifiers = gIdentifiers.execSelect();
 		while (rIdentifiers.hasNext()) {
 			QuerySolution querySolution = rIdentifiers.nextSolution();
-	
+
 			RDFNode url = querySolution.get("target");
 			if(url!=null) {
 				identifiers.put(Bibliographic.LABEL_URL, url.toString());
@@ -263,45 +275,103 @@ class OpenAnnotationUtilsService {
 
 				RDFNode pii = querySolution.get(Bibliographic.LABEL_PII);
 				if(pii!=null) identifiers.put(Bibliographic.LABEL_PII, pii.toString());
-				
+
 				RDFNode title =  querySolution.get(Bibliographic.LABEL_TITLE);
 				if(title!=null) identifiers.put(Bibliographic.LABEL_TITLE, title.toString());
 			}
 		}
 	}
-	
+
 	public Map<String,String> detectTargetIdentifiers(apiKey, Dataset dataset, Map<String,String> identifiers) {
 		log.info("[" + apiKey + "] Target identifiers detection...");
-		String QUERY = "PREFIX frbr: <http://purl.org/vocab/frbr/core#> " + 
-			"PREFIX prism: <http://prismstandard.org/namespaces/basic/2.0/> " + 
-			"PREFIX oa: <http://www.w3.org/ns/oa#> " + 
-			"PREFIX fabio:<http://purl.org/spar/fabio#> " + 
+		String QUERY = "PREFIX frbr: <http://purl.org/vocab/frbr/core#> " +
+			"PREFIX prism: <http://prismstandard.org/namespaces/basic/2.0/> " +
+			"PREFIX oa: <http://www.w3.org/ns/oa#> " +
+			"PREFIX fabio:<http://purl.org/spar/fabio#> " +
 			"PREFIX dct:<http://purl.org/dc/terms/>" +
-			"SELECT DISTINCT ?doi ?pmid ?pmcid ?pii ?target WHERE {GRAPH ?g " + 
-			"{{ ?ann oa:hasTarget ?target . ?target frbr:embodimentOf ?s. ?s prism:doi ?doi . ?s fabio:hasPubMedId ?pmid . ?s fabio:hasPII ?pii . ?s fabio:hasPubMedCentralId ?pmcid . } " + 
+			"SELECT DISTINCT ?doi ?pmid ?pmcid ?pii ?target WHERE {GRAPH ?g " +
+			"{{ ?ann oa:hasTarget ?target . ?target frbr:embodimentOf ?s. ?s prism:doi ?doi . ?s fabio:hasPubMedId ?pmid . ?s fabio:hasPII ?pii . ?s fabio:hasPubMedCentralId ?pmcid . } " +
 			"UNION { ?ann oa:hasTarget ?spt. ?spt oa:hasSource ?target. ?target frbr:embodimentOf ?s. ?s prism:doi ?doi . ?s fabio:hasPubMedId ?pmid . ?s fabio:hasPII ?pii . ?s fabio:hasPubMedCentralId ?pmcid . }}}"
 
 		QueryExecution gIdentifiers  = QueryExecutionFactory.create (QueryFactory.create(QUERY), dataset);
 		ResultSet rIdentifiers = gIdentifiers.execSelect();
 		while (rIdentifiers.hasNext()) {
 			QuerySolution querySolution = rIdentifiers.nextSolution();
-	
+
 			RDFNode url = querySolution.get("target");
 			if(url!=null) {
 				identifiers.put("url", url.toString());
-			
+
 				RDFNode doi = querySolution.get(Bibliographic.LABEL_DOI);
 				if(doi!=null) identifiers.put(Bibliographic.LABEL_DOI, doi.toString());
-				
+
 				RDFNode pmid = querySolution.get(Bibliographic.LABEL_PMID);
 				if(pmid!=null) identifiers.put(Bibliographic.LABEL_PMID, pmid.toString());
-				
+
 				RDFNode pmcid = querySolution.get(Bibliographic.LABEL_PMCID);
 				if(pmcid!=null) identifiers.put(Bibliographic.LABEL_PMCID, pmcid.toString());
-				
+
 				RDFNode pii = querySolution.get(Bibliographic.LABEL_PII);
 				if(pii!=null) identifiers.put(Bibliographic.LABEL_PII, pii.toString());
 			}
+		}
+	}
+
+	/**
+	 * Render a JSON-LD representation of the annotation
+	 * @param apiKey			The API key of the client issuing the request
+	 * @param annotation		A Dataset object containing the annotation's graph
+	 * @param response			The Grails response object
+	 * @param status			The HTTP status code
+	 */
+	def renderAnnotation(def apiKey, def annotation, def response, def status) {
+		// Serialize into JSON-LD
+		ByteArrayOutputStream baos = new ByteArrayOutputStream()
+		RDFDataMgr.write(baos, annotation, RDFLanguages.JSONLD)
+
+		// Frame
+		def json = new JSONObject(baos.toString())
+		json.remove("@id") // We have to do this for the framing to work for some reason...
+		def contextJson = JsonUtils.fromInputStream(
+				callExternalUrl(apiKey, configAccessService.getAsString("annotopia.jsonld.openannotation.framing")))
+		def framed = JsonLdProcessor.frame(
+				json,
+				contextJson,
+				new JsonLdOptions())
+
+		// Remove wrapping @graph
+		def framedJson = new JSONObject(framed)
+		def outputJson = framedJson.get("@graph").getAt(0)
+		outputJson.put('@context', framedJson.get('@context'))
+
+		// Render response
+		response.contentType = "text/json;charset=UTF-8"
+		response.setStatus(status)
+		response.outputStream << JsonUtils.toPrettyString(outputJson)
+		response.outputStream.flush()
+	}
+
+	private InputStream callExternalUrl(def apiKey, String URL) {
+		Proxy httpProxy = null;
+		if(grailsApplication.config.annotopia.server.proxy.host && grailsApplication.config.annotopia.server.proxy.port) {
+			String proxyHost = configAccessService.getAsString("annotopia.server.proxy.host"); //replace with your proxy server name or IP
+			int proxyPort = configAccessService.getAsString("annotopia.server.proxy.port").toInteger(); //your proxy server port
+			SocketAddress addr = new InetSocketAddress(proxyHost, proxyPort);
+			httpProxy = new Proxy(Proxy.Type.HTTP, addr);
+		}
+
+		if(httpProxy!=null) {
+			long startTime = System.currentTimeMillis();
+			log.info ("[" + apiKey + "] " + "Proxy request: " + URL);
+			URL url = new URL(URL);
+			//Pass the Proxy instance defined above, to the openConnection() method
+			URLConnection urlConn = url.openConnection(httpProxy);
+			urlConn.connect();
+			log.info ("[" + apiKey + "] " + "Proxy resolved in (" + (System.currentTimeMillis()-startTime) + "ms)");
+			return urlConn.getInputStream();
+		} else {
+			log.info ("[" + apiKey + "] " + "No proxy request: " + URL);
+			return new URL(URL).openStream();
 		}
 	}
 }
