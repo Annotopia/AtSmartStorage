@@ -97,7 +97,7 @@ class AnnotationIntegratedController extends BaseController {
 		def oauthToken = apiKeyAuthenticationService.getOauthToken(request)
 		if(oauthToken != null) {
 			apiKey = oauthToken.system.apikey
-			user = apiKeyAuthenticationService.getUserIdentifiedByToken(oauthToken.getToken());
+			user = oauthToken.user
 		} else {
 			apiKey = apiKeyAuthenticationService.getApiKey(request)
 
