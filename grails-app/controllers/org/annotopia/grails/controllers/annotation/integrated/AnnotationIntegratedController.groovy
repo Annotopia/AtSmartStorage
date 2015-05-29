@@ -92,7 +92,7 @@ class AnnotationIntegratedController extends BaseController {
 
 	def beforeInterceptor = {
 		startTime = System.currentTimeMillis()
-		
+
 		// Authenticate with OAuth or Annotopia API Key
 		def oauthToken = apiKeyAuthenticationService.getOauthToken(request)
 		if(oauthToken != null) {
@@ -293,21 +293,47 @@ class AnnotationIntegratedController extends BaseController {
 					"<"+annotationSetURI+"> <http://purl.org/annotopia#annotations> ?annotation_graph ." +
 					"graph ?annotation_graph {" +
 					"?s a <http://www.w3.org/ns/oa#Annotation> ."
-			if(params.tgtUrl!=null)
+
+			def first = true
+			if(params.tgtUrl!=null) {
+				if(!first)
+					queryBuffer << "UNION "
+				queryBuffer << " {"
 				openAnnotationVirtuosoService.getTargetFilter(queryBuffer, [params.tgtUrl], "true")
+				queryBuffer << "} "
+				first = false
+			}
 
-			if(params.tgtDoi!=null)
+			if(params.tgtDoi!=null) {
+				if(!first)
+					queryBuffer << "UNION "
+				queryBuffer << " {"
 				openAnnotationVirtuosoService.getTargetDoiFilter(queryBuffer, params.tgtDoi)
+				queryBuffer << "} "
+				first = false
+			}
 
-			if(params.tgtPmid!=null)
+			if(params.tgtPmid!=null) {
+				if(!first)
+					queryBuffer << "UNION "
+				queryBuffer << " {"
 				openAnnotationVirtuosoService.getTargetPubMedFilter(queryBuffer, params.tgtPmid)
+				queryBuffer << "} "
+				first = false
+			}
 
-			if(params.tgtPmcid!=null)
+			if(params.tgtPmcid!=null) {
+				if(!first)
+					queryBuffer << "UNION "
+				queryBuffer << " {"
 				openAnnotationVirtuosoService.getTargetPubMedCentralFilter(queryBuffer, params.tgtPmcid)
+				queryBuffer << "} "
+				first = false
+			}
 
 			queryBuffer << "}}}"
 
-			println queryBuffer
+			log.info(queryBuffer)
 
 			// Remove all annotations references for now
 			def model = annotationSet.getNamedModel(annotationSet.listNames().next())

@@ -82,11 +82,11 @@ class OpenAnnotationVirtuosoService {
 	}
 
 	private getTargetPubMedFilter(queryBuffer, pmid) {
-		queryBuffer.append(targetEmbodimentFilter("http://purl.org/spar/fabio#hasPubMedCentralId", pmid))
+		queryBuffer.append(targetEmbodimentFilter("http://purl.org/spar/fabio#hasPubMedId", pmid))
 	}
 
 	private getTargetPubMedCentralFilter(queryBuffer, pmcid) {
-		queryBuffer.append(targetEmbodimentFilter("http://purl.org/spar/fabio#hasPubMedId", pmcid))
+		queryBuffer.append(targetEmbodimentFilter("http://purl.org/spar/fabio#hasPubMedCentralId", pmcid))
 	}
 
 	private String targetEmbodimentFilter(predicateUri, literal) {
