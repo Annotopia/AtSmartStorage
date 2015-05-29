@@ -29,7 +29,7 @@ class OpenAnnotationSetRESTController extends BaseController {
 	def openAnnotationUtilsService
 
 	// Shared variables
-	def user 
+	def user
 	def apiKey
 	def annotationSet // The annotationSet being operated on
 	def annotationSetURI
@@ -37,12 +37,12 @@ class OpenAnnotationSetRESTController extends BaseController {
 
 	def beforeInterceptor = {
 		startTime = System.currentTimeMillis()
-		
+
 		// Authenticate with OAuth or Annotopia API Key
 		def oauthToken = apiKeyAuthenticationService.getOauthToken(request)
 		if(oauthToken != null) {
 			apiKey = oauthToken.system.apikey
-			user = apiKeyAuthenticationService.getUserIdentifiedByToken(oauthToken.getToken());
+			user = oauthToken.user
 		} else {
 			apiKey = apiKeyAuthenticationService.getApiKey(request)
 
