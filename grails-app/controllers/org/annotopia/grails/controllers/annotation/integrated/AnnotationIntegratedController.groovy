@@ -25,7 +25,6 @@ import grails.converters.JSON
 import java.util.regex.Matcher
 
 import org.annotopia.grails.vocabularies.AnnotopiaVocabulary
-import org.annotopia.grails.vocabularies.OA
 import org.annotopia.grails.vocabularies.PAV
 import org.annotopia.grails.vocabularies.RDF
 import org.annotopia.groovy.service.store.BaseController
@@ -48,8 +47,6 @@ import com.hp.hpl.jena.rdf.model.Model
 import com.hp.hpl.jena.rdf.model.ModelFactory
 import com.hp.hpl.jena.rdf.model.Resource
 import com.hp.hpl.jena.rdf.model.ResourceFactory
-import com.hp.hpl.jena.rdf.model.Statement
-import com.hp.hpl.jena.rdf.model.StmtIterator
 
 /**
  * @author Paolo Ciccarese <paolo.ciccarese@gmail.com>
@@ -86,6 +83,7 @@ class AnnotationIntegratedController extends BaseController {
 
 	// Shared variables/functionality
 	def startTime
+	def user
 	def apiKey
 	def outCmd
 	def incGph
@@ -94,11 +92,12 @@ class AnnotationIntegratedController extends BaseController {
 
 	def beforeInterceptor = {
 		startTime = System.currentTimeMillis()
-
+		
 		// Authenticate with OAuth or Annotopia API Key
 		def oauthToken = apiKeyAuthenticationService.getOauthToken(request)
 		if(oauthToken != null) {
 			apiKey = oauthToken.system.apikey
+			user = apiKeyAuthenticationService.getUserIdentifiedByToken(oauthToken.getToken());
 		} else {
 			apiKey = apiKeyAuthenticationService.getApiKey(request)
 
