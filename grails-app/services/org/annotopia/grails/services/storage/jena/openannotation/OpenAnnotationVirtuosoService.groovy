@@ -39,11 +39,11 @@ class OpenAnnotationVirtuosoService {
 	def grailsApplication
 	def configAccessService
 	def jenaVirtuosoStoreService
-	
+
 	// --------------------------------------------------------
 	//  GENERAL
 	// --------------------------------------------------------
-	
+
 	private boolean getTargetFilter(queryBuffer, tgtUrls, tgtFgt) {
 		if(tgtUrls==null) { // Return any annotation
 			// If the tgtFgt is not true we need to filter out the
@@ -68,7 +68,7 @@ class OpenAnnotationVirtuosoService {
 		}
 		return true;
 	}
-	
+
 	private getTargetTitleFilter(queryBuffer, text) {
 		if(text==null) {
 			return false;
@@ -76,7 +76,31 @@ class OpenAnnotationVirtuosoService {
 			queryBuffer.append("{?s oa:hasTarget ?t2. ?t2 dct:title ?title1 FILTER regex(str(?title1), \""+ text + "\", \"i\")} UNION {?s oa:hasTarget ?t. ?t a oa:SpecificResource. ?t oa:hasSource ?s1. ?s1 dct:title ?title2 FILTER regex(str(?title2), \""+ text + "\", \"i\")}")
 		}
 	}
-	
+
+	private getTargetDoiFilter(queryBuffer, doi) {
+		queryBuffer.append(targetEmbodimentFilter("http://prismstandard.org/namespaces/basic/2.0/doi", doi))
+	}
+
+	private getTargetPubMedFilter(queryBuffer, pmid) {
+		queryBuffer.append(targetEmbodimentFilter("http://purl.org/spar/fabio#hasPubMedCentralId", pmid))
+	}
+
+	private getTargetPubMedCentralFilter(queryBuffer, pmcid) {
+		queryBuffer.append(targetEmbodimentFilter("http://purl.org/spar/fabio#hasPubMedId", pmcid))
+	}
+
+	private String targetEmbodimentFilter(predicateUri, literal) {
+		return "{?s oa:hasTarget ?t ."+
+				"?t <http://purl.org/vocab/frbr/core#embodimentOf> ?e ."+
+				"?e <"+predicateUri+"> '"+literal+"' } UNION "+
+			   "{?s oa:hasTarget ?t ."+
+				"?t a oa:SpecificResource . "+
+				"?t oa:hasSource ?z ."+
+				"?z <http://purl.org/vocab/frbr/core#embodimentOf> ?e ."+
+				"?e <"+predicateUri+"> '"+literal+"' }"
+	}
+
+
 	private getSourcesFilter(queryBuffer, sources) {
 		if(sources!=null && sources.size()>0) {
 			boolean first = false;
@@ -89,7 +113,7 @@ class OpenAnnotationVirtuosoService {
 			}
 		}
 	}
-	
+
 	private getMotivationsFilter(queryBuffer, motivations) {
 		if(motivations!=null && motivations.size()>0) {
 			boolean first = false;
@@ -101,16 +125,16 @@ class OpenAnnotationVirtuosoService {
 			}
 		}
 	}
-	
+
 	// --------------------------------------------------------
 	//  BROWSE
 	// --------------------------------------------------------
-	
+
 	private getTextSearchFilter(queryBuffer, text, motivations, inclusions) {
 		if(text!=null && text.length()>0) {
 			queryBuffer.append("{");
 			getEmbeddedTextualBodyTextFilter(queryBuffer, text, motivations);
-			if(inclusions.contains("document title")) { 
+			if(inclusions.contains("document title")) {
 				queryBuffer.append(" UNION ");
 				getTargetTitleFilter(queryBuffer, text);
 			}
@@ -120,7 +144,7 @@ class OpenAnnotationVirtuosoService {
 			queryBuffer.append("}");
 		}
 	}
-	
+
 	/**
 	 * Counts all the graph (annotations) containing annotation meeting
 	 * the given criteria.
@@ -156,24 +180,24 @@ class OpenAnnotationVirtuosoService {
 //				}
 //			}
 //		}
-		
+
 		if(!getTargetFilter(queryBuffer, tgtUrls, tgtFgt)) return 0;
 		//if(!getTargetTitleFilter(queryBuffer, tgtUrls, tgtFgt)) return 0;
-		
+
 		getSourcesFilter(queryBuffer, sources);
 		getMotivationsFilter(queryBuffer, motivations);
-		
+
 		String queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> " +
 			"SELECT (COUNT(DISTINCT ?g) AS ?total) WHERE { GRAPH ?g { ?s a oa:Annotation. " +
 				queryBuffer.toString() +
 			"}}";
-		
+
 		log.info('[' + apiKey + '] Query total accessible Annotation Graphs: ' + queryString);
 		int totalCount = jenaVirtuosoStoreService.count(apiKey, queryString);
 		log.info('[' + apiKey + '] Total accessible Annotation Graphs: ' + totalCount);
 		totalCount;
 	}
-	
+
 	/**
 	 * Retrieves all the graph names of the graphs containing annotation meeting
 	 * the given criteria.
@@ -195,7 +219,7 @@ class OpenAnnotationVirtuosoService {
 			' tgtFgt:' + tgtFgt +
 			' sources:' + sources +
 			' motivations:' + motivations;
-			
+
 		StringBuffer queryBuffer = new StringBuffer();
 //		if(tgtUrls==null) { // Return any annotation
 //			// If the tgtFgt is not true we need to filter out the
@@ -218,12 +242,12 @@ class OpenAnnotationVirtuosoService {
 //				}
 //			}
 //		}
-		
+
 		if(!getTargetFilter(queryBuffer, tgtUrls, tgtFgt)) return new HashSet<String>();
-		
+
 		getSourcesFilter(queryBuffer, sources);
 		getMotivationsFilter(queryBuffer, motivations);
-	
+
 		String queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> " +
 		"SELECT DISTINCT ?g WHERE { GRAPH ?g { ?s a oa:Annotation. " +
 			queryBuffer.toString() +
@@ -231,25 +255,25 @@ class OpenAnnotationVirtuosoService {
 		Set<String> graphs = jenaVirtuosoStoreService.retrieveGraphsNames(apiKey, queryString);
 		graphs
 	}
-	
+
 	// --------------------------------------------------------
-	//  TEXT SEARCH 
-	// --------------------------------------------------------	
+	//  TEXT SEARCH
+	// --------------------------------------------------------
 	private void getEmbeddedTextualBodyTextFilter(queryBuffer, text, motivations) {
 		queryBuffer.append("{ ?s oa:hasBody ?b1. ?b1 cnt:chars ?content. FILTER regex(?content, \"" + text + "\", \"i\")  }");
 	}
-	
+
 	private void getSemanticTagTextFilter(queryBuffer, text, motivations) {
 		queryBuffer.append("{ ?s oa:hasBody ?b2. ?b2 rdfs:label ?content. FILTER regex(?content, \"" + text + "\", \"i\")  }");
 	}
-	
+
 	private void getHighligthTextFilter(queryBuffer, text, motivations) {
 		if(motivations!=null && motivations.size()>0 && ("highlighting" in motivations)) {
 			queryBuffer.append(" UNION ");
 			queryBuffer.append("{ ?s oa:motivatedBy ?motivation1. FILTER (str(?motivation1) = 'http://www.w3.org/ns/oa#highlighting'). ?s oa:hasTarget ?t1. ?t1 oa:hasSelector ?selector. ?selector a oa:TextQuoteSelector. ?selector oa:exact ?exact. FILTER regex(?exact, \"" + text + "\", \"i\")  }");
 		}
 	}
-	
+
 	/**
 	 * Counts all the graph (annotations) containing annotation meeting
 	 * the given criteria.
@@ -285,25 +309,25 @@ class OpenAnnotationVirtuosoService {
 //				}
 //			}
 //		}
-		
+
 		if(!getTargetFilter(queryBuffer, tgtUrls, tgtFgt)) return 0;
-		
+
 		getSourcesFilter(queryBuffer, sources);
 		getMotivationsFilter(queryBuffer, motivations);
 		getTextSearchFilter(queryBuffer, text, motivations, inclusions);
 		//getTargetTitleFilter(queryBuffer, text);
-		
+
 		String queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> PREFIX  cnt:  <http://www.w3.org/2011/content#> PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> PREFIX  dct:  <http://purl.org/dc/terms/> " +
 			"SELECT (COUNT(DISTINCT ?g) AS ?total) WHERE { GRAPH ?g { ?s a oa:Annotation. {" +
 				queryBuffer.toString() +
 			"}}}";
-		
+
 		log.info('[' + apiKey + '] Query total accessible Annotation Graphs: ' + queryString);
 		int totalCount = jenaVirtuosoStoreService.count(apiKey, queryString);
 		log.info('[' + apiKey + '] Total accessible Annotation Graphs: ' + totalCount);
 		totalCount;
 	}
-	
+
 	/**
 	 * Retrieves all the graph names of the graphs containing annotation meeting
 	 * the given criteria.
@@ -326,7 +350,7 @@ class OpenAnnotationVirtuosoService {
 			' text:' + text +
 			' sources:' + sources +
 			' motivations:' + motivations;
-			
+
 		StringBuffer queryBuffer = new StringBuffer();
 //		if(tgtUrls==null) { // Return any annotation
 //			// If the tgtFgt is not true we need to filter out the
@@ -349,13 +373,13 @@ class OpenAnnotationVirtuosoService {
 //				}
 //			}
 //		}
-		
+
 		if(!getTargetFilter(queryBuffer, tgtUrls, tgtFgt)) return new HashSet<String>();
-		
+
 		getSourcesFilter(queryBuffer, sources);
 		getMotivationsFilter(queryBuffer, motivations);
 		getTextSearchFilter(queryBuffer, text, motivations, inclusions)
-	
+
 		String queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> PREFIX  cnt:  <http://www.w3.org/2011/content#> PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> PREFIX  dct:  <http://purl.org/dc/terms/>" +
 		"SELECT DISTINCT ?g WHERE { GRAPH ?g { ?s a oa:Annotation. " +
 			queryBuffer.toString() +
@@ -363,7 +387,7 @@ class OpenAnnotationVirtuosoService {
 		Set<String> graphs = jenaVirtuosoStoreService.retrieveGraphsNames(apiKey, queryString);
 		graphs
 	}
-	
+
 	/**
 	 * Retrieves all the graphs containing a given annotation identified
 	 * by the URI.
@@ -373,28 +397,28 @@ class OpenAnnotationVirtuosoService {
 	 */
 	public Set<String> retrieveAnnotationGraphNames(apiKey, uri) {
 		log.info '[' + apiKey + '] Retrieving Annotation Graph Names ' + uri;
-		
+
 		String queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> " +
 			"SELECT DISTINCT ?g WHERE { GRAPH ?g { <" + uri + "> a oa:Annotation }}";
-		
+
 		Set<String> graphs = jenaVirtuosoStoreService.retrieveGraphsNames(apiKey, queryString);
 		graphs
 	}
-	
+
 	// TODO return all graphs also the ones that are bodies!!!!
 	public Dataset retrieveAnnotation(apiKey, uri) {
 		log.info '[' + apiKey + '] Retrieving annotation ' + uri;
-		
+
 		String queryString = "PREFIX oa:<http://www.w3.org/ns/oa#> " +
 			"SELECT ?body ?graph  WHERE {{ GRAPH ?graph { <" + uri + "> a oa:Annotation }} " +
 			"UNION { GRAPH ?g {<" + uri + "> oa:hasBody ?body. ?body a <http://www.w3.org/2004/03/trix/rdfg-1/Graph>}}}";
 		log.trace('[' + apiKey + '] ' + queryString);
-	
+
 		VirtGraph graph = new VirtGraph (
 			configAccessService.getAsString("annotopia.storage.triplestore.host"),
 			configAccessService.getAsString("annotopia.storage.triplestore.user"),
 			configAccessService.getAsString("annotopia.storage.triplestore.pass"));
-		
+
 		Dataset graphs;
 		try {
 			VirtuosoQueryExecution vqe = VirtuosoQueryExecutionFactory.create (QueryFactory.create(queryString), graph);
@@ -431,9 +455,9 @@ class OpenAnnotationVirtuosoService {
 			return null;
 		}
 	}
-	
+
 	// TODO From here on to be refactored
-	
+
 //	public int countAnnotationGraphs(apiKey,tgtFgt) {
 //		// Retrieves all the annotations
 //		String queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> " +
@@ -442,17 +466,17 @@ class OpenAnnotationVirtuosoService {
 //			queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> " +
 //				"SELECT (COUNT(DISTINCT ?g) AS ?total) WHERE { GRAPH ?g { ?s a oa:Annotation }}";
 //		}
-//		
+//
 //		int totalCount = jenaVirtuosoStoreService.count(apiKey, queryString);
 //		log.info('[' + apiKey + '] Total accessible Annotation Graphs: ' + totalCount);
 //		totalCount;
 //	}
-//	
 //
-//		
+//
+//
 //	public int countAnnotationGraphs(apiKey, tgtUrl, tgtFgt, Map<String,String> identifiers) {
 //		String queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> " +
-//			"SELECT (COUNT(DISTINCT ?g) AS ?total) WHERE { GRAPH ?g { ?s a oa:Annotation }}";		
+//			"SELECT (COUNT(DISTINCT ?g) AS ?total) WHERE { GRAPH ?g { ?s a oa:Annotation }}";
 //		if(tgtUrl!=null && tgtFgt=="false") {
 //			queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> " +
 //				"SELECT (COUNT(DISTINCT ?g) AS ?total) WHERE { GRAPH ?g { ?s a oa:Annotation . ?s oa:hasTarget <" + tgtUrl + "> }}";
@@ -470,17 +494,17 @@ class OpenAnnotationVirtuosoService {
 //				if(first) queryBuffer.append(" UNION ");
 //				first = true;
 //			}
-//			
+//
 //			queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> " +
 //				"SELECT (COUNT(DISTINCT ?g) AS ?total) WHERE { GRAPH ?g { ?s a oa:Annotation . " + queryBuffer.toString() + "}}";
 //			println queryString
 //		}
-//			
+//
 //		int totalCount = jenaVirtuosoStoreService.count(apiKey, queryString);
 //		log.info('[' + apiKey + '] Total accessible Annotation Graphs: ' + totalCount);
 //		totalCount;
 //	}
-	
+
 //	public int countAnnotationSetGraphs(apiKey, tgtUrl, tgtFgt) {
 //		String queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> " +
 //			"SELECT (COUNT(DISTINCT ?g) AS ?total) WHERE { GRAPH ?g { ?s a <http://purl.org/annotopia#AnnotationSet> }}";
@@ -494,14 +518,14 @@ class OpenAnnotationVirtuosoService {
 //					" UNION {?a <http://www.w3.org/ns/oa#hasTarget> ?t. ?t <http://www.w3.org/ns/oa#hasSource> <" + tgtUrl + "> }}}"
 //				"}";
 //		}
-//			
+//
 //		int totalCount = jenaVirtuosoStoreService.count(apiKey, queryString);
 //		log.info('[' + apiKey + '] Total accessible Annotation Set Graphs: ' + totalCount);
 //		totalCount;
 //	}
 
 //	/**
-//	 * Weather or not Annotation have been originally stored as graph, 
+//	 * Weather or not Annotation have been originally stored as graph,
 //	 * Annotopia wraps each anotation in a Named Graph. Therefore when
 //	 * counting the total of annotations, the SPARQL query includes the
 //	 * named graph parameter ?g
@@ -512,14 +536,14 @@ class OpenAnnotationVirtuosoService {
 //
 //		String queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> " +
 //			"SELECT (COUNT(DISTINCT ?s) AS ?total) WHERE { GRAPH ?g { ?s a oa:Annotation }}";
-//			
+//
 //		int totalCount = jenaVirtuosoStoreService.count(apiKey, queryString);
 //		log.info('[' + apiKey + '] Total accessible Annotations in Named Graphs: ' + totalCount);
 //		totalCount;
 //	}
 
 
-	
+
 //	public Set<String> retrieveAnnotationGraphsNames(apiKey, max, offset, tgtUrl, tgtFgt) {
 //		log.info  '[' + apiKey + '] Retrieving annotation graphs names ' +
 //			' max:' + max +
@@ -537,17 +561,17 @@ class OpenAnnotationVirtuosoService {
 //				"SELECT DISTINCT ?g WHERE { GRAPH ?g { ?s a oa:Annotation . {?s oa:hasTarget <" + tgtUrl +
 //				"> } UNION {?s oa:hasTarget ?t. ?t a oa:SpecificResource. ?t oa:hasSource <" + tgtUrl + ">}}} LIMIT " + max + " OFFSET " + offset;
 //		}
-//	
+//
 //		Set<String> graphs = jenaVirtuosoStoreService.retrieveGraphsNames(apiKey, queryString);
 //		graphs
 //	}
-	
+
 //	public Set<String> retrieveAnnotationSetsGraphsNames(apiKey, max, offset, tgtUrl, tgtFgt) {
 //		log.info  '[' + apiKey + '] Retrieving annotation sets graphs names ' +
 //			' max:' + max +
 //			' offset:' + offset +
 //			' tgtUrl:' + tgtUrl;
-//			
+//
 //		String queryString = "PREFIX at: <http://purl.org/annotopia#> " +
 //			"SELECT DISTINCT ?g WHERE { GRAPH ?g { ?s a at:AnnotationSet }} LIMIT " + max + " OFFSET " + offset;
 //		if(tgtUrl!=null) {
@@ -556,26 +580,26 @@ class OpenAnnotationVirtuosoService {
 //				"{ ?a oa:hasTarget <" + tgtUrl + "> }" +
 //				" UNION {?a <http://www.w3.org/ns/oa#hasTarget> ?t. ?t <http://www.w3.org/ns/oa#hasSource> <" + tgtUrl + "> }}} LIMIT " + max + " OFFSET " + offset;
 //		}
-//		
+//
 //		Set<String> graphs = jenaVirtuosoStoreService.retrieveGraphsNames(apiKey, queryString);
 //		graphs
 //	}
-	
 
-	
+
+
 //	public Dataset retrieveAnnotationSet(apiKey, uri) {
 //		log.info '[' + apiKey + '] Retrieving annotation sets ' + uri;
-//		
+//
 //		String queryString = "PREFIX at:  <http://purl.org/annotopia#> " +
 //			"SELECT DISTINCT ?g WHERE { GRAPH ?g { <" + uri + "> a at:AnnotationSet }}";
 //		log.trace('[' + apiKey + '] ' + queryString);
-//	
+//
 //		VirtGraph graph = new VirtGraph (
 //			grailsApplication.config.annotopia.storage.triplestore.host,
 //			grailsApplication.config.annotopia.storage.triplestore.user,
 //			grailsApplication.config.annotopia.storage.triplestore.pass);
-//		
-//		Dataset graphs;	
+//
+//		Dataset graphs;
 //		try {
 //			VirtuosoQueryExecution vqe = VirtuosoQueryExecutionFactory.create (QueryFactory.create(queryString), graph);
 //			ResultSet results = vqe.execSelect();

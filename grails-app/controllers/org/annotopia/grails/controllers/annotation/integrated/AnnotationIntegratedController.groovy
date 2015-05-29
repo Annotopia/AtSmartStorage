@@ -285,7 +285,7 @@ class AnnotationIntegratedController extends BaseController {
 	 */
 	def show = {
 		// Filtering within sets
-		if(params.tgtUrl!=null) {
+		if(params.tgtUrl!=null || params.tgtDoi!=null || params.tgtPmid!=null || params.tgtPmcid!=null) {
 			// Get the names of the annotation graphs that contain
 			//  annotations with targets that match the filter!
 			StringBuffer queryBuffer = new StringBuffer()
@@ -294,8 +294,21 @@ class AnnotationIntegratedController extends BaseController {
 					"<"+annotationSetURI+"> <http://purl.org/annotopia#annotations> ?annotation_graph ." +
 					"graph ?annotation_graph {" +
 					"?s a <http://www.w3.org/ns/oa#Annotation> ."
-			openAnnotationVirtuosoService.getTargetFilter(queryBuffer, [params.tgtUrl], "true")
+			if(params.tgtUrl!=null)
+				openAnnotationVirtuosoService.getTargetFilter(queryBuffer, [params.tgtUrl], "true")
+
+			if(params.tgtDoi!=null)
+				openAnnotationVirtuosoService.getTargetDoiFilter(queryBuffer, params.tgtDoi)
+
+			if(params.tgtPmid!=null)
+				openAnnotationVirtuosoService.getTargetPubMedFilter(queryBuffer, params.tgtPmid)
+
+			if(params.tgtPmcid!=null)
+				openAnnotationVirtuosoService.getTargetPubMedCentralFilter(queryBuffer, params.tgtPmcid)
+
 			queryBuffer << "}}}"
+
+			println queryBuffer
 
 			// Remove all annotations references for now
 			def model = annotationSet.getNamedModel(annotationSet.listNames().next())
