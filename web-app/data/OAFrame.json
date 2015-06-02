@@ -16,6 +16,34 @@
       "trig":"http://www.w3.org/2004/03/trix/rdfg-1/",
       "xsd":"http://www.w3.org/2001/XMLSchema#",
       "xxx":"http://purl.org/annotopia#",
+      "mp":"http://purl.org/mp/",
+      "mp:asserts":{
+         "@type":"@id"
+      },
+      "mp:argues":{
+         "@type":"@id"
+      },
+      "mp:hasAttribution":{
+         "@type":"@id"
+      },
+      "mp:attributionOfAgent":{
+         "@type":"@id"
+      },
+      "mp:qualifiedBy":{
+         "@type":"@id"
+      },
+      "mp:supportedBy":{
+         "@type":"@id"
+      },
+      "mp:quotes":{
+         "@type":"@id"
+      },
+      "mp:represents":{
+         "@type":"@id"
+      },
+      "mp:atTime":{
+         "@type":"xsd:dateTime"
+      },
       "hasBody":{
          "@type":"@id",
          "@id":"oa:hasBody"
@@ -131,19 +159,13 @@
    },
    "@type":"oa:Annotation",
    "hasBody":{
-      "@type":[
-         "cnt:ContentAsText",
-         "oa:SemanticTag"
-      ]
+
    },
    "hasTarget":{
 
    },
    "annotatedBy":{
-      "@type":[
-         "foaf:Person",
-         "foaf:Software"
-      ]
+
    },
    "permissions":{
 
