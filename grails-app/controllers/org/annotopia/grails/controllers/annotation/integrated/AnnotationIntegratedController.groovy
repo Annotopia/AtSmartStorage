@@ -507,6 +507,10 @@ class AnnotationIntegratedController extends BaseController {
 					ResourceFactory.createProperty(AnnotopiaVocabulary.ANNOTATIONS),
 					ResourceFactory.createResource(it))
 		}
+		
+		newAnnotationSetModel.removeAll(ResourceFactory.createResource(annotationSetURI), ResourceFactory.createProperty(PAV.PAV_PREVIOUS_VERSION), null);
+		newAnnotationSetModel.add(ResourceFactory.createResource(annotationSetURI), ResourceFactory.createProperty(PAV.PAV_PREVIOUS_VERSION),
+			ResourceFactory.createPlainLiteral(annotationSetURI));
 
 		// Set Last saved on
 		newAnnotationSetModel.removeAll(ResourceFactory.createResource(annotationSetURI),

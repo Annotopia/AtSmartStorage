@@ -801,7 +801,7 @@ class OpenAnnotationStorageService {
 	 * @param newSubject		The new URI identifying the resource
 	 * @param originalSubject	The previous URI identifying the resource
 	 */
-	private void updatePreviousVersionInfo(Model model, Resource newSubject, Resource originalSubject) {
+	public void updatePreviousVersionInfo(Model model, Resource newSubject, Resource originalSubject) {
 		model.removeAll(newSubject, ResourceFactory.createProperty(PAV.PAV_PREVIOUS_VERSION), null);
 		if(!originalSubject.isAnon()) {
 			model.add(model.createStatement(newSubject,

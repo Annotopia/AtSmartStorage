@@ -492,9 +492,13 @@ class AnnotationIntegratedStorageService {
 			}
 
 			// Last saved on
+//			updateDateProperty(annotationModel, annotationSetUri, PAV.PAV_LAST_UPDATED_ON);
+			
 			annotationModel.removeAll(annotationSetUri, ResourceFactory.createProperty(PAV.PAV_LAST_UPDATED_ON), null);
 			annotationModel.add(annotationSetUri, ResourceFactory.createProperty(PAV.PAV_LAST_UPDATED_ON),
 				ResourceFactory.createPlainLiteral(dateFormat.format(new Date())));
+			
+			
 
 			// Version
 			annotationModel.removeAll(annotationSetUri, ResourceFactory.createProperty(PAV.PAV_VERSION), null);
@@ -580,12 +584,18 @@ class AnnotationIntegratedStorageService {
 				ResourceFactory.createProperty(PAV.PAV_PREVIOUS_VERSION),
 				ResourceFactory.createPlainLiteral(oldAnnotation.toString()));
 
-			annotationModel.removeAll(ResourceFactory.createResource(oldNewAnnotationUriMapping.get(oldAnnotation)), ResourceFactory.createProperty(PAV.PAV_LAST_UPDATED_ON), null);
-			annotationModel.add(
-				ResourceFactory.createResource(oldNewAnnotationUriMapping.get(oldAnnotation)),
-				ResourceFactory.createProperty(PAV.PAV_LAST_UPDATED_ON),
-				ResourceFactory.createPlainLiteral(dateFormat.format(new Date())));
+			updateDateProperty(annotationModel, oldNewAnnotationUriMapping.get(oldAnnotation), PAV.PAV_LAST_UPDATED_ON);
 		}
+	}
+	
+	private void updateDateProperty(Model annotationModel, def subject, def property) {
+		annotationModel.removeAll(ResourceFactory.createResource(subject), ResourceFactory.createProperty(PAV.PAV_LAST_UPDATED_ON), null);
+		def date = dateFormat.format(new Date());
+		println '----------------------- ' + date;
+		annotationModel.add(
+			ResourceFactory.createResource(subject),
+			ResourceFactory.createProperty(PAV.PAV_LAST_UPDATED_ON),
+			ResourceFactory.createPlainLiteral(date));
 	}
 
 	public Dataset updateAnnotationSet(String apiKey, Long startTime, Boolean incGph, String set) {
@@ -637,7 +647,7 @@ class AnnotationIntegratedStorageService {
 
 			Model annotationModel = inMemoryDataset.getDefaultModel();
 			HashMap<Resource, String> oldNewAnnotationUriMapping = new HashMap<Resource, String>();
-
+			
 			Set<Resource> annotationSetUris = new HashSet<Resource>();
 			int annotationsSetsUrisInDefaultGraphsCounter =
 				openAnnotationSetsUtilsService.detectAnnotationSetUriInDefaultGraph(apiKey, inMemoryDataset, annotationSetUris, null);
@@ -650,9 +660,9 @@ class AnnotationIntegratedStorageService {
 			} else if(annotationsSetsUrisInDefaultGraphsCounter==1) {
 
 				Dataset datasetToRender = DatasetFactory.createMem();
-
+				
 				String annotationSetUri = annotationSetUris.iterator().next();
-
+				
 				println "==============================================================="
 				println ">>> ANNOTATION SET URI " + annotationSetUri
 				// Retrieve the graph name from the storage
@@ -738,11 +748,12 @@ class AnnotationIntegratedStorageService {
 								m.removeAll(ResourceFactory.createResource(annotationUri), ResourceFactory.createProperty(AnnotopiaVocabulary.HAS_CHANGED), null);
 
 								// Updating last saved on
-								m.removeAll(ResourceFactory.createResource(annotationUri), ResourceFactory.createProperty(PAV.PAV_LAST_UPDATED_ON), null);
-								m.add(
-									ResourceFactory.createResource(annotationUri),
-									ResourceFactory.createProperty(PAV.PAV_LAST_UPDATED_ON),
-									ResourceFactory.createPlainLiteral(dateFormat.format(new Date())));
+								updateDateProperty(m,ResourceFactory.createResource(annotationUri), PAV.PAV_LAST_UPDATED_ON);
+//								m.removeAll(ResourceFactory.createResource(annotationUri), ResourceFactory.createProperty(PAV.PAV_LAST_UPDATED_ON), null);
+//								m.add(
+//									ResourceFactory.createResource(annotationUri),
+//									ResourceFactory.createProperty(PAV.PAV_LAST_UPDATED_ON),
+//									ResourceFactory.createPlainLiteral(dateFormat.format(new Date())));
 
 								m.removeAll(ResourceFactory.createResource(annotationSetUri), ResourceFactory.createProperty(PAV.PAV_PREVIOUS_VERSION), null);
 
@@ -789,9 +800,19 @@ class AnnotationIntegratedStorageService {
 					RDFDataMgr.read(setWithoutAnnotationModel, new ByteArrayInputStream(annotationSetAsString.getBytes("UTF-8")), RDFLanguages.JSONLD);
 
 					// Set Last saved on
-					setWithoutAnnotationModel.removeAll(ResourceFactory.createResource(annotationSetUri), ResourceFactory.createProperty(PAV.PAV_LAST_UPDATED_ON), null);
-					setWithoutAnnotationModel.add(ResourceFactory.createResource(annotationSetUri), ResourceFactory.createProperty(PAV.PAV_LAST_UPDATED_ON),
-						ResourceFactory.createPlainLiteral(dateFormat.format(new Date())));
+//					setWithoutAnnotationModel.removeAll(ResourceFactory.createResource(annotationSetUri), ResourceFactory.createProperty(PAV.PAV_LAST_UPDATED_ON), null);
+//					setWithoutAnnotationModel.add(ResourceFactory.createResource(annotationSetUri), ResourceFactory.createProperty(PAV.PAV_LAST_UPDATED_ON),
+//						ResourceFactory.createPlainLiteral(dateFormat.format(new Date())));
+					
+					//openAnnotationStorageService.updatePreviousVersionInfo(inMemoryDataset, ResourceFactory.createResource(annotationSetUri), ResourceFactory.createResource(annotationSetUri));
+					
+					setWithoutAnnotationModel.removeAll(ResourceFactory.createResource(annotationSetUri), ResourceFactory.createProperty(PAV.PAV_PREVIOUS_VERSION), null);
+					println '+++++++++++ ' + annotationSetUri
+					setWithoutAnnotationModel.add(ResourceFactory.createResource(annotationSetUri), ResourceFactory.createProperty(PAV.PAV_PREVIOUS_VERSION),
+						ResourceFactory.createPlainLiteral(annotationSetUri));
+					
+					
+					updateDateProperty(setWithoutAnnotationModel, ResourceFactory.createResource(annotationSetUri), PAV.PAV_LAST_UPDATED_ON);
 
 					// Set Version
 					setWithoutAnnotationModel.removeAll(ResourceFactory.createResource(annotationSetUri), ResourceFactory.createProperty(PAV.PAV_VERSION), null);

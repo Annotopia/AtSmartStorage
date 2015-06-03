@@ -42,7 +42,7 @@ import com.hp.hpl.jena.rdf.model.Model
 class BaseController {
 
 	// Date format for all Open Annotation date content
-	SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssz")
+	SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ")
 
 	/**
 	 * Logging and message for invalid API key.
