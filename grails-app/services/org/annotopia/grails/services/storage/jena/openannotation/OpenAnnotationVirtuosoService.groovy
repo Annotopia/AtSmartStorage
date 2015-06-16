@@ -251,7 +251,11 @@ class OpenAnnotationVirtuosoService {
 		String queryString = "PREFIX oa:   <http://www.w3.org/ns/oa#> " +
 		"SELECT DISTINCT ?g WHERE { GRAPH ?g { ?s a oa:Annotation. " +
 			queryBuffer.toString() +
-		"}} ORDER BY DESC(?annotatedAt) LIMIT " + max + " OFFSET " + offset;
+		"}} ORDER BY DESC(?annotatedAt)"
+		if(max != null)
+			queryString << " LIMIT "+max
+		if(offset != null)
+			queryString << " OFFSET "+offset
 		Set<String> graphs = jenaVirtuosoStoreService.retrieveGraphsNames(apiKey, queryString);
 		graphs
 	}

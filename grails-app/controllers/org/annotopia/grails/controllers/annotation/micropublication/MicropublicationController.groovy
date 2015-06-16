@@ -30,8 +30,6 @@ class MicropublicationController extends BaseController {
 	// Shared variables/functionality
 	def startTime
 	def apiKey
-	def outCmd
-	def incGph
 	def beforeInterceptor = {
 		startTime = System.currentTimeMillis()
 
@@ -51,18 +49,6 @@ class MicropublicationController extends BaseController {
 	}
 
     def index() {
-		outCmd = (request.JSON.outCmd!=null)?request.JSON.outCmd:"none";
-		if(params.outCmd!=null) outCmd = params.outCmd;
-
-		incGph = (request.JSON.incGph!=null)?request.JSON.incGph:"false";
-		if(params.incGph!=null) incGph = params.incGph;
-
-		// Pagination
-		def max = (request.JSON.max!=null)?request.JSON.max:"100000000";
-		if(params.max!=null) max = params.max;
-		def offset = (request.JSON.offset!=null)?request.JSON.offset:"0";
-		if(params.offset!=null) offset = params.offset;
-
 		// Target filters
 		def tgtUrl = request.JSON.tgtUrl
 		if(params.tgtUrl!=null) tgtUrl = params.tgtUrl;
@@ -98,17 +84,14 @@ class MicropublicationController extends BaseController {
 		def flavor = request.JSON.flavor
 
 		log.info("[" + apiKey + "] List >>" +
-			" max:" + max + " offset:" + offset +
 			((tgtUrl!=null) ? (" tgtUrl:" + tgtUrl):"") +
 			((tgtFgt!=null) ? (" tgtFgt:" + tgtFgt):"") +
 			((tgtExt!=null) ? (" tgtExt:" + tgtExt):"") +
 			((tgtIds!=null) ? (" tgtIds:" + tgtIds):"") +
-			((flavor!=null) ? (" flavor:" + flavor):"") +
-			((outCmd!=null) ? (" outCmd:" + outCmd):"") +
-			((incGph!=null) ? (" incGph:" + incGph):""));
+			((flavor!=null) ? (" flavor:" + flavor):""));
 
-		def annotationGraphs = openAnnotationStorageService.listAnnotation(apiKey, max, offset, tgtUrls,
-			tgtFgt, tgtExt, tgtIds, incGph, sourcesFacet, motivationsFacet)
+		def annotationGraphs = openAnnotationStorageService.listAnnotation(apiKey, null, null, tgtUrls,
+			tgtFgt, tgtExt, tgtIds, "false", sourcesFacet, motivationsFacet)
 		def contextJson = JsonUtils.fromInputStream(
 			callExternalUrl(apiKey, configAccessService.getAsString("annotopia.jsonld.micropublication.framing")))
 		def list = []
@@ -125,7 +108,7 @@ class MicropublicationController extends BaseController {
 				def outputJson = framedJson.get("@graph").getAt(0) // Don't need wrapping graph
 				if(outputJson != null) {
 					outputJson.put('@context', framedJson.get('@context')) // Need the context thought
-					list.add(JsonUtils.toPrettyString(content))
+					list.add(JsonUtils.toPrettyString(outputJson))
 				}
 			}
 		}
