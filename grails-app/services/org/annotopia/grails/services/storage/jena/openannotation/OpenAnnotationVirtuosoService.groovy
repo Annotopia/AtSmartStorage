@@ -119,7 +119,8 @@ class OpenAnnotationVirtuosoService {
 			boolean first = false;
 			motivations.each { motivation ->
 				if(first) queryBuffer.append(" UNION ");
-				if(motivation!='unmotivated') queryBuffer.append("{ ?s oa:motivatedBy ?motivation. FILTER (str(?motivation) = 'http://www.w3.org/ns/oa#" + motivation + "') }")
+				if(motivation!='unmotivated' && !(motivation=='micropublishing')) queryBuffer.append("{ ?s oa:motivatedBy ?motivation. FILTER (str(?motivation) = 'http://www.w3.org/ns/oa#" + motivation + "') }")
+				else if(motivation=='micropublishing')  queryBuffer.append("{ ?s oa:motivatedBy ?motivation. FILTER (str(?motivation) = 'mp:" + motivation + "') }")
 				else queryBuffer.append("{ ?s a oa:Annotation . FILTER NOT EXISTS { ?s oa:motivatedBy ?m. }}");
 				first=true;
 			}
