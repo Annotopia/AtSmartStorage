@@ -15,6 +15,34 @@
 	    "prov": "http://www.w3.org/ns/prov#",
 	    "trig": "http://www.w3.org/2004/03/trix/rdfg-1/",
 	    "xsd": "http://www.w3.org/2001/XMLSchema#",
+	    "mp":"http://purl.org/mp/",
+	    "mp:asserts":{
+	         "@type":"@id"
+	      },
+	      "mp:argues":{
+	         "@type":"@id"
+	      },
+	      "mp:hasAttribution":{
+	         "@type":"@id"
+	      },
+	      "mp:attributionOfAgent":{
+	         "@type":"@id"
+	      },
+	      "mp:qualifiedBy":{
+	         "@type":"@id"
+	      },
+	      "mp:supportedBy":{
+	         "@type":"@id"
+	      },
+	      "mp:quotes":{
+	         "@type":"@id"
+	      },
+	      "mp:represents":{
+	         "@type":"@id"
+	      },
+	      "mp:atTime":{
+	         "@type":"xsd:dateTime"
+	      },
 	    
 	    "hasBody" :      {"@type":"@id", "@id" : "oa:hasBody"},
 	    "hasTarget" :    {"@type":"@id", "@id" : "oa:hasTarget"},
